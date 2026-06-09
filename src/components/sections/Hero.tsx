@@ -5,7 +5,10 @@
  * a neutral studio-grey gradient stands in (listed as the CSS fallback),
  * so nothing looks broken.
  */
+import { useTranslations } from "next-intl";
+
 export function Hero() {
+  const t = useTranslations("Hero");
   return (
     <section className="relative isolate flex min-h-[calc(100svh-5rem)] items-center overflow-hidden">
       {/* Photo layer (falls back to a grey gradient if the image is missing) */}
@@ -28,21 +31,25 @@ export function Hero() {
         }}
       />
 
-      <div className="w-full px-6 py-20 md:px-10 lg:px-24">
+      {/* On narrow screens the text spans the full width, past where the
+          horizontal gradient fades out — a uniform scrim keeps it legible. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-black/25 md:hidden"
+      />
+
+      <div className="w-full px-6 py-16 md:px-10 md:py-20 lg:px-24">
         <div className="max-w-xl text-white">
           <h1 className="font-serif text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             Brigite&rsquo;s studio
           </h1>
 
           <p className="mt-7 font-serif text-3xl font-bold leading-tight sm:text-4xl">
-            Strenght, Mobility &amp; Performance
+            {t("tagline")}
           </p>
 
           <p className="mt-7 max-w-md font-serif text-lg leading-relaxed text-white/90 sm:text-xl">
-            Designed for beginners, fitness enthusiasts, performers and athletes
-            alike, my coaching supports you in building strength, improving
-            mobility and developing confidence in your body at every stage of
-            your journey.
+            {t("intro")}
           </p>
         </div>
       </div>

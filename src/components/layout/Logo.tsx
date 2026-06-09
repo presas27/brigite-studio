@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -6,10 +7,11 @@ import { cn } from "@/lib/utils";
  * asset is provided — drop an <svg>/<Image> here to swap it out.
  */
 export function Logo({ className }: { className?: string }) {
+  const t = useTranslations("Nav");
   return (
     <Link
       href="/"
-      aria-label="Brigite's Studio — home"
+      aria-label={t("logoHome")}
       className={cn(
         "inline-flex items-baseline font-serif leading-none text-foreground select-none",
         className,

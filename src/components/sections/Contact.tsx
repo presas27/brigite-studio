@@ -5,7 +5,7 @@ import { ContactForm } from "@/components/ui/ContactForm";
  */
 export function Contact() {
   return (
-    <section id="contact" className="w-full px-6 py-24 md:px-10 lg:py-32">
+    <section id="contact" className="w-full px-6 py-16 md:px-10 md:py-24 lg:py-32">
       <div className="mx-auto max-w-3xl">
         <ContactForm />
       </div>

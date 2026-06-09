@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { Testimonial } from "@/lib/testimonials";
 
 /**
@@ -7,8 +8,9 @@ import type { Testimonial } from "@/lib/testimonials";
  * "SEE COMMENT →" anchored at the bottom.
  */
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  const t = useTranslations("Testimonials");
   return (
-    <article className="flex min-h-[30rem] flex-col rounded-[2rem] bg-white p-8 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.25)] sm:p-10">
+    <article className="flex min-h-[22rem] flex-col rounded-[2rem] bg-white p-8 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.25)] sm:min-h-[26rem] sm:p-10 lg:min-h-[30rem]">
       <div className="flex items-center justify-end gap-4">
         <span className="font-serif text-2xl font-bold tracking-tight">
           {testimonial.name}
@@ -40,7 +42,7 @@ export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
         href={testimonial.href ?? "#"}
         className="mt-auto inline-flex items-center gap-2 font-serif text-sm font-medium uppercase tracking-[0.18em] transition-opacity hover:opacity-60"
       >
-        See comment
+        {t("seeComment")}
         <span aria-hidden>→</span>
       </Link>
     </article>

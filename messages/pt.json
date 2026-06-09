@@ -1,0 +1,69 @@
+{
+  "Meta": {
+    "description": "Brigite's Studio — personal training com a Sara Brigites. Treinos personalizados, acompanhamento e resultados reais."
+  },
+  "Nav": {
+    "primary": "Principal",
+    "home": "Início",
+    "services": "Serviços",
+    "about": "Sobre mim",
+    "contact": "Contacta!",
+    "logoHome": "Brigite's Studio — início",
+    "instagram": "Instagram",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu",
+    "language": "Idioma",
+    "switchToPortuguese": "Mudar para português",
+    "switchToEnglish": "Mudar para inglês"
+  },
+  "Hero": {
+    "tagline": "Força, Mobilidade & Performance",
+    "intro": "Pensado para iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso."
+  },
+  "Services": {
+    "intro": "Força, condição física e treino personalizado pensados à volta dos teus objetivos e estilo de vida, ajudando-te a tornares-te mais saudável, mais forte e mais confiante no teu corpo e em ti.",
+    "featured": {
+      "title": "Treino Personalizado",
+      "description": "Ganha força, melhora a tua saúde e desenvolve confiança no teu corpo através de treino personalizado adaptado aos teus objetivos, estilo de vida e experiência."
+    },
+    "items": {
+      "aerial": {
+        "title": "Aéreo & Performance",
+        "description": "Acompanhamento para artistas aéreos e atletas aventureiros que procuram desenvolver força, mobilidade, técnica e confiança."
+      },
+      "mobility": {
+        "title": "Mobilidade & Flexibilidade",
+        "description": "Desenvolve flexibilidade, mobilidade e controlo corporal, melhorando a forma como te moves, treinas e te sentes todos os dias."
+      },
+      "handbalancing": {
+        "title": "Equilibrismo",
+        "description": "Descobre a arte do equilíbrio através de uma abordagem progressiva focada na força, consciência e controlo corporal. Sejas iniciante ou experiente, as sessões são adaptadas ao teu nível e objetivos."
+      },
+      "performances": {
+        "title": "Espetáculos",
+        "description": "Traz algo extraordinário ao teu evento com espetáculos de aéreo e equilibrismo feitos à medida para cativar e inspirar.",
+        "cta": "Contacta-me"
+      }
+    }
+  },
+  "About": {
+    "heading": "Olá, sou a Sara.",
+    "p1": "Sou ex-atleta e artista acrobata profissional, com formação em movimento, força e controlo corporal de alto nível, tendo atuado internacionalmente pela Europa, Ásia e Américas.",
+    "p2": "Para além da carreira como performer, trabalhei como treinadora e estudei na University of Kent, em Londres. Sou também Personal Trainer Certificada pela YMCA, combinando experiência prática de treino com uma base sólida em ciências do exercício.",
+    "p3": "Especializo-me em treino personalizado para ganhar força, melhorar a condição física, aumentar a mobilidade e a confiança. A minha abordagem foca-se em resultados sustentáveis que se ajustam ao teu estilo de vida e objetivos."
+  },
+  "Testimonials": {
+    "seeComment": "Ver comentário"
+  },
+  "Contact": {
+    "nameLabel": "Nome",
+    "namePlaceholder": "Joana Santos",
+    "phoneLabel": "Telemóvel",
+    "phonePlaceholder": "+3519xxxxxxxx",
+    "emailLabel": "Email",
+    "emailPlaceholder": "joana@email.com",
+    "messageLabel": "Mensagem",
+    "messagePlaceholder": "Olá!",
+    "submit": "Enviar"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const fieldClass =
   "w-full rounded-2xl bg-[#f3f3f2] px-5 py-4 font-sans text-base text-foreground placeholder:text-foreground/40 outline-none transition focus:ring-2 focus:ring-[#7d6049]/40";
@@ -15,6 +16,7 @@ const initial = { name: "", phone: "", email: "", message: "" };
  * when email delivery is ready.
  */
 export function ContactForm() {
+  const t = useTranslations("Contact");
   const [values, setValues] = useState(initial);
 
   function update(field: keyof typeof initial) {
@@ -35,13 +37,13 @@ export function ContactForm() {
       <div className="space-y-7">
         <div className="space-y-3">
           <label htmlFor="name" className={labelClass}>
-            Name
+            {t("nameLabel")}
           </label>
           <input
             id="name"
             name="name"
             type="text"
-            placeholder="Joana Santos"
+            placeholder={t("namePlaceholder")}
             value={values.name}
             onChange={update("name")}
             className={fieldClass}
@@ -50,13 +52,13 @@ export function ContactForm() {
 
         <div className="space-y-3">
           <label htmlFor="phone" className={labelClass}>
-            Phone Number
+            {t("phoneLabel")}
           </label>
           <input
             id="phone"
             name="phone"
             type="tel"
-            placeholder="+3519xxxxxxxx"
+            placeholder={t("phonePlaceholder")}
             value={values.phone}
             onChange={update("phone")}
             className={fieldClass}
@@ -65,13 +67,13 @@ export function ContactForm() {
 
         <div className="space-y-3">
           <label htmlFor="email" className={labelClass}>
-            Email
+            {t("emailLabel")}
           </label>
           <input
             id="email"
             name="email"
             type="email"
-            placeholder="jane@framer.com"
+            placeholder={t("emailPlaceholder")}
             value={values.email}
             onChange={update("email")}
             className={fieldClass}
@@ -80,12 +82,12 @@ export function ContactForm() {
 
         <div className="space-y-3">
           <label htmlFor="message" className={labelClass}>
-            Message
+            {t("messageLabel")}
           </label>
           <textarea
             id="message"
             name="message"
-            placeholder="Hey!"
+            placeholder={t("messagePlaceholder")}
             value={values.message}
             onChange={update("message")}
             rows={5}
@@ -98,7 +100,7 @@ export function ContactForm() {
         type="submit"
         className="mt-9 w-full rounded-full bg-[#7d6049] py-4 font-sans text-base font-semibold text-white transition-colors hover:bg-[#6b5240]"
       >
-        Submit
+        {t("submit")}
       </button>
     </form>
   );

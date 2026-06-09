@@ -1,17 +1,23 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { site } from "@/lib/site";
 import { Logo } from "./Logo";
+import { MobileNav } from "./MobileNav";
+import { LocaleToggle } from "./LocaleToggle";
 
 /**
- * Top navigation bar — opaque white, full-width, sticky.
+ * Top navigation bar — opaque white, full-width, sticky. The inline nav
+ * shows from `md` up; below that it collapses into the MobileNav hamburger.
  */
 export function Header() {
+  const t = useTranslations("Nav");
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white">
       <div className="flex h-20 items-center justify-between px-6 md:px-10 lg:px-12">
         <Logo />
 
-        <nav aria-label="Principal">
+        <nav aria-label={t("primary")} className="hidden md:block">
           <ul className="flex items-center gap-6 font-serif text-base font-medium text-foreground md:gap-9 md:text-lg">
             {site.nav.map((item) => (
               <li key={item.href}>
@@ -19,7 +25,7 @@ export function Header() {
                   href={item.href}
                   className="transition-opacity hover:opacity-60"
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               </li>
             ))}
@@ -29,7 +35,7 @@ export function Header() {
                   href={site.social.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Instagram"
+                  aria-label={t("instagram")}
                   className="block transition-opacity hover:opacity-60"
                 >
                   <svg
@@ -49,8 +55,13 @@ export function Header() {
                 </a>
               </li>
             )}
+            <li>
+              <LocaleToggle />
+            </li>
           </ul>
         </nav>
+
+        <MobileNav />
       </div>
     </header>
   );

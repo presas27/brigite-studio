@@ -14,11 +14,12 @@ export const site = {
     instagram: "https://www.instagram.com/brigitecircus",
     facebook: "",
   },
+  // `key` maps to the `Nav` namespace in messages/*.json for labels.
   nav: [
-    { label: "Home", href: "/" },
-    { label: "Services", href: "#services" },
-    { label: "About me", href: "#about" },
-    { label: "Get in touch!", href: "#contact" },
+    { key: "home", href: "/" },
+    { key: "services", href: "#services" },
+    { key: "about", href: "#about" },
+    { key: "contact", href: "#contact" },
   ],
 } as const;
 

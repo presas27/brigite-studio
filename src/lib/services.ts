@@ -1,57 +1,38 @@
 /**
- * Services content. Text mirrors the reference design verbatim
- * (including its original typos). `image` paths are placeholders —
- * drop the real files into /public/images and reference them here.
- *
- * NOTE: a couple of strings are truncated in the source screenshots
- * and marked with TODO — confirm the full copy.
+ * Services — structural data only (ids, image paths, CTA targets).
+ * All copy lives in messages/*.json under the `Services` namespace,
+ * keyed by `id`. Drop real images into /public/images and set `image`.
  */
 
-export type Service = {
-  title: string;
-  description: string;
+export type ServiceItem = {
+  /** Maps to `Services.items.<id>` in the message catalog. */
+  id: string;
   image?: string;
-  cta?: { label: string; href: string };
+  cta?: { href: string };
 };
 
 /** Wide, highlighted card shown above the grid. */
-export const featuredService: Service = {
-  title: "Personal Training",
-  description:
-    "Build strenght, improve your health and develop confidence in your body through personalised training tailored to your goals, lifestyle and experience",
+export const featuredService: { image?: string } = {
   // image: "/images/services/personal-training.jpg",
 };
 
 /** Two-column grid of secondary services. */
-export const services: Service[] = [
+export const serviceItems: ServiceItem[] = [
   {
-    title: "Aerial & Performance",
-    // TODO: copy is cut off in the reference — confirm full text.
-    description:
-      "Coaching for aerial artist and adventurous athelets looking to develop strength, mobility, technique and confidence through",
+    id: "aerial",
     // image: "/images/services/aerial-performance.jpg",
   },
   {
-    title: "Mobolity & Flexibility",
-    description:
-      "Develop flexibility, mobility and body control while imptoving the way you move, train and feel everyday.",
+    id: "mobility",
     // image: "/images/services/mobility-flexibility.jpg",
   },
   {
-    title: "Handbalancing",
-    description:
-      "Discover the art of balancing through a progressive approach focused on strength, awareness and body control. Whether you're a beginner or experienced, sessions are tailored to your level and goals.",
+    id: "handbalancing",
     // image: "/images/services/handbalancing.jpg",
   },
   {
-    title: "Performances",
-    description:
-      "Bring something extraordinary to your event with bespoke aerial and hand balancing performances designed to captivate and inspire.",
-    cta: { label: "Get in touch", href: "#contact" },
+    id: "performances",
+    cta: { href: "#contact" },
     // image: "/images/services/performances.jpg",
   },
 ];
-
-/** Centered intro line above the services. */
-export const servicesIntro =
-  "Strength, conditioning and personalised training designed around your goals and lifestyle, helping you become healthier, stronger, and more confident in your body and yourself";

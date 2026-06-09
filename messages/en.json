@@ -1,0 +1,69 @@
+{
+  "Meta": {
+    "description": "Brigite's Studio — personal training with Sara Brigites. Personalised coaching, real support and lasting results."
+  },
+  "Nav": {
+    "primary": "Main",
+    "home": "Home",
+    "services": "Services",
+    "about": "About me",
+    "contact": "Get in touch!",
+    "logoHome": "Brigite's Studio — home",
+    "instagram": "Instagram",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "language": "Language",
+    "switchToPortuguese": "Switch to Portuguese",
+    "switchToEnglish": "Switch to English"
+  },
+  "Hero": {
+    "tagline": "Strength, Mobility & Performance",
+    "intro": "Designed for beginners, fitness enthusiasts, performers and athletes alike, my coaching supports you in building strength, improving mobility and developing confidence in your body at every stage of your journey."
+  },
+  "Services": {
+    "intro": "Strength, conditioning and personalised training designed around your goals and lifestyle, helping you become healthier, stronger, and more confident in your body and yourself.",
+    "featured": {
+      "title": "Personal Training",
+      "description": "Build strength, improve your health and develop confidence in your body through personalised training tailored to your goals, lifestyle and experience."
+    },
+    "items": {
+      "aerial": {
+        "title": "Aerial & Performance",
+        "description": "Coaching for aerial artists and adventurous athletes looking to develop strength, mobility, technique and confidence."
+      },
+      "mobility": {
+        "title": "Mobility & Flexibility",
+        "description": "Develop flexibility, mobility and body control while improving the way you move, train and feel every day."
+      },
+      "handbalancing": {
+        "title": "Handbalancing",
+        "description": "Discover the art of balancing through a progressive approach focused on strength, awareness and body control. Whether you're a beginner or experienced, sessions are tailored to your level and goals."
+      },
+      "performances": {
+        "title": "Performances",
+        "description": "Bring something extraordinary to your event with bespoke aerial and hand balancing performances designed to captivate and inspire.",
+        "cta": "Get in touch"
+      }
+    }
+  },
+  "About": {
+    "heading": "Hi, I'm Sara.",
+    "p1": "I'm a former athlete and professional acrobat artist with a background in elite-level movement, strength, and body control, performing internationally across Europe, Asia, and the Americas.",
+    "p2": "Alongside my performance career, I've worked as a coach and studied at the University of Kent in London, UK. I am also a YMCA Certified Personal Trainer, combining practical coaching experience with a strong foundation in exercise science.",
+    "p3": "I specialise in personalised training designed to build strength, improve fitness, enhance mobility, and increase confidence. My approach focuses on sustainable results that fit your lifestyle and goals."
+  },
+  "Testimonials": {
+    "seeComment": "See comment"
+  },
+  "Contact": {
+    "nameLabel": "Name",
+    "namePlaceholder": "Joana Santos",
+    "phoneLabel": "Phone Number",
+    "phonePlaceholder": "+3519xxxxxxxx",
+    "emailLabel": "Email",
+    "emailPlaceholder": "joana@email.com",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Hey!",
+    "submit": "Submit"
+  }
+}
