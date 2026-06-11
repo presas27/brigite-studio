@@ -52,6 +52,26 @@
     "p2": "Alongside my performance career, I've worked as a coach and studied at the University of Kent in London, UK. I am also a YMCA Certified Personal Trainer, combining practical coaching experience with a strong foundation in exercise science.",
     "p3": "I specialise in personalised training designed to build strength, improve fitness, enhance mobility, and increase confidence. My approach focuses on sustainable results that fit your lifestyle and goals."
   },
+  "Work": {
+    "eyebrow": "On stage",
+    "title": "Sara's work",
+    "intro": "Aerial, hand balancing and performance — moments captured on stages around the world.",
+    "cta": "See more",
+    "ctaAria": "See more of Sara Brigite's work on her JamarGig profile (opens in a new tab)",
+    "carouselLabel": "Artistic work gallery",
+    "alt": {
+      "aerialStrapsPurple": "Sara Brigite on aerial straps, silhouette under purple light",
+      "aerialStrapsBlue": "Sara Brigite inverted on aerial straps, blue lighting",
+      "aerialHoopOrange": "Sara Brigite suspended on an aerial hoop, orange costume and bokeh lights",
+      "firePerformance": "Sara Brigite with arms raised during a fire act",
+      "aerialSilksRed": "Sara Brigite on red aerial silks beneath a ring of lights",
+      "contortionBackbend": "Sara Brigite in a contortion backbend on stage",
+      "stagePoseRed": "Sara Brigite in a dynamic stage pose, red costume",
+      "editorialRedCurtain": "Editorial portrait of Sara Brigite against a red curtain",
+      "editorialRedSilk": "Sara Brigite lying on red silk, editorial portrait",
+      "editorialRedPortrait": "Editorial portrait of Sara Brigite in shades of red"
+    }
+  },
   "Testimonials": {
     "seeComment": "See comment"
   },

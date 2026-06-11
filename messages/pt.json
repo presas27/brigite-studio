@@ -52,6 +52,26 @@
     "p2": "Para além da carreira como performer, trabalhei como treinadora e estudei na University of Kent, em Londres. Sou também Personal Trainer Certificada pela YMCA, combinando experiência prática de treino com uma base sólida em ciências do exercício.",
     "p3": "Especializo-me em treino personalizado para ganhar força, melhorar a condição física, aumentar a mobilidade e a confiança. A minha abordagem foca-se em resultados sustentáveis que se ajustam ao teu estilo de vida e objetivos."
   },
+  "Work": {
+    "eyebrow": "Em palco",
+    "title": "O trabalho da Sara",
+    "intro": "Aérea, equilibrismo e performance — momentos capturados em palcos por todo o mundo.",
+    "cta": "Ver mais",
+    "ctaAria": "Ver mais trabalho de Sara Brigite no perfil JamarGig (abre em novo separador)",
+    "carouselLabel": "Galeria de trabalho artístico",
+    "alt": {
+      "aerialStrapsPurple": "Sara Brigite em straps aéreos, silhueta sob luz roxa",
+      "aerialStrapsBlue": "Sara Brigite invertida em straps aéreos, iluminação azul",
+      "aerialHoopOrange": "Sara Brigite suspensa num arco aéreo, fato laranja e luzes desfocadas",
+      "firePerformance": "Sara Brigite de braços erguidos num número de fogo",
+      "aerialSilksRed": "Sara Brigite em tecidos aéreos vermelhos sob um anel de luzes",
+      "contortionBackbend": "Sara Brigite num backbend de contorção em palco",
+      "stagePoseRed": "Sara Brigite numa pose dinâmica em palco, fato vermelho",
+      "editorialRedCurtain": "Retrato editorial de Sara Brigite com cortina vermelha",
+      "editorialRedSilk": "Sara Brigite deitada sobre seda vermelha, retrato editorial",
+      "editorialRedPortrait": "Retrato editorial de Sara Brigite em tons de vermelho"
+    }
+  },
   "Testimonials": {
     "seeComment": "Ver comentário"
   },
