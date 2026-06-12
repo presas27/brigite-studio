@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
@@ -22,6 +22,7 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
  */
 export function Hero() {
   const t = useTranslations("Hero");
+  const locale = useLocale();
   const scope = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const leadRef = useRef<HTMLDivElement>(null);
@@ -91,7 +92,10 @@ export function Hero() {
         },
       );
     },
-    { scope },
+    // SplitText replaces the h1's DOM, so a locale change must remount
+    // the node (key below) and re-run the split — otherwise React writes
+    // the new text into detached nodes and the title never updates.
+    { scope, dependencies: [locale], revertOnUpdate: true },
   );
 
   return (
@@ -102,6 +106,7 @@ export function Hero() {
               on mobile it flows from the top as before. */}
           <div className="lg:my-auto">
             <h1
+              key={locale}
               ref={titleRef}
               className="relative z-10 max-w-[14ch] font-display text-[clamp(3.5rem,10.5vw,9rem)] uppercase leading-[0.95] tracking-tight text-cream"
             >

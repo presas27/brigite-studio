@@ -1,12 +1,12 @@
 /**
  * i18n configuration — cookie-based locale, no URL routing.
- * Portuguese is the default; English is offered via the navbar toggle.
+ * English is the default; Portuguese is offered via the navbar toggle.
  */
 export const locales = ["pt", "en"] as const;
 
 export type Locale = (typeof locales)[number];
 
-export const defaultLocale: Locale = "pt";
+export const defaultLocale: Locale = "en";
 
 /** Cookie that persists the visitor's chosen language. */
 export const LOCALE_COOKIE = "NEXT_LOCALE";

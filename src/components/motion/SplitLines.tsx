@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useLocale } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
@@ -12,6 +13,9 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
  * Masked line reveal on scroll for display headlines, the same recipe
  * as the hero title. Progressive enhancement: server-rendered visible,
  * hidden only by the tween's first tick, skipped under reduced motion.
+ * SplitText replaces the heading's DOM, so a locale change remounts the
+ * node (key) and re-runs the split — otherwise React writes the new
+ * text into detached nodes and the heading never updates.
  */
 export function SplitLines({
   children,
@@ -21,6 +25,7 @@ export function SplitLines({
   className?: string;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
+  const locale = useLocale();
 
   useGSAP(
     () => {
@@ -46,11 +51,11 @@ export function SplitLines({
         });
       });
     },
-    { scope: ref },
+    { scope: ref, dependencies: [locale], revertOnUpdate: true },
   );
 
   return (
-    <h2 ref={ref} className={className}>
+    <h2 key={locale} ref={ref} className={className}>
       {children}
     </h2>
   );

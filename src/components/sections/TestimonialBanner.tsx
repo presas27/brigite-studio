@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
@@ -18,6 +18,7 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
  */
 export function TestimonialBanner() {
   const t = useTranslations("Testimonial");
+  const locale = useLocale();
   const scope = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLParagraphElement>(null);
   const attrRef = useRef<HTMLElement>(null);
@@ -82,7 +83,9 @@ export function TestimonialBanner() {
         });
       });
     },
-    { scope },
+    // SplitText replaces the quote's DOM, so a locale change must
+    // remount the node (key below) and re-run the split.
+    { scope, dependencies: [locale], revertOnUpdate: true },
   );
 
   return (
@@ -101,6 +104,7 @@ export function TestimonialBanner() {
       <figure className="relative mx-auto max-w-4xl px-6 text-center">
         <blockquote>
           <p
+            key={locale}
             ref={quoteRef}
             className="font-display text-[clamp(1.9rem,4.5vw,3.5rem)] uppercase leading-[1.05]"
           >
