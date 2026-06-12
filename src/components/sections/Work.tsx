@@ -1,11 +1,13 @@
 import { useTranslations } from "next-intl";
 import { Coverflow } from "@/components/ui/Coverflow";
 import { workImages, workProfileUrl } from "@/lib/work";
+import { Reveal } from "@/components/motion/Reveal";
 
 /**
- * "Trabalho" — a coverflow of Sara's circus / aerial work with a "Ver mais" CTA
- * out to her JamarGig profile. Copy comes from the `Work` namespace; the
- * carousel itself is the client component <Coverflow>.
+ * "Trabalho" — a coverflow of Sara's circus / aerial work with a "Ver
+ * mais" CTA out to her JamarGig profile. On ink the photos' stage
+ * blacks dissolve into the section and only the lit figure glows. Copy
+ * comes from the `Work` namespace; the carousel is <Coverflow>.
  */
 export function Work() {
   const t = useTranslations("Work");
@@ -17,21 +19,22 @@ export function Work() {
 
   return (
     <section
-      id="work"
-      className="w-full overflow-hidden px-6 py-16 md:px-10 md:py-24 lg:py-32"
+      id="trabalho"
+      className="w-full scroll-mt-24 overflow-hidden bg-ink"
     >
-      <div className="mx-auto max-w-6xl">
-        <header className="mx-auto max-w-2xl text-center">
-          <p className="font-serif text-sm font-medium uppercase tracking-[0.25em] text-foreground/70">
-            {t("eyebrow")}
-          </p>
-          <h2 className="mt-4 font-serif text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
-            {t("title")}
-          </h2>
-          <p className="mt-5 font-serif text-lg leading-relaxed text-foreground/70">
-            {t("intro")}
-          </p>
-        </header>
+      <div className="mx-auto max-w-7xl px-6 py-24 md:px-10 md:py-32 lg:px-12">
+        <Reveal>
+          <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <h2 className="max-w-[16ch] font-display text-[clamp(2.75rem,6.5vw,5.25rem)] uppercase leading-[0.95] text-cream">
+              {t.rich("title", {
+                m: (chunks) => <span className="text-bronze">{chunks}</span>,
+              })}
+            </h2>
+            <p className="max-w-[36ch] text-lg leading-relaxed text-cream/70 md:text-right">
+              {t("intro")}
+            </p>
+          </header>
+        </Reveal>
 
         <div className="mt-14 md:mt-20">
           <Coverflow slides={slides} label={t("carouselLabel")} />
@@ -43,9 +46,9 @@ export function Work() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("ctaAria")}
-            className="group inline-flex items-center gap-2 font-serif text-lg font-medium text-foreground"
+            className="group inline-flex items-center gap-2 text-lg font-medium text-cream"
           >
-            <span className="border-b border-foreground/30 pb-1 transition-colors group-hover:border-foreground">
+            <span className="border-b border-cream/30 pb-1 transition-colors group-hover:border-cream">
               {t("cta")}
             </span>
             <svg

@@ -29,7 +29,7 @@ export function LocaleToggle({ className }: { className?: string }) {
       role="group"
       aria-label={t("language")}
       className={cn(
-        "inline-flex items-center font-serif text-base font-medium",
+        "inline-flex items-center text-sm font-medium",
         isPending && "opacity-60",
         className,
       )}
@@ -54,7 +54,7 @@ export function LocaleToggle({ className }: { className?: string }) {
               }
               className={cn(
                 "uppercase tracking-wide transition-opacity hover:opacity-60",
-                isActive ? "text-foreground" : "text-foreground/45",
+                isActive ? "text-foreground" : "text-foreground/60",
               )}
             >
               {locale}

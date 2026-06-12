@@ -54,7 +54,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls="mobile-menu"
         aria-label={open ? t("closeMenu") : t("openMenu")}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-foreground transition-opacity hover:opacity-60"
+        className="inline-flex size-11 items-center justify-center rounded-full text-cream transition-opacity hover:opacity-60"
       >
         <svg
           viewBox="0 0 24 24"
@@ -88,7 +88,7 @@ export function MobileNav() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="fixed inset-0 top-20 z-40 bg-black/30"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
@@ -105,12 +105,12 @@ export function MobileNav() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
-            className="fixed inset-x-0 top-20 z-50 bg-white px-6 pb-8 pt-2 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.25)]"
+            className="fixed inset-x-3 top-[5.25rem] z-50 rounded-3xl bg-ink px-6 pb-8 pt-2 ring-1 ring-cream/10 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.6)]"
           >
             <nav aria-label={t("primary")}>
-              <ul className="flex flex-col font-serif text-2xl font-medium text-foreground">
+              <ul className="flex flex-col font-display text-3xl uppercase text-cream">
                 {site.nav.map((item) => (
-                  <li key={item.href} className="border-b border-black/5">
+                  <li key={item.href} className="border-b border-cream/10">
                     <Link
                       href={item.href}
                       onClick={() => setOpen(false)}
@@ -133,7 +133,7 @@ export function MobileNav() {
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
                   aria-label={t("instagram")}
-                  className="mt-6 inline-flex items-center gap-3 font-serif text-lg font-medium transition-opacity hover:opacity-60"
+                  className="mt-6 inline-flex items-center gap-3 text-lg font-medium text-cream transition-opacity hover:opacity-60"
                 >
                   <svg
                     viewBox="0 0 24 24"

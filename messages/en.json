@@ -1,61 +1,72 @@
 {
   "Meta": {
-    "description": "Brigite's Studio — personal training with Sara Brigites. Personalised coaching, real support and lasting results."
+    "description": "Personal training with Sara Brigites. Personalised coaching, close support and lasting results."
   },
   "Nav": {
     "primary": "Main",
     "home": "Home",
-    "services": "Services",
     "about": "About me",
+    "plans": "Plans",
+    "work": "Work",
     "contact": "Get in touch!",
-    "logoHome": "Brigite's Studio — home",
+    "logoHome": "Brigite's Studio, home",
     "instagram": "Instagram",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "language": "Language",
     "switchToPortuguese": "Switch to Portuguese",
-    "switchToEnglish": "Switch to English"
+    "switchToEnglish": "Switch to English",
+    "footerNav": "Footer"
   },
   "Hero": {
-    "tagline": "Strength, Mobility & Performance",
-    "intro": "Designed for beginners, fitness enthusiasts, performers and athletes alike, my coaching supports you in building strength, improving mobility and developing confidence in your body at every stage of your journey."
-  },
-  "Services": {
-    "intro": "Strength, conditioning and personalised training designed around your goals and lifestyle, helping you become healthier, stronger, and more confident in your body and yourself.",
-    "featured": {
-      "title": "Personal Training",
-      "description": "Build strength, improve your health and develop confidence in your body through personalised training tailored to your goals, lifestyle and experience."
-    },
-    "items": {
-      "aerial": {
-        "title": "Aerial & Performance",
-        "description": "Coaching for aerial artists and adventurous athletes looking to develop strength, mobility, technique and confidence."
-      },
-      "mobility": {
-        "title": "Mobility & Flexibility",
-        "description": "Develop flexibility, mobility and body control while improving the way you move, train and feel every day."
-      },
-      "handbalancing": {
-        "title": "Handbalancing",
-        "description": "Discover the art of balancing through a progressive approach focused on strength, awareness and body control. Whether you're a beginner or experienced, sessions are tailored to your level and goals."
-      },
-      "performances": {
-        "title": "Performances",
-        "description": "Bring something extraordinary to your event with bespoke aerial and hand balancing performances designed to captivate and inspire.",
-        "cta": "Get in touch"
-      }
-    }
+    "title": "Strength, <i>mobility</i> and performance",
+    "intro": "Designed for beginners, fitness enthusiasts, performers and athletes alike, my coaching supports you in building strength, improving mobility and developing confidence in your body at every stage of your journey.",
+    "cta": "Book a session",
+    "secondary": "See plans",
+    "alt": "Sara Brigites smiling with her arms crossed"
   },
   "About": {
-    "heading": "Hi, I'm Sara.",
+    "heading": "Hi, <m>I'm</m> Sara.",
     "p1": "I'm a former athlete and professional acrobat artist with a background in elite-level movement, strength, and body control, performing internationally across Europe, Asia, and the Americas.",
     "p2": "Alongside my performance career, I've worked as a coach and studied at the University of Kent in London, UK. I am also a YMCA Certified Personal Trainer, combining practical coaching experience with a strong foundation in exercise science.",
     "p3": "I specialise in personalised training designed to build strength, improve fitness, enhance mobility, and increase confidence. My approach focuses on sustainable results that fit your lifestyle and goals."
   },
+  "Plans": {
+    "title": "Plans <m>built</m> for you",
+    "items": {
+      "personal": {
+        "name": "1:1 Training",
+        "tagline": "Full in-person coaching, session by session.",
+        "b1": "A plan that's 100% yours",
+        "b2": "Individual in-person sessions",
+        "b3": "Ongoing assessment and progression",
+        "b4": "Direct support between sessions",
+        "cta": "Talk to me"
+      },
+      "online": {
+        "name": "Online Coaching",
+        "tagline": "Train wherever you are, with a plan and remote support.",
+        "b1": "A weekly plan adapted to you",
+        "b2": "Videos and technical feedback",
+        "b3": "Regular check-ins",
+        "b4": "Adjustments whenever you need",
+        "cta": "Start online"
+      },
+      "specialty": {
+        "name": "Mobility & Handbalancing",
+        "tagline": "Flexibility, mobility and the art of balance, from beginner to advanced.",
+        "b1": "Mobility and flexibility",
+        "b2": "Progressive handbalancing",
+        "b3": "Aerial work",
+        "b4": "Body control and awareness",
+        "b5": "Sessions tailored to your level",
+        "cta": "Book a session"
+      }
+    }
+  },
   "Work": {
-    "eyebrow": "On stage",
-    "title": "Sara's work",
-    "intro": "Aerial, hand balancing and performance — moments captured on stages around the world.",
+    "title": "<m>Sara's</m> work",
+    "intro": "Aerial, hand balancing and performance on stages around the world.",
     "cta": "See more",
     "ctaAria": "See more of Sara Brigite's work on her JamarGig profile (opens in a new tab)",
     "carouselLabel": "Artistic work gallery",
@@ -72,10 +83,39 @@
       "editorialRedPortrait": "Editorial portrait of Sara Brigite in shades of red"
     }
   },
-  "Testimonials": {
-    "seeComment": "See comment"
+  "Testimonial": {
+    "quote": "<m>With Sara I found</m> strength and confidence I didn't know I had.",
+    "name": "Joana M.",
+    "role": "1:1 training client, Lisbon"
+  },
+  "FAQ": {
+    "heading": "FAQ",
+    "items": {
+      "1": {
+        "q": "Where do sessions take place?",
+        "a": "In Lisbon, in the studio or outdoors depending on your plan. I also coach online if you're somewhere else."
+      },
+      "2": {
+        "q": "Do I need experience to start?",
+        "a": "No. Your plan starts from your current level and grows with you. The first session always includes an assessment."
+      },
+      "3": {
+        "q": "When will I see results?",
+        "a": "It depends on your starting point and consistency. With two to three sessions a week, most people feel real changes within the first weeks."
+      },
+      "4": {
+        "q": "How does online coaching work?",
+        "a": "You get a weekly plan, record your exercises when you want feedback and we do regular check-ins to adjust."
+      },
+      "5": {
+        "q": "How do I start?",
+        "a": "Message me through the form or Instagram. We book a chat, set your goals and pick the right plan for you."
+      }
+    }
   },
   "Contact": {
+    "title": "<m>Ready to</m> train?",
+    "subtitle": "Write to me and we'll build your plan.",
     "nameLabel": "Name",
     "namePlaceholder": "Joana Santos",
     "phoneLabel": "Phone Number",
@@ -84,6 +124,9 @@
     "emailPlaceholder": "joana@email.com",
     "messageLabel": "Message",
     "messagePlaceholder": "Hey!",
-    "submit": "Submit"
+    "submit": "Submit",
+    "sending": "Sending…",
+    "success": "Message sent. You'll get a confirmation in your inbox.",
+    "error": "Couldn't send. Try again or email geral@brigites.studio."
   }
 }

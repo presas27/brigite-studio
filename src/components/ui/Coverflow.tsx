@@ -286,7 +286,7 @@ export function Coverflow({ slides, label, interval = 3500 }: CoverflowProps) {
           hovering.current = false;
           scheduleNext();
         }}
-        className="relative mx-auto h-[calc(var(--cw)*1.5)] w-full touch-pan-y select-none outline-none [--cw:clamp(13.5rem,62vw,21rem)] [perspective:1600px] focus-visible:ring-2 focus-visible:ring-[#3a2c22]/60 focus-visible:ring-offset-4"
+        className="relative mx-auto h-[calc(var(--cw)*1.5)] w-full touch-pan-y select-none outline-none [--cw:clamp(13.5rem,62vw,21rem)] [perspective:1600px] focus-visible:ring-2 focus-visible:ring-caramel/70 focus-visible:ring-offset-4 focus-visible:ring-offset-ink"
       >
         {slides.map((slide, i) => (
           <div
@@ -305,9 +305,9 @@ export function Coverflow({ slides, label, interval = 3500 }: CoverflowProps) {
                 // Tailwind v4 translate/scale utilities write the native
                 // `translate`/`scale` properties, not `transform` — they must
                 // be listed in transition-property or the hover lift snaps.
-                "relative h-full w-full overflow-hidden rounded-3xl bg-[#f1f0ee] shadow-2xl transition-[translate,scale,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [backface-visibility:hidden] [will-change:translate,scale]",
+                "relative h-full w-full overflow-hidden rounded-3xl bg-[#0b0907] ring-1 ring-cream/10 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.8)] transition-[translate,scale,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [backface-visibility:hidden] [will-change:translate,scale]",
                 i !== active &&
-                  "group-hover:-translate-y-3 group-hover:scale-[1.03] group-hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.45)]",
+                  "group-hover:-translate-y-3 group-hover:scale-[1.03] group-hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)]",
               )}
             >
               <Image

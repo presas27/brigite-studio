@@ -1,20 +1,43 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The brand is serif-forward; Playfair Display is the
- * primary face. Colors are close to the reference and easy to retune.
+ * Design tokens. Condensed display type (Anton) over a warm dark canvas.
+ * The page rests on near-black ink (only ever exposed on overscroll —
+ * the hero gradient and ink band cover it edge to edge), and the
+ * hero/testimonial surfaces glow caramel, all pulled from Sara's studio
+ * wardrobe. Playfair survives as the italic accent only. `silk` red is
+ * reserved for form error states.
  */
 :root {
-  --background: #ffffff;
-  --foreground: #1b1b1b;
+  --background: #14100c;
+  --foreground: #faf5ec;
+  --ink: #14100c;
+  --ink-lift: #1d1712;
+  --cream: #faf5ec;
+  --butter: #f5e9d6;
+  --caramel: #d9a05b;
+  --caramel-deep: #b87a3e;
+  --brown-deep: #6b3f24;
+  --bronze: #9a7a58;
+  --silk: #b31818;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-lift: var(--ink-lift);
+  --color-cream: var(--cream);
+  --color-butter: var(--butter);
+  --color-caramel: var(--caramel);
+  --color-caramel-deep: var(--caramel-deep);
+  --color-brown-deep: var(--brown-deep);
+  --color-bronze: var(--bronze);
+  --color-silk: var(--silk);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
 }
 
 * {
@@ -29,8 +52,64 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--caramel);
+  color: var(--ink);
+}
+
+/*
+ * Film grain. Doubles as dither against gradient banding, so it goes on
+ * every large gradient surface (hero, photo cards, testimonial band) and
+ * nowhere else. Host needs `relative` + `overflow-hidden`.
+ */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/*
+ * Layered caramel gradients. The hero stacks two radials over the linear
+ * base so no single radial bands across the full card; smaller surfaces
+ * (photo cards, featured plan) use the simple pair.
+ */
+.gradient-hero {
+  /* The bright radial doubles as a spotlight behind the figure — it
+     keeps the area around her hair luminous so cut-out edges dissolve. */
+  background:
+    radial-gradient(70% 85% at 78% 42%, #efb975 0%, rgba(239, 185, 117, 0) 62%),
+    radial-gradient(90% 70% at 15% 95%, #8a5a33 0%, rgba(138, 90, 51, 0) 60%),
+    linear-gradient(
+      165deg,
+      var(--caramel) 0%,
+      var(--caramel-deep) 48%,
+      var(--brown-deep) 100%
+    );
+}
+.gradient-caramel {
+  background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
+}
+
+/* Underline that grows from the left on hover. */
+.link-grow {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 250ms ease-out;
+}
+.link-grow:hover,
+.link-grow:focus-visible {
+  background-size: 100% 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,61 +1,72 @@
 {
   "Meta": {
-    "description": "Brigite's Studio — personal training com a Sara Brigites. Treinos personalizados, acompanhamento e resultados reais."
+    "description": "Personal training com a Sara Brigites. Treinos personalizados, acompanhamento próximo e resultados reais."
   },
   "Nav": {
     "primary": "Principal",
     "home": "Início",
-    "services": "Serviços",
     "about": "Sobre mim",
+    "plans": "Planos",
+    "work": "Trabalho",
     "contact": "Contacta!",
-    "logoHome": "Brigite's Studio — início",
+    "logoHome": "Brigite's Studio, início",
     "instagram": "Instagram",
     "openMenu": "Abrir menu",
     "closeMenu": "Fechar menu",
     "language": "Idioma",
     "switchToPortuguese": "Mudar para português",
-    "switchToEnglish": "Mudar para inglês"
+    "switchToEnglish": "Mudar para inglês",
+    "footerNav": "Rodapé"
   },
   "Hero": {
-    "tagline": "Força, Mobilidade & Performance",
-    "intro": "Pensado para iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso."
-  },
-  "Services": {
-    "intro": "Força, condição física e treino personalizado pensados à volta dos teus objetivos e estilo de vida, ajudando-te a tornares-te mais saudável, mais forte e mais confiante no teu corpo e em ti.",
-    "featured": {
-      "title": "Treino Personalizado",
-      "description": "Ganha força, melhora a tua saúde e desenvolve confiança no teu corpo através de treino personalizado adaptado aos teus objetivos, estilo de vida e experiência."
-    },
-    "items": {
-      "aerial": {
-        "title": "Aéreo & Performance",
-        "description": "Acompanhamento para artistas aéreos e atletas aventureiros que procuram desenvolver força, mobilidade, técnica e confiança."
-      },
-      "mobility": {
-        "title": "Mobilidade & Flexibilidade",
-        "description": "Desenvolve flexibilidade, mobilidade e controlo corporal, melhorando a forma como te moves, treinas e te sentes todos os dias."
-      },
-      "handbalancing": {
-        "title": "Equilibrismo",
-        "description": "Descobre a arte do equilíbrio através de uma abordagem progressiva focada na força, consciência e controlo corporal. Sejas iniciante ou experiente, as sessões são adaptadas ao teu nível e objetivos."
-      },
-      "performances": {
-        "title": "Espetáculos",
-        "description": "Traz algo extraordinário ao teu evento com espetáculos de aéreo e equilibrismo feitos à medida para cativar e inspirar.",
-        "cta": "Contacta-me"
-      }
-    }
+    "title": "Força, <i>mobilidade</i> e performance",
+    "intro": "Pensado para iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso.",
+    "cta": "Marcar sessão",
+    "secondary": "Ver planos",
+    "alt": "Sara Brigites de braços cruzados, a sorrir"
   },
   "About": {
-    "heading": "Olá, sou a Sara.",
+    "heading": "Olá, <m>sou a</m> Sara.",
     "p1": "Sou ex-atleta e artista acrobata profissional, com formação em movimento, força e controlo corporal de alto nível, tendo atuado internacionalmente pela Europa, Ásia e Américas.",
     "p2": "Para além da carreira como performer, trabalhei como treinadora e estudei na University of Kent, em Londres. Sou também Personal Trainer Certificada pela YMCA, combinando experiência prática de treino com uma base sólida em ciências do exercício.",
     "p3": "Especializo-me em treino personalizado para ganhar força, melhorar a condição física, aumentar a mobilidade e a confiança. A minha abordagem foca-se em resultados sustentáveis que se ajustam ao teu estilo de vida e objetivos."
   },
+  "Plans": {
+    "title": "Planos <m>pensados</m> para ti",
+    "items": {
+      "personal": {
+        "name": "Treino 1:1",
+        "tagline": "Acompanhamento presencial completo, sessão a sessão.",
+        "b1": "Plano 100% personalizado",
+        "b2": "Sessões presenciais individuais",
+        "b3": "Avaliação e progressão contínua",
+        "b4": "Apoio direto entre sessões",
+        "cta": "Falar comigo"
+      },
+      "online": {
+        "name": "Treino Online",
+        "tagline": "Treina onde estiveres, com plano e acompanhamento à distância.",
+        "b1": "Plano semanal adaptado a ti",
+        "b2": "Vídeos e feedback técnico",
+        "b3": "Check-ins regulares",
+        "b4": "Ajustes sempre que precisares",
+        "cta": "Começar online"
+      },
+      "specialty": {
+        "name": "Mobilidade & Equilibrismo",
+        "tagline": "Flexibilidade, mobilidade e a arte do equilíbrio, do iniciante ao avançado.",
+        "b1": "Mobilidade e flexibilidade",
+        "b2": "Equilibrismo progressivo",
+        "b3": "Trabalho aéreo",
+        "b4": "Controlo e consciência corporal",
+        "b5": "Sessões adaptadas ao teu nível",
+        "cta": "Marcar sessão"
+      }
+    }
+  },
   "Work": {
-    "eyebrow": "Em palco",
-    "title": "O trabalho da Sara",
-    "intro": "Aérea, equilibrismo e performance — momentos capturados em palcos por todo o mundo.",
+    "title": "O trabalho <m>da Sara</m>",
+    "intro": "Aérea, equilibrismo e performance em palcos por todo o mundo.",
     "cta": "Ver mais",
     "ctaAria": "Ver mais trabalho de Sara Brigite no perfil JamarGig (abre em novo separador)",
     "carouselLabel": "Galeria de trabalho artístico",
@@ -72,10 +83,39 @@
       "editorialRedPortrait": "Retrato editorial de Sara Brigite em tons de vermelho"
     }
   },
-  "Testimonials": {
-    "seeComment": "Ver comentário"
+  "Testimonial": {
+    "quote": "<m>Com a Sara ganhei</m> força e confiança que não sabia que tinha.",
+    "name": "Joana M.",
+    "role": "Aluna de treino 1:1, Lisboa"
+  },
+  "FAQ": {
+    "heading": "FAQ",
+    "items": {
+      "1": {
+        "q": "Onde decorrem os treinos?",
+        "a": "Em Lisboa, em estúdio ou ao ar livre, conforme o teu plano. Também trabalho online com quem está noutra cidade."
+      },
+      "2": {
+        "q": "Preciso de experiência para começar?",
+        "a": "Não. O plano parte do teu nível atual e cresce contigo. A primeira sessão inclui sempre uma avaliação."
+      },
+      "3": {
+        "q": "Quando começo a ver resultados?",
+        "a": "Depende do ponto de partida e da consistência. Com duas a três sessões por semana, a maioria sente diferenças reais nas primeiras semanas."
+      },
+      "4": {
+        "q": "Como funciona o treino online?",
+        "a": "Recebes um plano semanal, gravas os exercícios quando precisas de feedback e fazemos check-ins regulares para ajustar."
+      },
+      "5": {
+        "q": "Como começo?",
+        "a": "Escreve-me pelo formulário ou Instagram. Marcamos uma conversa, definimos objetivos e escolhemos o plano certo para ti."
+      }
+    }
   },
   "Contact": {
+    "title": "<m>Vamos</m> treinar?",
+    "subtitle": "Escreve-me e construímos o teu plano.",
     "nameLabel": "Nome",
     "namePlaceholder": "Joana Santos",
     "phoneLabel": "Telemóvel",
@@ -84,6 +124,9 @@
     "emailPlaceholder": "joana@email.com",
     "messageLabel": "Mensagem",
     "messagePlaceholder": "Olá!",
-    "submit": "Enviar"
+    "submit": "Enviar",
+    "sending": "A enviar…",
+    "success": "Mensagem enviada. Vais receber uma confirmação no teu email.",
+    "error": "Não foi possível enviar. Tenta outra vez ou escreve para geral@brigites.studio."
   }
 }

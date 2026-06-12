@@ -4,28 +4,30 @@ import { cn } from "@/lib/utils";
 type ButtonProps = {
   href: string;
   children: React.ReactNode;
-  variant?: "solid";
+  variant?: "cream" | "dark";
   className?: string;
 };
 
 const variants = {
-  solid: "bg-[#3a2c22] text-white hover:bg-[#2b2019]",
+  cream: "bg-butter text-ink hover:bg-[#efe0c8]",
+  dark: "bg-ink text-cream hover:bg-[#241b13]",
 };
 
 /**
- * Brand CTA. Link-based by default (anchors/navigation).
+ * Brand CTA pill. Link-based by default (anchors/navigation). `group`
+ * lets children nudge on hover (e.g. a trailing arrow).
  */
 export function Button({
   href,
   children,
-  variant = "solid",
+  variant = "cream",
   className,
 }: ButtonProps) {
   return (
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center justify-center rounded-full px-7 py-3 font-serif text-base font-medium transition-colors",
+        "group inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 font-sans text-base font-semibold transition-colors duration-200",
         variants[variant],
         className,
       )}

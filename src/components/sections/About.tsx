@@ -1,32 +1,53 @@
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { about } from "@/lib/about";
-import { Media } from "@/components/ui/Media";
+import { Reveal } from "@/components/motion/Reveal";
+import { ClipReveal } from "@/components/motion/ClipReveal";
 
 /**
- * About me — portrait on the left, justified bio on the right. Copy comes
- * from the `About` namespace.
+ * About — opens the ink band that runs to the footer, lapping over the
+ * hero so its rounded corners reveal caramel gradient rather than the
+ * page background. Studio portrait card to the left, bio to the right
+ * with a two-tone heading. Copy comes from the `About` namespace.
  */
 export function About() {
   const t = useTranslations("About");
   const paragraphs = [t("p1"), t("p2"), t("p3")];
 
   return (
-    <section id="about" className="w-full px-6 py-16 md:px-10 md:py-24 lg:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2 md:gap-16">
-        <Media
-          src={about.image}
-          alt="Sara Brigites"
-          className="aspect-[2/3] w-full"
-          sizes="(min-width: 768px) 50vw, 100vw"
-        />
+    <section
+      id="sobre"
+      className="relative -mt-8 scroll-mt-24 rounded-t-[2rem] bg-ink md:-mt-10 md:rounded-t-[2.5rem]"
+    >
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 py-24 md:grid-cols-12 md:gap-10 md:px-10 md:py-32 lg:px-12">
+        <ClipReveal className="md:col-span-5">
+          <div className="gradient-caramel grain relative mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden rounded-[1.75rem] md:max-w-none">
+            <Image
+              src={about.image}
+              alt={about.alt}
+              width={about.width}
+              height={about.height}
+              sizes="(min-width: 768px) 26rem, 80vw"
+              className="absolute bottom-0 left-1/2 h-full w-auto max-w-none -translate-x-1/2"
+            />
+          </div>
+        </ClipReveal>
 
-        <div className="font-serif text-lg font-bold leading-relaxed text-foreground sm:text-xl">
-          <p>{t("heading")}</p>
-          {paragraphs.map((paragraph, i) => (
-            <p key={i} className="mt-6 text-left sm:text-justify">
-              {paragraph}
-            </p>
-          ))}
+        <div className="md:col-span-7 lg:col-span-6 lg:col-start-7">
+          <Reveal>
+            <h2 className="max-w-[16ch] font-display text-[clamp(2.75rem,6.5vw,5.25rem)] uppercase leading-[0.95] text-cream">
+              {t.rich("heading", {
+                m: (chunks) => <span className="text-bronze">{chunks}</span>,
+              })}
+            </h2>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="mt-8 max-w-[52ch] space-y-6 text-lg leading-relaxed text-cream/75">
+              {paragraphs.map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>

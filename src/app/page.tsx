@@ -1,9 +1,11 @@
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
-import { Services } from "@/components/sections/Services";
 import { About } from "@/components/sections/About";
+import { Plans } from "@/components/sections/Plans";
 import { Work } from "@/components/sections/Work";
-import { Testimonials } from "@/components/sections/Testimonials";
+import { TestimonialBanner } from "@/components/sections/TestimonialBanner";
+import { FAQ } from "@/components/sections/FAQ";
 import { Contact } from "@/components/sections/Contact";
 
 export default function Home() {
@@ -12,12 +14,14 @@ export default function Home() {
       <Header />
       <main id="main">
         <Hero />
-        <Services />
         <About />
+        <Plans />
         <Work />
-        <Testimonials />
+        <TestimonialBanner />
+        <FAQ />
         <Contact />
       </main>
+      <Footer />
     </>
   );
 }
