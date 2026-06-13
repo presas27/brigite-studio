@@ -53,7 +53,7 @@
         "cta": "Start online"
       },
       "specialty": {
-        "name": "Mobility & Handbalancing",
+        "name": "Aerial, Handbalancing and Mobility",
         "tagline": "Flexibility, mobility and the art of balance, from beginner to advanced.",
         "b1": "Mobility and flexibility",
         "b2": "Progressive handbalancing",
@@ -65,7 +65,7 @@
     }
   },
   "Work": {
-    "title": "<m>Sara's</m> work",
+    "title": "On <m>Stage</m>",
     "intro": "Aerial, hand balancing and performance on stages around the world.",
     "cta": "See more",
     "ctaAria": "See more of Sara Brigite's work on her JamarGig profile (opens in a new tab)",
@@ -93,7 +93,7 @@
     "items": {
       "1": {
         "q": "Where do sessions take place?",
-        "a": "In Lisbon, in the studio or outdoors depending on your plan. I also coach online if you're somewhere else."
+        "a": "In Lisbon, private studios, online or outdoors depending on your plan and request. Also available for national and international workshops/intensive programmes."
       },
       "2": {
         "q": "Do I need experience to start?",

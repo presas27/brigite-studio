@@ -20,15 +20,15 @@
   },
   "Hero": {
     "title": "Força, <i>mobilidade</i> e performance",
-    "intro": "Pensado para iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso.",
+    "intro": "Criado a pensar em iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso.",
     "cta": "Marcar sessão",
     "secondary": "Ver planos",
     "alt": "Sara Brigites de braços cruzados, a sorrir"
   },
   "About": {
     "heading": "Olá, <m>sou a</m> Sara.",
-    "p1": "Sou ex-atleta e artista acrobata profissional, com formação em movimento, força e controlo corporal de alto nível, tendo atuado internacionalmente pela Europa, Ásia e Américas.",
-    "p2": "Para além da carreira como performer, trabalhei como treinadora e estudei na University of Kent, em Londres. Sou também Personal Trainer Certificada pela YMCA, combinando experiência prática de treino com uma base sólida em ciências do exercício.",
+    "p1": "Sou ex-atleta e artista acrobata profissional, com formação em movimento, força e controlo corporal de alto nível, tendo atuado internacionalmente pela Europa, Ásia e América.",
+    "p2": "Para além da carreira como performer, trabalho como treinadora e estudei na University of Kent, em Londres. Sou também Personal Trainer Certificada pela YMCA, combinando experiência prática de treino com uma base sólida em ciências do exercício.",
     "p3": "Especializo-me em treino personalizado para ganhar força, melhorar a condição física, aumentar a mobilidade e a confiança. A minha abordagem foca-se em resultados sustentáveis que se ajustam ao teu estilo de vida e objetivos."
   },
   "Plans": {
@@ -53,7 +53,7 @@
         "cta": "Começar online"
       },
       "specialty": {
-        "name": "Mobilidade & Equilibrismo",
+        "name": "Acrobacia aérea, equilíbrio e mobilidade",
         "tagline": "Flexibilidade, mobilidade e a arte do equilíbrio, do iniciante ao avançado.",
         "b1": "Mobilidade e flexibilidade",
         "b2": "Equilibrismo progressivo",
@@ -65,7 +65,7 @@
     }
   },
   "Work": {
-    "title": "O trabalho <m>da Sara</m>",
+    "title": "No <m>palco</m>",
     "intro": "Aérea, equilibrismo e performance em palcos por todo o mundo.",
     "cta": "Ver mais",
     "ctaAria": "Ver mais trabalho de Sara Brigite no perfil JamarGig (abre em novo separador)",
@@ -93,7 +93,7 @@
     "items": {
       "1": {
         "q": "Onde decorrem os treinos?",
-        "a": "Em Lisboa, em estúdio ou ao ar livre, conforme o teu plano. Também trabalho online com quem está noutra cidade."
+        "a": "Em Lisboa, em estúdio privado, online ou ao ar livre conforme o teu plano e interesse. Também disponível para workshops/programas intensivos a nível nacional e internacional."
       },
       "2": {
         "q": "Preciso de experiência para começar?",
