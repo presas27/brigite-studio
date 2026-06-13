@@ -31,8 +31,11 @@ export function ContactForm() {
   const [values, setValues] = useState(initial);
   const [state, formAction, pending] = useActionState(sendContactEmail, initialState);
 
-  // Reset the fields once per successful submit — the "previous render"
-  // pattern, adjusting state during render instead of in an effect.
+  // Reset the fields once per successful submit — the React-documented
+  // "adjust state during render" pattern. `prevStatus` is read here during
+  // render (the comparison), so useState is correct; a ref would violate
+  // react-hooks/refs (no ref access during render).
+  // oxlint-disable-next-line react-doctor/rerender-state-only-in-handlers -- prevStatus is read during render for this comparison, not handler-only state
   const [prevStatus, setPrevStatus] = useState(state.status);
   if (state.status !== prevStatus) {
     setPrevStatus(state.status);

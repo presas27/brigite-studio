@@ -45,8 +45,8 @@ export function About() {
           </Reveal>
           <Reveal delay={0.08}>
             <div className="mt-8 max-w-[52ch] space-y-6 text-lg leading-relaxed text-cream/75">
-              {paragraphs.map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
+              {paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
           </Reveal>

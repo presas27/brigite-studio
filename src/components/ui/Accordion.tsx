@@ -74,8 +74,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                 </svg>
               </button>
             </h3>
-            <div
-              role="region"
+            <section
               id={regionId}
               aria-labelledby={btnId}
               className={cn(
@@ -88,7 +87,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                   {item.a}
                 </p>
               </div>
-            </div>
+            </section>
           </div>
         );
       })}

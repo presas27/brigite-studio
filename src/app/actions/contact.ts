@@ -18,6 +18,7 @@ export type ContactFormState = { status: "idle" | "success" | "error" };
  * send the visitor a localized confirmation. The confirmation is
  * best-effort — the lead is already in Sara's inbox if it fails.
  */
+// oxlint-disable-next-line react-doctor/server-auth-actions -- public contact form; the site has no authentication, and abuse is handled by the honeypot + input/length validation below
 export async function sendContactEmail(
   _prev: ContactFormState,
   formData: FormData,
@@ -37,6 +38,7 @@ export async function sendContactEmail(
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    // oxlint-disable-next-line react-doctor/server-after-nonblocking -- diagnostic log on the missing-config path; the action returns an error immediately after, so there is no response to defer
     console.warn("RESEND_API_KEY is not set — contact email not sent.");
     return { status: "error" };
   }

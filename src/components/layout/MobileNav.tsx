@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
 import { site } from "@/lib/site";
 import { LocaleToggle } from "./LocaleToggle";
 
@@ -46,7 +46,8 @@ export function MobileNav() {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <LazyMotion features={domAnimation}>
+      <div className="md:hidden">
       <button
         ref={toggleRef}
         type="button"
@@ -82,7 +83,7 @@ export function MobileNav() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             key="overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -97,7 +98,7 @@ export function MobileNav() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             key="panel"
             id="mobile-menu"
             ref={panelRef}
@@ -153,9 +154,10 @@ export function MobileNav() {
                 </a>
               )}
             </nav>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </LazyMotion>
   );
 }

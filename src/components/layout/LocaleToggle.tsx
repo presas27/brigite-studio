@@ -25,6 +25,7 @@ export function LocaleToggle({ className }: { className?: string }) {
   }
 
   return (
+    /* oxlint-disable react-doctor/prefer-tag-over-role -- ARIA group of language-toggle buttons; there is no native HTML "group" element (the rule suggests <address>, which is semantically wrong here) */
     <div
       role="group"
       aria-label={t("language")}
@@ -63,5 +64,6 @@ export function LocaleToggle({ className }: { className?: string }) {
         );
       })}
     </div>
+    /* oxlint-enable react-doctor/prefer-tag-over-role */
   );
 }

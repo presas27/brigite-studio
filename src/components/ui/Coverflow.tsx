@@ -259,6 +259,7 @@ export function Coverflow({ slides, label, interval = 3500 }: CoverflowProps) {
 
   return (
     <div className="relative w-full">
+      {/* oxlint-disable react-doctor/prefer-tag-over-role, react-doctor/no-noninteractive-tabindex -- carousel stage uses role="group" + aria-roledescription and is focusable for arrow-key nav (WAI-ARIA APG carousel pattern); cards use role="button" because a <button> cannot wrap the Image/overlay divs per the HTML content model */}
       <div
         ref={stageRef}
         role="group"
@@ -295,6 +296,15 @@ export function Coverflow({ slides, label, interval = 3500 }: CoverflowProps) {
               cardRefs.current[i] = el;
             }}
             onClick={() => onCardClick(i)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onCardClick(i);
+              }
+            }}
+            role="button"
+            aria-label={slide.alt}
+            tabIndex={-1}
             className={cn(
               "group absolute left-1/2 top-0 h-[calc(var(--cw)*1.5)] w-[var(--cw)] will-change-transform [backface-visibility:hidden] [transform-style:preserve-3d]",
               i === active ? "cursor-default" : "cursor-pointer",
@@ -329,6 +339,7 @@ export function Coverflow({ slides, label, interval = 3500 }: CoverflowProps) {
           </div>
         ))}
       </div>
+      {/* oxlint-enable react-doctor/prefer-tag-over-role, react-doctor/no-noninteractive-tabindex */}
     </div>
   );
 }
