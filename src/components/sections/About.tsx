@@ -28,7 +28,7 @@ export function About() {
               width={about.width}
               height={about.height}
               sizes="(min-width: 768px) 26rem, 80vw"
-              className="absolute bottom-0 left-1/2 h-full w-auto max-w-none -translate-x-1/2"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
         </ClipReveal>
