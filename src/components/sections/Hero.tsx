@@ -159,10 +159,10 @@ export function Hero() {
             className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_rgba(60,30,10,0.35)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:right-16"
           >
             <Image
-              src="/images/sara/hero-cutout-v6.webp"
+              src="/images/sara/hero-cutout-v7.webp"
               alt={t("alt")}
-              width={957}
-              height={1380}
+              width={1200}
+              height={1739}
               preload
               sizes="(min-width: 1024px) 40rem, 70vw"
               className="relative h-[min(52svh,28rem)] w-auto lg:h-[min(84vh,54rem)]"
