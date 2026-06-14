@@ -6,7 +6,7 @@ import { autoReplyEmail, notificationEmail } from "@/lib/emails";
 import { site } from "@/lib/site";
 
 /** Sender for both emails — the domain must be verified in Resend. */
-const FROM = "Brigite's Studio <site@brigites.studio>";
+const FROM = "Brigite's Studio <site@brigitestudio.com>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

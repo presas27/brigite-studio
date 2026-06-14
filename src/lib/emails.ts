@@ -36,7 +36,7 @@ function layout(body: string) {
   <body style="margin:0;padding:32px 16px;background:#ffffff;">
     <div style="max-width:560px;margin:0 auto;color:#111111;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;">
       ${body}
-      <p style="margin:40px 0 0;font-size:13px;color:#888888;">Brigite&#39;s Studio &middot; <a href="${site.url}" style="color:#888888;">brigites.studio</a></p>
+      <p style="margin:40px 0 0;font-size:13px;color:#888888;">Brigite&#39;s Studio &middot; <a href="${site.url}" style="color:#888888;">brigitestudio.com</a></p>
     </div>
   </body>
 </html>`;

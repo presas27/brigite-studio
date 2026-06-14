@@ -7,9 +7,9 @@ export const site = {
   trainer: "Sara Brigites",
   description:
     "Personal training com a Sara Brigites. Treinos personalizados, acompanhamento próximo e resultados reais.",
-  url: "https://brigites.studio",
+  url: "https://brigitestudio.com",
   locale: "pt-PT",
-  email: "geral@brigites.studio",
+  email: "sarabrigite@brigitestudio.com",
   social: {
     instagram: "https://www.instagram.com/brigitecircus",
     facebook: "",
