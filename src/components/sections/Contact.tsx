@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { ContactForm } from "@/components/ui/ContactForm";
+import { ContactFormServer } from "@/components/ui/ContactFormServer";
 import { Reveal } from "@/components/motion/Reveal";
 import { SplitLines } from "@/components/motion/SplitLines";
 import { SolMark } from "@/components/ui/SolMark";
@@ -29,7 +29,7 @@ export function Contact() {
         </p>
 
         <Reveal delay={0.1} className="mx-auto mt-16 w-full max-w-3xl">
-          <ContactForm />
+          <ContactFormServer />
         </Reveal>
       </div>
     </section>

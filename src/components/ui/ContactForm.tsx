@@ -25,8 +25,11 @@ function sanitizePhone(raw: string) {
 /**
  * Contact form. Submits to the Resend-backed `sendContactEmail` server
  * action, which notifies Sara and sends the visitor a confirmation.
+ *
+ * `token` is a server-issued timing token (see ContactFormServer) carried in a
+ * hidden field so the action can reject bot-speed submissions.
  */
-export function ContactForm() {
+export function ContactForm({ token }: { token: string }) {
   const t = useTranslations("Contact");
   const [values, setValues] = useState(initial);
   const [state, formAction, pending] = useActionState(sendContactEmail, initialState);
@@ -131,6 +134,9 @@ export function ContactForm() {
         aria-hidden="true"
         className="absolute -left-[9999px] h-px w-px opacity-0"
       />
+
+      {/* Timing token — lets the action reject bot-speed / replayed submits. */}
+      <input type="hidden" name="_t" value={token} />
 
       <button
         type="submit"

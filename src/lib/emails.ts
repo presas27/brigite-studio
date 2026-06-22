@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/config";
+import type { ModerationResult } from "./moderation";
 import { site } from "./site";
 
 /**
@@ -42,8 +43,15 @@ function layout(body: string) {
 </html>`;
 }
 
-/** Notification to Sara with the form data. Always in Portuguese. */
-export function notificationEmail(data: ContactPayload): EmailContent {
+/**
+ * Notification to Sara with the form data. Always in Portuguese. When
+ * `moderation` flags the message, the subject is prefixed with ⚠️ and a banner
+ * lists the reasons — the message still comes through so nothing is lost.
+ */
+export function notificationEmail(
+  data: ContactPayload,
+  moderation?: ModerationResult,
+): EmailContent {
   const name = escapeHtml(data.name);
   const phone = data.phone
     ? `<a href="tel:${escapeHtml(data.phone)}" style="color:#111111;">${escapeHtml(data.phone)}</a>`
@@ -51,9 +59,19 @@ export function notificationEmail(data: ContactPayload): EmailContent {
   const email = escapeHtml(data.email);
   const message = escapeHtml(data.message).replaceAll("\n", "<br />");
 
+  const flagged = moderation?.verdict === "flag";
+  const reasons = moderation?.reasons.map(escapeHtml).join(", ") ?? "";
+  const banner = flagged
+    ? `<div style="margin:0 0 24px;padding:12px 16px;border:1px solid #e0a23d;background:#fff7e6;border-radius:10px;font-size:14px;color:#8a5a00;line-height:1.5;">
+        <strong>⚠️ Mensagem marcada automaticamente</strong><br />
+        Motivos: ${reasons}. Pode ser spam ou conteúdo abusivo — confirma antes de responder.
+      </div>`
+    : "";
+
   return {
-    subject: `Nova mensagem de ${data.name}`,
+    subject: `${flagged ? "⚠️ [Verificar] " : ""}Nova mensagem de ${data.name}`,
     html: layout(`
+      ${banner}
       <h1 style="margin:0 0 24px;font-size:22px;">Nova mensagem pelo site</h1>
       <p style="margin:0 0 4px;"><strong>Nome:</strong> ${name}</p>
       <p style="margin:0 0 4px;"><strong>Telemóvel:</strong> ${phone}</p>
@@ -62,6 +80,7 @@ export function notificationEmail(data: ContactPayload): EmailContent {
       <p style="margin:0;">${message}</p>
       <p style="margin:32px 0 0;font-size:14px;color:#555555;"><em>Responde a este email para falar diretamente com ${name}.</em></p>`),
     text: [
+      ...(flagged ? [`⚠️ MARCADA AUTOMATICAMENTE — motivos: ${reasons}`, ""] : []),
       "Nova mensagem pelo site",
       "",
       `Nome: ${data.name}`,
