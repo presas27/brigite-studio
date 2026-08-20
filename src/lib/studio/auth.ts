@@ -2,6 +2,7 @@ import { createHmac, randomBytes, createHash, timingSafeEqual } from "node:crypt
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { get, run } from "./db";
+import { seedStudio } from "./seed";
 import { activateUser, findClient, findUser } from "./users";
 import type { Client, User } from "./types";
 
@@ -94,6 +95,13 @@ export async function endSession(): Promise<void> {
 
 /** The signed-in user, or `undefined`. Safe to call from any server context. */
 export async function currentUser(): Promise<User | undefined> {
+  // The layout seeds too, but a layout and the page under it render in parallel:
+  // on a cold instance with an empty database the page's session lookup can win
+  // the race, find no row for a perfectly valid cookie, and bounce the visitor
+  // to the sign-in screen. Seeding here first makes the lookup deterministic.
+  // Idempotent and one indexed read once the coach row exists.
+  seedStudio();
+
   const raw = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!raw) return undefined;
 
