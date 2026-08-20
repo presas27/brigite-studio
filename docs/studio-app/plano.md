@@ -626,14 +626,18 @@ baseada em `cream` desaparece.
 
 ### Decisões que se desviam do plano
 
-- **Persistência: SQLite local** (`node:sqlite`, ficheiro em `.data/studio.db`), não Convex.
-  Razão: zero provisionamento, corre num `bun run dev` sem credenciais. Todo o acesso a
+- **Persistência: SQLite local** (`node:sqlite`), não Convex. Razão: zero
+  provisionamento, corre num `bun run dev` sem credenciais. Todo o acesso a
   dados passa por `all`/`get`/`run` em `src/lib/studio/db.ts` com SQL escrito à mão, por
   isso a troca para Convex/Postgres/libSQL (§9.2) é mecânica.
   **Um ficheiro em disco não sobrevive a um deploy serverless** — antes de produção há
   mesmo de haver esta migração, ou um host persistente.
-- **Uploads em disco** (`.data/uploads`) servidos pela rota autenticada, não blob storage.
-  Mesma razão, mesmo caminho de migração.
+- **Raiz de dados** em `src/lib/studio/paths.ts`: `.data/` em local, `/tmp` no Vercel
+  (o bundle da lambda é read-only), `STUDIO_DATA_DIR` para apontar a um volume. No
+  Vercel a base é portanto **recriada pelo seed em cada cold start** — é o que torna o
+  preview navegável, e é exatamente o que produção não pode ter.
+- **Uploads em disco** (`<raiz>/uploads`) servidos pela rota autenticada, não blob
+  storage. Mesma razão, mesmo caminho de migração.
 - **Fotos de progresso continuam fora**, como decidido em §8.
 - Nutrição, comunidade, desafios, wearables e pagamentos: não construídos, por desenho.
 
@@ -656,9 +660,25 @@ da consola desaparecem à medida que são resolvidos.
    exatamente o estado em que se revê técnica. Passou a ouvir `seeked`/`seeking`/
    `loadedmetadata` e a ler `currentTime` do elemento no momento de marcar.
 
+### Modo demonstração
+
+`STUDIO_DEMO=1` faz duas coisas: o seed cria a aluna de demonstração com uma semana de
+plano, e `/app/entrar` ganha entrada direta como Sara ou como essa aluna. A entrada
+direta existe porque numa base efémera o magic link **não pode** funcionar — o token é
+estado na base, e a instância que o emitiu não é a que serve o clique. Sem a variável,
+o ecrã de entrada e o fluxo de magic link ficam exatamente como estavam.
+
+O seed corre com ids determinísticos (`withStableIds`, `src/lib/studio/id.ts`) pela mesma
+razão: `/app/coach/alunos/seed-0034` tem de resolver em qualquer instância. Linhas
+criadas por utilizadores mantêm ids aleatórios.
+
+Está montado em `test.brigitestudio.com` (projeto Vercel `brigite-studio-test`, branch
+`test`), sem proteção de deployment e sem `RESEND_API_KEY` — logo sem envio de email.
+
 ### Variáveis de ambiente
 
 `STUDIO_SECRET` (assinatura de sessões; cai para `CONTACT_FORM_SECRET`/`RESEND_API_KEY`),
-`STUDIO_COACH_EMAIL` (default `hello@brigitestudio.com`), `STUDIO_DEMO=1` (cria a aluna
-de demonstração), `RESEND_API_KEY` (sem ela o link de acesso é impresso na consola e
-devolvido no ecrã, para desenvolvimento). Ver `.env.example`.
+`STUDIO_COACH_EMAIL` (default `hello@brigitestudio.com`), `STUDIO_DEMO=1` (aluna de
+demonstração + entrada direta), `STUDIO_DATA_DIR` (raiz de dados alternativa),
+`RESEND_API_KEY` (sem ela o link de acesso é impresso na consola e devolvido no ecrã,
+para desenvolvimento). Ver `.env.example`.
