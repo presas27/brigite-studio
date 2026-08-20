@@ -207,6 +207,22 @@ CREATE TABLE IF NOT EXISTS measurements (
   created_at  INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS leads (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  email       TEXT NOT NULL,
+  phone       TEXT NOT NULL DEFAULT '',
+  message     TEXT NOT NULL DEFAULT '',
+  interest    TEXT,
+  source      TEXT NOT NULL DEFAULT 'site',
+  status      TEXT NOT NULL DEFAULT 'new'
+              CHECK (status IN ('new', 'talking', 'won', 'lost')),
+  notes       TEXT NOT NULL DEFAULT '',
+  client_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_assignments_client_date
   ON assignments (client_id, date);
 CREATE INDEX IF NOT EXISTS idx_set_logs_assignment ON set_logs (assignment_id);
@@ -216,6 +232,7 @@ CREATE INDEX IF NOT EXISTS idx_submissions_client ON submissions (client_id, cre
 CREATE INDEX IF NOT EXISTS idx_blocks_workout ON workout_blocks (workout_id, position);
 CREATE INDEX IF NOT EXISTS idx_items_block ON workout_items (block_id, position);
 CREATE INDEX IF NOT EXISTS idx_measurements_client ON measurements (client_id, date);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at);
 `;
 
 function open(): DatabaseSync {
@@ -288,4 +305,30 @@ export function shiftDay(key: string, days: number): string {
   const utc = new Date(Date.UTC(y, m - 1, d));
   utc.setUTCDate(utc.getUTCDate() + days);
   return utc.toISOString().slice(0, 10);
+}
+
+/** `YYYY-MM` for a date (today by default), in Lisbon time. */
+export function monthKey(date: Date = new Date()): string {
+  return dayKey(date).slice(0, 7);
+}
+
+/** Shift a `YYYY-MM` key by whole months. */
+export function shiftMonth(key: string, months: number): string {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1 + months, 1)).toISOString().slice(0, 7);
+}
+
+/**
+ * Every day key a Monday-first calendar page for `YYYY-MM` has to render —
+ * the month plus the leading and trailing days that complete its first and
+ * last weeks. Always a whole number of weeks, never a fixed six: padding a
+ * 28-day February to six rows hangs two empty March weeks off the bottom.
+ */
+export function monthGrid(key: string): string[] {
+  const [y, m] = key.split("-").map(Number);
+  const offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7; // Monday = 0
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const start = shiftDay(`${key}-01`, -offset);
+  const cells = Math.ceil((offset + daysInMonth) / 7) * 7;
+  return Array.from({ length: cells }, (_, i) => shiftDay(start, i));
 }

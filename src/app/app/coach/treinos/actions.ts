@@ -14,6 +14,7 @@ import {
   moveItem,
   removeBlock,
   removeItem,
+  reorderItems,
   updateBlock,
   updateItem,
   updateWorkout,
@@ -170,6 +171,51 @@ export async function updateItemAction(formData: FormData): Promise<void> {
     rpe: textField(formData, "rpe"),
     notes: textField(formData, "notes"),
   });
+  revalidatePath(workoutPath(workoutId));
+}
+
+/**
+ * Commit a drag. The client posts the target block's whole running order, so
+ * one call covers reordering inside a block and dropping a card into another
+ * one — the item is adopted by whichever block sends its id.
+ *
+ * Typed rather than form-encoded because it is fired from a transition after
+ * the card has already moved on screen, not from a submit.
+ */
+export async function reorderItemsAction(
+  workoutId: string,
+  blockId: string,
+  itemIds: string[],
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId || !Array.isArray(itemIds)) return;
+  reorderItems(blockId, itemIds.map(String).filter(Boolean));
+  revalidatePath(workoutPath(workoutId));
+}
+
+/** Switch a block between per-exercise sets and rounds of the whole list. */
+export async function setBlockKindAction(
+  workoutId: string,
+  blockId: string,
+  kind: BlockKind,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId) return;
+  // Leaving the circuit resets the round count: "3 rounds of sets of 3" is a
+  // prescription nobody means, and it silently doubles the volume.
+  updateBlock(blockId, { kind, ...(kind === "normal" ? { rounds: 1 } : {}) });
+  revalidatePath(workoutPath(workoutId));
+}
+
+/** Add an exercise from the picker. Returns nothing — the grid re-renders. */
+export async function addExerciseAction(
+  workoutId: string,
+  blockId: string,
+  exerciseId: string,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId || !exerciseId) return;
+  addItem(blockId, { exerciseId });
   revalidatePath(workoutPath(workoutId));
 }
 

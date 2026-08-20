@@ -75,7 +75,7 @@ export default async function ClientCheckinPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} lead={t("clientLead")} />
+      <PageHeader title={t("title")} />
 
       {alreadyDone && (
         // Confirmation, not a warning: the week's check-in is done.

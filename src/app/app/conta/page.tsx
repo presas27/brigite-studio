@@ -46,7 +46,6 @@ export default async function AccountPage({
   return (
     <div className="max-w-2xl space-y-8">
       <PageHeader
-        kicker={t(`role.${user.role}`)}
         title={t("title")}
         lead={t("lead")}
         backHref={user.role === "coach" ? "/app/coach" : "/app/aluno"}

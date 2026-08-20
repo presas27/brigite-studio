@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
-import type { ExerciseFormState } from "@/app/app/coach/biblioteca/actions";
+import type { ExerciseFormState } from "@/app/app/coach/exercicios/actions";
 import type { Exercise, Tracking } from "@/lib/studio/types";
+import { useModalClose } from "../AddModal";
 import { Field } from "../Field";
 import { SubmitButton } from "../SubmitButton";
 import { field } from "../theme";
@@ -30,7 +31,15 @@ export function ExerciseForm({
   const t = useTranslations("Studio.library");
   const common = useTranslations("Studio.common");
   const errors = useTranslations("Studio.errors");
-  const [state, formAction] = useActionState(action, initial);
+  const close = useModalClose();
+  // Wrapping the action instead of watching the result in an effect: the
+  // dialog closes on the same tick the server says yes, and the form works
+  // unchanged outside a dialog, where `close` is a no-op.
+  const [state, formAction] = useActionState(async (prev: ExerciseFormState, formData: FormData) => {
+    const next = await action(prev, formData);
+    if (next.status === "ok") close();
+    return next;
+  }, initial);
 
   const nameError = state.status === "error" && state.reason === "required" ? errors("required") : undefined;
   const fileError = state.status === "error" && state.reason !== "required" ? errors(state.reason) : undefined;

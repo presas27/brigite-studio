@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/studio/Empty";
-import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { AssignPanel } from "@/components/studio/plan/AssignPanel";
 import { DayColumn } from "@/components/studio/plan/DayColumn";
@@ -25,7 +24,7 @@ export default async function CoachPlanPage({
   searchParams: Promise<{ semana?: string; repetido?: string }>;
 }) {
   const { clientId } = await params;
-  const { viewer, client } = await requireClientAccess(clientId);
+  const { viewer } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
   const sp = await searchParams;
@@ -62,14 +61,7 @@ export default async function CoachPlanPage({
   const basePath = `/app/coach/alunos/${clientId}/plano`;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        kicker={client.name}
-        title={t("title")}
-        lead={t("lead", { name: client.name })}
-        backHref={`/app/coach/alunos/${clientId}`}
-      />
-
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav className="flex flex-wrap items-center gap-2">
           <Link href={`${basePath}?semana=${shiftDay(monday, -7)}`} className={buttonGhost}>

@@ -108,7 +108,7 @@ export default async function AlunoProgressoPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("progress.title")} lead={t("progress.lead")} />
+      <PageHeader title={t("progress.title")} />
 
       {/* The headline number, and the only gold surface on this screen. */}
       <div className={cn(surfaceAccent, "p-6 sm:p-8")}>

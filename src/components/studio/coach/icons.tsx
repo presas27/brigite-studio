@@ -10,27 +10,53 @@
 const PATHS: Record<string, string> = {
   overview: "M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5M9.5 20v-6h5v6",
   message: "M4 5h16v11H8l-4 3.5V5Z",
+  leads: "M4 13h4.5l1.3 2.5h4.4L15.5 13H20M4.4 12.7 7 5.5h10l2.6 7.2M4 13v5.5h16V13",
   clients: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2.1.7 3.5 2.4 3.5 5.2",
   calendar: "M4 6h16v14H4V6ZM8 3v4M16 3v4M4 11h16M9 15h2M14 15h2",
   video: "M3 6h11v12H3V6Zm11 4 6-3.5v11L14 14",
   checkin: "M8 4h8v3H8V4Zm-2 3h12v14H6V7Zm3 6 2 2 4-4",
   library: "M4 4h5v16H4V4Zm7 0h4v16h-4V4Zm7 1.5 3 14.5",
   dumbbell: "M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10",
-  search: "M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Zm4.8-1.7L20 20",
   bell: "M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9ZM10 18a2 2 0 0 0 4 0",
   plus: "M12 5v14M5 12h14",
   chevron: "m9 6 6 6-6 6",
+  arrowLeft: "M20 12H4.5M11 5l-7 7 7 7",
+  grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
+  trash: "M4 7h16M9.5 7V4h5v3M6.5 7l.9 13h9.2l.9-13M10 11v5.5M14 11v5.5",
   menu: "M4 7h16M4 12h16M4 17h16",
+  // Sidebar-collapse toggle: a rounded panel split into a narrow rail (left)
+  // and the main pane (right) — not a plain rectangle, and not a bare
+  // chevron in a circle. The arrow lives in the wide pane, not the rail. Two
+  // separate glyphs rather than one rotated 180°, because the rail always
+  // stays on the left; only the arrow direction flips between the two states.
+  panelLeftClose:
+    "M6.5 4.5H17.5A3 3 0 0 1 20.5 7.5V16.5A3 3 0 0 1 17.5 19.5H6.5A3 3 0 0 1 3.5 16.5V7.5A3 3 0 0 1 6.5 4.5ZM9 4.5V19.5M16 9.5 13.5 12 16 14.5",
+  panelLeftOpen:
+    "M6.5 4.5H17.5A3 3 0 0 1 20.5 7.5V16.5A3 3 0 0 1 17.5 19.5H6.5A3 3 0 0 1 3.5 16.5V7.5A3 3 0 0 1 6.5 4.5ZM9 4.5V19.5M13.5 9.5 16 12 13.5 14.5",
   close: "M6 6l12 12M18 6 6 18",
+  // Six teeth on a true 60° grid: flanks step out from a 5.9 root circle to an
+  // 8.5 tip circle, hub at 2.7. Fewer, wider teeth survive the 16px rendering.
   settings:
-    "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8-3.5-2 .4-.6 1.5 1.2 1.7-1.6 1.6-1.7-1.2-1.5.6-.4 2h-2.2l-.4-2-1.5-.6-1.7 1.2-1.6-1.6L5.2 14l-.6-1.5-2-.4V9.9l2-.4L5.2 8 4 6.3l1.6-1.6 1.7 1.2 1.5-.6.4-2h2.2l.4 2 1.5.6 1.7-1.2L16.6 6.3 15.4 8l.6 1.5 2 .4v2.2Z",
+    "M10.18 6.39L10.23 3.69A8.5 8.5 0 0 1 13.77 3.69L13.82 6.39A5.9 5.9 0 0 1 15.95 7.62L18.32 6.31A8.5 8.5 0 0 1 20.08 9.37L17.77 10.77A5.9 5.9 0 0 1 17.77 13.23L20.08 14.63A8.5 8.5 0 0 1 18.32 17.69L15.95 16.38A5.9 5.9 0 0 1 13.82 17.61L13.77 20.31A8.5 8.5 0 0 1 10.23 20.31L10.18 17.61A5.9 5.9 0 0 1 8.05 16.38L5.68 17.69A8.5 8.5 0 0 1 3.92 14.63L6.23 13.23A5.9 5.9 0 0 1 6.23 10.77L3.92 9.37A8.5 8.5 0 0 1 5.68 6.31L8.05 7.62A5.9 5.9 0 0 1 10.18 6.39ZM12 9.3a2.7 2.7 0 1 0 0 5.4a2.7 2.7 0 1 0 0 -5.4Z",
   chart: "M4 20V4M4 20h16M8 16v-5M12.5 16V8M17 16v-3",
   logout: "M14 20H6V4h8M11 12h9m0 0-3-3m3 3-3 3",
+  search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.35-4.35",
+  grid: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z",
+  list: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01",
 };
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name, className }: { name: IconName; className?: string }) {
+export function Icon({
+  name,
+  className,
+  strokeWidth = 1.6,
+}: {
+  name: IconName;
+  className?: string;
+  /** Bump it when the glyph sits next to heavy display type and 1.6 reads thin. */
+  strokeWidth?: number;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -38,7 +64,7 @@ export function Icon({ name, className }: { name: IconName; className?: string }
       className={className}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

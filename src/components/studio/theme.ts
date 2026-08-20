@@ -37,9 +37,13 @@ export const surfaceAccentLink =
 /** Section heading — condensed display face, always uppercase. */
 export const heading = "font-display uppercase leading-none tracking-[0.01em]";
 
-/** Small all-caps label used above fields and section groups. */
-export const eyebrow =
-  "font-sans text-xs font-medium uppercase tracking-[0.12em] text-cream/55";
+/**
+ * Small label used above fields and section groups. Sentence case, body face,
+ * no letterspacing: a label names the thing under it and then gets out of the
+ * way. Caps and tracked-out letters turn every label into a small headline and
+ * make a dense screen shout.
+ */
+export const eyebrow = "font-sans text-xs font-medium text-cream/55";
 
 /** Text input / textarea / select. Matches the site contact form. */
 export const field =
@@ -75,8 +79,7 @@ export const muted = "text-sm leading-relaxed text-cream/60";
 /* The gold surface flips the contrast: text is ink, so anything cream-based
    vanishes. These four are the ink-side twins of the ones above. */
 
-export const eyebrowOnAccent =
-  "font-sans text-xs font-medium uppercase tracking-[0.12em] text-brown-deep/75";
+export const eyebrowOnAccent = "font-sans text-xs font-medium text-brown-deep/75";
 
 export const mutedOnAccent = "text-sm leading-relaxed text-ink/70";
 

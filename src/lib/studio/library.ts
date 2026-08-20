@@ -266,6 +266,18 @@ export function listWorkouts(search?: string): WorkoutSummary[] {
   }));
 }
 
+/** Every distinct workout focus in use, with its workout count. */
+export function workoutFocuses(): { tag: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const workout of listWorkouts()) {
+    const focus = workout.focus.trim();
+    if (focus) counts.set(focus, (counts.get(focus) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "pt"));
+}
+
 export function createWorkout(input: {
   name: string;
   focus?: string;
@@ -470,6 +482,26 @@ export function moveItem(itemId: string, direction: -1 | 1): void {
   tx(() => {
     run("UPDATE workout_items SET position = ? WHERE id = ?", Number(item.position), String(neighbour.id));
     run("UPDATE workout_items SET position = ? WHERE id = ?", Number(neighbour.position), itemId);
+  });
+}
+
+/**
+ * Rewrite one block's running order after a drag. Every id in `itemIds` is
+ * given the position of its index and adopted into `blockId`, which is what
+ * lets a card be dragged from one block into another: the target block posts
+ * its new list and the item follows it across.
+ */
+export function reorderItems(blockId: string, itemIds: string[]): void {
+  if (itemIds.length === 0) return;
+  tx(() => {
+    itemIds.forEach((itemId, index) => {
+      run(
+        "UPDATE workout_items SET block_id = ?, position = ? WHERE id = ?",
+        blockId,
+        index,
+        itemId,
+      );
+    });
   });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { updateExerciseAction } from "@/app/app/coach/biblioteca/actions";
+import { updateExerciseAction } from "@/app/app/coach/exercicios/actions";
 import type { Exercise } from "@/lib/studio/types";
 import { ExerciseForm } from "./ExerciseForm";
 

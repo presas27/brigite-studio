@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { findAssignment, lastLogsForExercise, logsFor } from "@/lib/studio/plan";
 import type { SetLog } from "@/lib/studio/types";
@@ -23,7 +22,6 @@ export default async function TreinoPage({
   if (!assignment) notFound();
 
   const { client } = await requireClientAccess(assignment.clientId);
-  const t = await getTranslations("Studio");
 
   const exerciseIds = Array.from(
     new Set(assignment.snapshot.blocks.flatMap((block) => block.items.map((item) => item.exerciseId))),
@@ -38,8 +36,6 @@ export default async function TreinoPage({
     <div className="space-y-8">
       <PageHeader
         backHref="/app/aluno"
-        backLabel={t("common.back")}
-        kicker={t("session.title")}
         title={assignment.snapshot.name}
         lead={assignment.snapshot.focus || undefined}
       />

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/studio/Empty";
-import { PageHeader } from "@/components/studio/PageHeader";
 import { CheckinCard } from "@/components/studio/plan/CheckinCard";
 import { parseDayKey } from "@/components/studio/plan/date";
 import { eyebrow, heading, surface } from "@/components/studio/theme";
@@ -21,7 +20,7 @@ export default async function CoachCheckinsPage({
   searchParams: Promise<{ respondido?: string }>;
 }) {
   const { clientId } = await params;
-  const { viewer, client } = await requireClientAccess(clientId);
+  const { viewer } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
   const { respondido } = await searchParams;
@@ -30,14 +29,7 @@ export default async function CoachCheckinsPage({
   const checkins = listCheckins(clientId, HISTORY_LIMIT);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        kicker={client.name}
-        title={t("title")}
-        lead={t("coachLead", { name: client.name })}
-        backHref={`/app/coach/alunos/${clientId}`}
-      />
-
+    <div className="space-y-6">
       {checkins.length === 0 ? (
         <Empty title={t("empty")} hint={t("emptyHint")} />
       ) : (

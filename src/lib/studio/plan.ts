@@ -103,6 +103,28 @@ export function assignmentsBetween(clientId: string, from: string, to: string): 
   return rows.map(mapAssignment);
 }
 
+/**
+ * Every active client's assignments in a date range, with the client's name
+ * already attached. The studio-wide calendar reads a whole month at once —
+ * one query per client per page would be thirty round trips to draw a grid.
+ */
+export function studioAssignmentsBetween(
+  from: string,
+  to: string,
+): (Assignment & { clientName: string })[] {
+  const rows = all<Row>(
+    `SELECT a.id, a.client_id, a.workout_id, a.date, a.status, a.note, a.snapshot,
+            a.started_at, a.done_at, a.created_at, u.name AS client_name
+       FROM assignments a
+       JOIN users u ON u.id = a.client_id
+      WHERE a.date BETWEEN ? AND ? AND u.status != 'archived'
+      ORDER BY a.date, u.name COLLATE NOCASE, a.created_at`,
+    from,
+    to,
+  );
+  return rows.map((row) => ({ ...mapAssignment(row), clientName: String(row.client_name) }));
+}
+
 export function assignmentsOn(clientId: string, date: string): Assignment[] {
   const rows = all<Row>(
     `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments

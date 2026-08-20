@@ -69,7 +69,7 @@ export default async function CoachCheckinsOverviewPage({
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} lead={t("studioLead")} />
+      <PageHeader title={t("title")} />
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <WeekNav basePath="/app/coach/checkins" monday={monday} t={tPlan} />

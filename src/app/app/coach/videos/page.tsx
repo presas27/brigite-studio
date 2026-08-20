@@ -38,7 +38,7 @@ export default async function CoachVideosPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("title")} lead={t("coachLead")} />
+      <PageHeader title={t("title")} />
 
       <VideoQueueFilters status={status} clientFilter={clientFilter} />
 

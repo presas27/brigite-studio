@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireCoach } from "@/lib/studio/auth";
 import { archiveExercise, createExercise, updateExercise } from "@/lib/studio/library";
 import { store } from "@/lib/studio/media";
@@ -11,7 +12,7 @@ import type { Tracking } from "@/lib/studio/types";
  * `requireCoach()` — the library is coach-authored, never client-editable.
  */
 
-const LIBRARY_PATH = "/app/coach/biblioteca";
+const LIBRARY_PATH = "/app/coach/exercicios";
 
 export type ExerciseFormState =
   | { status: "idle" }
@@ -93,11 +94,18 @@ export async function updateExerciseAction(
   });
 
   revalidatePath(LIBRARY_PATH);
+  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
   return { status: "ok" };
 }
 
+/**
+ * Archiving happens from the exercise's own page, and that page is exactly what
+ * stops existing — so it ends on the library rather than on a row that is no
+ * longer listed.
+ */
 export async function archiveExerciseAction(exerciseId: string): Promise<void> {
   await requireCoach();
   archiveExercise(exerciseId);
   revalidatePath(LIBRARY_PATH);
+  redirect(LIBRARY_PATH);
 }

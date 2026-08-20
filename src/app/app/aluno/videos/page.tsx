@@ -33,7 +33,7 @@ export default async function ClientVideosPage({
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} lead={t("clientLead")} />
+      <PageHeader title={t("title")} />
 
       <VideoSubmitForm
         exercises={exercises}

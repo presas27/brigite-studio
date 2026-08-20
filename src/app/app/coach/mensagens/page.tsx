@@ -32,7 +32,7 @@ export default async function CoachMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader kicker={t("threadsTitle")} title={t("title")} />
+      <PageHeader title={t("title")} />
       {rows.length === 0 ? (
         <Empty title={t("noClients")} hint={t("noClientsHint")} />
       ) : (
@@ -40,7 +40,7 @@ export default async function CoachMessagesPage() {
           {rows.map(({ client, last, unread }) => (
             <li key={client.id}>
               <Link
-                href={`/app/coach/mensagens/${client.id}`}
+                href={`/app/coach/alunos/${client.id}/mensagens`}
                 className={cn(surfaceLink, "flex items-center justify-between gap-4 p-4")}
               >
                 <div className="min-w-0">
@@ -49,7 +49,7 @@ export default async function CoachMessagesPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                   {last && (
-                    <span className="font-mono text-[0.65rem] text-cream/40">
+                    <span className="font-sans text-[0.65rem] text-cream/40">
                       {relativeTime(last.createdAt, locale)}
                     </span>
                   )}

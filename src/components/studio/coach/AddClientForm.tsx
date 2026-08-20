@@ -3,37 +3,45 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { addClient, type AddClientState } from "@/app/app/coach/actions";
+import { useModalClose } from "@/components/studio/AddModal";
 import { Field } from "@/components/studio/Field";
 import { SubmitButton } from "@/components/studio/SubmitButton";
-import { field, muted } from "@/components/studio/theme";
+import { field } from "@/components/studio/theme";
 
 const initial: AddClientState = { status: "idle" };
 
-const PLANS = ["personal", "online", "specialty"] as const;
+/** Default plan for a quick add — the coach adjusts it later from the client's profile. */
+const DEFAULT_PLAN = "online";
 
 /**
- * Inline invite form for the client roster. Lives inside a native `<details>`
- * disclosure at the call site — no modal library, and the browser opens it
- * for free when the header "Novo aluno" link targets its id.
+ * Invite form for the client roster. Just a name and an email: the
+ * health/goals/limitations questions belong to the client, so they arrive
+ * later via a detailed intake form sent through the same sign-in link, not
+ * something the coach fills in on someone's behalf.
+ *
+ * On success the dialog closes and the roster behind it already shows the new
+ * name marked "Convidado" — that is the confirmation the invite went out.
  */
 export function AddClientForm() {
   const t = useTranslations("Studio.clients");
   const common = useTranslations("Studio.common");
   const errors = useTranslations("Studio.errors");
-  const [state, formAction] = useActionState(addClient, initial);
+  const close = useModalClose();
 
-  if (state.status === "created") {
-    return <p className={muted}>{t("invited", { name: state.name })}</p>;
-  }
+  const [state, formAction] = useActionState(async (prev: AddClientState, formData: FormData) => {
+    const next = await addClient(prev, formData);
+    if (next.status === "created") close();
+    return next;
+  }, initial);
 
   return (
     <form action={formAction} className="space-y-4">
-      <p className={muted}>{t("addLead")}</p>
       {state.status === "invalid" && (
         <p className="font-sans text-xs text-silk" role="alert">
           {errors("generic")}
         </p>
       )}
+      <input type="hidden" name="plan" value={DEFAULT_PLAN} />
       <Field label={t("nameLabel")} htmlFor="client-name" required>
         <input
           id="client-name"
@@ -58,34 +66,9 @@ export function AddClientForm() {
           className={field}
         />
       </Field>
-      <Field label={t("planLabel")} htmlFor="client-plan" required>
-        <select id="client-plan" name="plan" defaultValue="online" className={field}>
-          {PLANS.map((plan) => (
-            <option key={plan} value={plan}>
-              {t(`plan.${plan}`)}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label={t("goalsLabel")} htmlFor="client-goals" hint={common("optional")}>
-        <textarea
-          id="client-goals"
-          name="goals"
-          rows={2}
-          placeholder={t("goalsPlaceholder")}
-          className={field}
-        />
-      </Field>
-      <Field label={t("injuriesLabel")} htmlFor="client-injuries" hint={common("optional")}>
-        <textarea
-          id="client-injuries"
-          name="injuries"
-          rows={2}
-          placeholder={t("injuriesPlaceholder")}
-          className={field}
-        />
-      </Field>
-      <SubmitButton pendingLabel={common("adding")}>{common("add")}</SubmitButton>
+      <div className="flex justify-end">
+        <SubmitButton pendingLabel={common("adding")}>{common("add")}</SubmitButton>
+      </div>
     </form>
   );
 }

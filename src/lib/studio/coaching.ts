@@ -573,7 +573,7 @@ export function recentActivity(limit = 40): ActivityItem[] {
       clientId: String(row.client_id),
       clientName: String(row.name),
       subject: null,
-      href: `/app/coach/mensagens/${String(row.client_id)}`,
+      href: `/app/coach/alunos/${String(row.client_id)}/mensagens`,
       actor: row.author_role === "coach" ? "coach" : "client",
       at: Number(row.created_at),
     });

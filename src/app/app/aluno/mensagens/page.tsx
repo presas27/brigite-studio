@@ -19,7 +19,7 @@ export default async function ClientMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("title")} lead={t("clientLead")} />
+      <PageHeader title={t("title")} />
       <div className={cn(surface, "p-4 sm:p-6")}>
         {messages.length === 0 ? (
           <Empty title={t("empty")} hint={t("emptyHint")} />

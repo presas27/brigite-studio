@@ -43,7 +43,7 @@ export function MessageThread({
         if (entry.kind === "day") {
           return (
             <div key={`day-${entry.key}`} className="flex justify-center py-1">
-              <span className={cn(chip, "text-[0.65rem] uppercase tracking-[0.08em] text-cream/45")}>
+              <span className={cn(chip, "text-[0.7rem] text-cream/45")}>
                 {dayFormatter.format(entry.date)}
               </span>
             </div>

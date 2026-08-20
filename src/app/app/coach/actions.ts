@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createSignInToken, requireCoach } from "@/lib/studio/auth";
 import { sendSignInLink } from "@/lib/studio/email";
+import { requestOrigin } from "@/lib/studio/origin";
 import {
   createClient,
   findClient,
@@ -21,18 +21,6 @@ import type { PlanId, UserStatus } from "@/lib/studio/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PLAN_IDS: Record<PlanId, true> = { personal: true, online: true, specialty: true };
-
-/**
- * Origin of the current request, so an invite link points at the host Sara is
- * actually using (dev server, preview deployment or production) rather than the
- * hardcoded canonical URL.
- */
-async function requestOrigin(): Promise<string | undefined> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("host");
-  if (!host) return undefined;
-  return `${requestHeaders.get("x-forwarded-proto") ?? "http"}://${host}`;
-}
 
 function isPlanId(value: string): value is PlanId {
   return value in PLAN_IDS;

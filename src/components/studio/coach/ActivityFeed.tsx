@@ -63,7 +63,7 @@ export async function ActivityFeed({ items }: { items: ActivityItem[] }) {
                     <span className="font-semibold text-cream">{item.clientName}</span>{" "}
                     {t(`kind.${item.kind}`, { subject: subjectOf(item) })}
                   </span>
-                  <span className="mt-1 block font-mono text-[0.65rem] text-cream/35">
+                  <span className="mt-1 block font-sans text-[0.65rem] text-cream/35">
                     {relativeTime(item.at, locale)}
                   </span>
                 </span>

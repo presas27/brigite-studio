@@ -25,10 +25,8 @@ export default async function CoachVideoReviewPage({
     <div className="space-y-6">
       <PageHeader
         backHref="/app/coach/videos"
-        backLabel={t("title")}
-        kicker={submission.clientName}
         title={submission.exerciseName ?? t("reviewTitle")}
-        lead={t("reviewLead")}
+        lead={submission.clientName}
       />
       <ReviewPlayer submission={submission} />
     </div>

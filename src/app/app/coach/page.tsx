@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ALERT_ICON, alertHref } from "@/components/studio/coach/alerts";
 import { ActivityFeed } from "@/components/studio/coach/ActivityFeed";
-import { Icon, type IconName } from "@/components/studio/coach/icons";
+import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
 import {
   buttonOnAccent,
@@ -19,30 +20,7 @@ import { coachAlerts, listSubmissions, recentActivity, unreadCount } from "@/lib
 import { dayKey, shiftDay, weekKey } from "@/lib/studio/db";
 import { assignmentsBetween, assignmentsOn } from "@/lib/studio/plan";
 import { listClients } from "@/lib/studio/users";
-import type { CoachAlert } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
-
-/** Where each alert kind is resolved. One destination, no ambiguity. */
-function alertHref(alert: CoachAlert): string {
-  switch (alert.kind) {
-    case "submission":
-      return `/app/coach/videos/${alert.submissionId}`;
-    case "checkin":
-      return `/app/coach/alunos/${alert.clientId}/checkins`;
-    case "message":
-      return `/app/coach/mensagens/${alert.clientId}`;
-    default:
-      return `/app/coach/alunos/${alert.clientId}`;
-  }
-}
-
-const ALERT_ICON: Record<CoachAlert["kind"], IconName> = {
-  submission: "video",
-  checkin: "checkin",
-  message: "message",
-  inactive: "chart",
-  missed: "calendar",
-};
 
 /**
  * Overview — the screen Sara lands on.
@@ -88,7 +66,7 @@ export default async function OverviewPage() {
       href: "/app/coach/videos",
     },
     { key: "unreadMessages", value: unreadMessages, href: "/app/coach/mensagens" },
-    { key: "sessionsThisWeek", value: weekSessions, href: "/app/coach/plano" },
+    { key: "sessionsThisWeek", value: weekSessions, href: "/app/coach/calendario" },
   ];
 
   return (
@@ -105,7 +83,7 @@ export default async function OverviewPage() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
             <Link key={stat.key} href={stat.href} className={cn(surfaceLink, "p-4")}>
-              <p className="font-mono text-[1.75rem] leading-none text-cream">{stat.value}</p>
+              <p className={cn(heading, "text-[1.75rem] text-cream")}>{stat.value}</p>
               <p className={cn(eyebrow, "mt-2 leading-snug")}>{t(`stats.${stat.key}`)}</p>
             </Link>
           ))}
@@ -172,7 +150,7 @@ export default async function OverviewPage() {
               {t("todaySessions")}
             </h2>
             <Link
-              href="/app/coach/plano"
+              href="/app/coach/calendario"
               className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-butter"
             >
               {t("viewAll")}

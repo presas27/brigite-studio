@@ -32,7 +32,7 @@ export async function StudioShell({
     { href: "/app/coach", label: t("nav.today") },
     { href: "/app/coach/alunos", label: t("nav.clients") },
     { href: "/app/coach/treinos", label: t("nav.workouts") },
-    { href: "/app/coach/biblioteca", label: t("nav.library") },
+    { href: "/app/coach/exercicios", label: t("nav.library") },
     { href: "/app/coach/videos", label: t("nav.videos") },
     { href: "/app/coach/mensagens", label: t("nav.messages") },
   ];
@@ -42,8 +42,10 @@ export async function StudioShell({
     { href: "/app/aluno/plano", label: t("nav.plan") },
     { href: "/app/aluno/videos", label: t("nav.videos") },
     { href: "/app/aluno/checkin", label: t("nav.checkin") },
+    { href: "/app/aluno/medidas", label: t("nav.medidas") },
     { href: "/app/aluno/mensagens", label: t("nav.messages") },
     { href: "/app/aluno/progresso", label: t("nav.progress") },
+    { href: "/app/aluno/evolucao", label: t("nav.evolucao") },
   ];
 
   const items = (role === "coach" ? coachItems : clientItems).map((item) => ({

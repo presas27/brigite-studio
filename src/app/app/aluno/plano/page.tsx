@@ -43,7 +43,6 @@ export default async function AlunoPlanoPage({
     <div className="space-y-6">
       <PageHeader
         title={t("plan.title")}
-        lead={t("session.planLead")}
         action={
           <div className="flex items-center gap-2">
             <Link

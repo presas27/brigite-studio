@@ -19,6 +19,16 @@ export function formatDayKey(key: string, locale: string): string {
   }).format(date);
 }
 
+/** Epoch ms -> a short localized month/year, e.g. "Ago. de 2026" (pt) or "Aug 2026" (en). */
+export function formatMonthYear(atMs: number, locale: string): string {
+  const formatted = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Lisbon",
+  }).format(new Date(atMs));
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
 /** Epoch ms -> "há 3 dias" / "3 days ago", bucketed by the largest sensible unit. */
 export function formatRelative(atMs: number, locale: string): string {
   const diffMs = atMs - Date.now();

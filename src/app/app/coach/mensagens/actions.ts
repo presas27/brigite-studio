@@ -24,7 +24,7 @@ export async function send(
   if (body.length > MAX_MESSAGE_LENGTH) return { ok: false, error: "tooLong" };
 
   sendMessage({ clientId, authorId: coach.id, body });
-  revalidatePath(`/app/coach/mensagens/${clientId}`);
+  revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
   revalidatePath("/app/coach/mensagens");
   return { ok: true };
 }
@@ -34,6 +34,6 @@ export async function markThreadReadAction(clientId: string): Promise<void> {
   const coach = await requireCoach();
   await requireClientAccess(clientId);
   markThreadRead(clientId, coach.id);
-  revalidatePath(`/app/coach/mensagens/${clientId}`);
+  revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
   revalidatePath("/app/coach/mensagens");
 }

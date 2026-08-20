@@ -1,24 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { AccountMenu } from "@/components/studio/AccountMenu";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { SolMark } from "@/components/ui/SolMark";
-import { buttonPrimary, eyebrow, field } from "@/components/studio/theme";
+import { eyebrow } from "@/components/studio/theme";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
+import type { CoachAlert } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "./icons";
+import { NotificationsMenu } from "./NotificationsMenu";
 
 type Item = {
   href: string;
   labelKey: string;
   icon: IconName;
-  /** Nested items turn the entry into a disclosure group. */
-  children?: { href: string; labelKey: string }[];
+  /** Renders the count as a red corner badge on the icon instead of the usual inline pill — reserved for unread messages, the one count that reads as urgent. */
+  urgentBadge?: boolean;
 };
+
+/** A titled run of destinations. The first one carries no title. */
+type Section = { titleKey?: string; items: Item[] };
+
+/**
+ * The rail in four runs, in the order Sara's attention actually moves:
+ * where she lands, the people she already trains, the material she builds
+ * from, and the business around it.
+ *
+ * Leads sit in their own run on purpose. Someone who filled in a form is not
+ * an aluna and should not read as one — putting the two side by side made the
+ * rail claim a relationship that does not exist yet.
+ */
+const SECTIONS: Section[] = [
+  { items: [{ href: "/app/coach", labelKey: "overview", icon: "overview" }] },
+  {
+    titleKey: "sections.coaching",
+    items: [
+      { href: "/app/coach/alunos", labelKey: "clients", icon: "clients" },
+      { href: "/app/coach/calendario", labelKey: "calendar", icon: "calendar" },
+      { href: "/app/coach/checkins", labelKey: "checkin", icon: "checkin" },
+      { href: "/app/coach/videos", labelKey: "videos", icon: "video" },
+      { href: "/app/coach/mensagens", labelKey: "messages", icon: "message", urgentBadge: true },
+    ],
+  },
+  {
+    titleKey: "sections.library",
+    items: [
+      { href: "/app/coach/treinos", labelKey: "workouts", icon: "library" },
+      { href: "/app/coach/exercicios", labelKey: "exercises", icon: "dumbbell" },
+    ],
+  },
+  {
+    titleKey: "sections.business",
+    items: [{ href: "/app/coach/leads", labelKey: "leads", icon: "leads" }],
+  },
+];
+
+/** Rail width, expanded and collapsed to icons-only. Mirrors the `16.5rem` /
+ * `4.75rem` Tailwind values below — kept in px so the tween below can drive
+ * the `--rail-w` custom property with plain numbers. */
+const RAIL_WIDTH_EXPANDED = 264;
+const RAIL_WIDTH_COLLAPSED = 76;
 
 /**
  * Coach navigation. Sara works on a laptop with a lot of client state to move
@@ -30,29 +77,13 @@ type Item = {
  * drawer's open state; splitting them would mean lifting that state into a
  * context for no gain.
  */
-const MAIN: Item[] = [
-  { href: "/app/coach", labelKey: "overview", icon: "overview" },
-  { href: "/app/coach/alunos", labelKey: "clients", icon: "clients" },
-  { href: "/app/coach/plano", labelKey: "plan", icon: "calendar" },
-  { href: "/app/coach/videos", labelKey: "videos", icon: "video" },
-  { href: "/app/coach/checkins", labelKey: "checkin", icon: "checkin" },
-  { href: "/app/coach/mensagens", labelKey: "messages", icon: "message" },
-  {
-    href: "/app/coach/treinos",
-    labelKey: "libraries",
-    icon: "library",
-    children: [
-      { href: "/app/coach/treinos", labelKey: "workouts" },
-      { href: "/app/coach/biblioteca", labelKey: "exercises" },
-    ],
-  },
-];
-
 export function CoachChrome({
   name,
   email,
   themeMode,
   badges,
+  alerts,
+  quickAdd,
   children,
 }: {
   name: string;
@@ -60,14 +91,101 @@ export function CoachChrome({
   themeMode: ThemeMode;
   /** Counts keyed by href — rendered as a caramel pip on the nav item. */
   badges: Record<string, number>;
+  /** The topbar's add control. Rendered by the layout so it can be a server component. */
+  quickAdd: React.ReactNode;
+  /** Feeds the bell's dropdown — same list as the overview's "Precisa de ti" panel. */
+  alerts: CoachAlert[];
   children: React.ReactNode;
 }) {
   const t = useTranslations("Studio.nav");
-  const tWorkouts = useTranslations("Studio.workouts");
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+  // The rail is genuinely `position: fixed` at every breakpoint (see the aside's
+  // className below) — nothing short of that is immune to the browser's overscroll
+  // rubber-banding, which a `sticky` rail would still visibly shift with. Fixed
+  // elements take themselves out of layout, so the content column needs its own
+  // offset that shrinks/grows in lockstep; both read the same `--rail-w` custom
+  // property off this shell so one tween drives both, frame for frame.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const railWidthRef = useRef({ w: RAIL_WIDTH_EXPANDED });
 
-  const pendingTotal = Object.values(badges).reduce((sum, n) => sum + n, 0);
+  const { contextSafe } = useGSAP({ scope: asideRef });
+
+  function setRailWidth(px: number) {
+    shellRef.current?.style.setProperty("--rail-w", `${px}px`);
+  }
+
+  /**
+   * One timeline per toggle, built fresh so it always animates from the
+   * current state rather than replaying a pre-baked one. Closing fades the
+   * labels out fast and lets the rail keep shrinking after they're gone;
+   * opening grows the rail first and fades labels in once there's room —
+   * that ordering is what keeps the text from visibly reflowing mid-tween.
+   */
+  // contextSafe defers this closure to the click handler below (toggleCollapsed); the ref is
+  // never read during render, but the compiler can't see through contextSafe to know that.
+  // eslint-disable-next-line react-hooks/refs
+  const animateCollapse = contextSafe((next: boolean) => {
+    const aside = asideRef.current;
+    if (!aside) return;
+    const fadeTargets = aside.querySelectorAll<HTMLElement>("[data-sidebar-fade]");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const target = next ? RAIL_WIDTH_COLLAPSED : RAIL_WIDTH_EXPANDED;
+
+    const railWidth = railWidthRef.current;
+
+    if (reduced) {
+      railWidth.w = target;
+      setRailWidth(target);
+      gsap.set(fadeTargets, { autoAlpha: next ? 0 : 1 });
+      return;
+    }
+
+    const tl = gsap.timeline({ defaults: { ease: "power2.out" }, overwrite: true });
+    if (next) {
+      tl.to(fadeTargets, { autoAlpha: 0, duration: 0.15 }, 0).to(
+        railWidth,
+        { w: target, duration: 0.35, onUpdate: () => setRailWidth(railWidth.w) },
+        0,
+      );
+    } else {
+      tl.to(railWidth, { w: target, duration: 0.35, onUpdate: () => setRailWidth(railWidth.w) }, 0).to(
+        fadeTargets,
+        { autoAlpha: 1, duration: 0.2 },
+        0.18,
+      );
+    }
+  });
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      animateCollapse(next);
+      return next;
+    });
+  }
+
+  // The toggle only exists at `lg`; if the viewport narrows past that while
+  // collapsed (a resized window, not a reload), the mobile drawer must not
+  // inherit the icon-only width.
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
+      if (event.matches) return;
+      setCollapsed(false);
+      railWidthRef.current.w = RAIL_WIDTH_EXPANDED;
+      shellRef.current?.style.removeProperty("--rail-w");
+      const aside = asideRef.current;
+      if (!aside) return;
+      gsap.set(aside.querySelectorAll<HTMLElement>("[data-sidebar-fade]"), {
+        clearProps: "opacity,visibility",
+      });
+    };
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
 
   // Exact match for section roots, prefix match for their children, so
   // `/app/coach/treinos/<id>` lights up Libraries without `/app/coach`
@@ -78,90 +196,87 @@ export function CoachChrome({
   }
 
   const nav = (
-    <nav aria-label={t("mainMenu")} className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
-      <form action="/app/coach/alunos" className="relative">
-        <Icon
-          name="search"
-          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cream/40"
-        />
-        <input
-          type="search"
-          name="q"
-          placeholder={t("searchClient")}
-          aria-label={t("searchClient")}
-          className={cn(field, "py-2.5 pl-9 text-sm")}
-        />
-      </form>
-
-      <div className="space-y-1">
-        <p className={cn(eyebrow, "px-3 pb-1")}>{t("mainMenu")}</p>
-        {MAIN.map((item) => {
-          const active = isActive(item.href);
-          const groupOpen = item.children?.some((child) => isActive(child.href)) ?? false;
-          const badge = badges[item.href];
-          return (
-            <div key={item.href}>
+    <nav aria-label={t("mainMenu")} className="flex min-h-0 flex-1 flex-col gap-5">
+      {SECTIONS.map((section) => (
+        <div key={section.titleKey ?? "root"} className="space-y-1">
+          {section.titleKey && (
+            // Fades with the rest of the labels when the rail collapses; the
+            // line it leaves behind is what keeps the icon stack in runs.
+            <p data-sidebar-fade className={cn(eyebrow, "px-3 pb-1")}>
+              {t(section.titleKey)}
+            </p>
+          )}
+          {section.items.map((item) => {
+            const active = isActive(item.href);
+            const badge = badges[item.href];
+            return (
               <Link
+                key={item.href}
                 href={item.href}
                 onClick={() => setDrawerOpen(false)}
-                aria-current={active || groupOpen ? "page" : undefined}
+                aria-current={active ? "page" : undefined}
+                title={collapsed ? t(item.labelKey) : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 font-sans text-sm transition-colors",
-                  active || groupOpen
+                  active
                     ? "bg-caramel font-semibold text-ink"
                     : "text-cream/70 hover:bg-cream/5 hover:text-cream",
                 )}
               >
-                <Icon name={item.icon} className="h-[1.15rem] w-[1.15rem] shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
-                {badge != null && badge > 0 && (
-                  <span
-                    className={cn(
-                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-mono text-[0.65rem] leading-none",
-                      active || groupOpen ? "bg-ink/15 text-ink" : "bg-caramel/20 text-accent-ink",
-                    )}
-                  >
-                    {badge}
-                  </span>
-                )}
-                {item.children && (
-                  <Icon
-                    name="chevron"
-                    className={cn("h-3.5 w-3.5 shrink-0 transition-transform", groupOpen && "rotate-90")}
-                  />
-                )}
+                <span className="relative shrink-0">
+                  <Icon name={item.icon} className="h-[1.15rem] w-[1.15rem]" />
+                  {badge != null &&
+                    badge > 0 &&
+                    (item.urgentBadge ? (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-mono text-[0.6rem] leading-none text-on-dark ring-2 ring-rail">
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    ) : (
+                      collapsed && (
+                        <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-caramel ring-2 ring-rail" />
+                      )
+                    ))}
+                </span>
+                <span data-sidebar-fade className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
+                  {!item.urgentBadge && badge != null && badge > 0 && (
+                    <span
+                      className={cn(
+                        "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-mono text-[0.65rem] leading-none",
+                        active ? "bg-ink/15 text-ink" : "bg-caramel/20 text-accent-ink",
+                      )}
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </span>
               </Link>
+            );
+          })}
+        </div>
+      ))}
 
-              {item.children && groupOpen && (
-                <ul className="mt-1 mb-1 space-y-1 border-l border-cream/10 pl-3 ml-5">
-                  {item.children.map((child) => (
-                    <li key={child.href}>
-                      <Link
-                        href={child.href}
-                        onClick={() => setDrawerOpen(false)}
-                        aria-current={isActive(child.href) ? "page" : undefined}
-                        className={cn(
-                          "block rounded-[0.7rem] px-3 py-2 font-sans text-sm transition-colors",
-                          isActive(child.href)
-                            ? "bg-cream/10 text-cream"
-                            : "text-cream/55 hover:bg-cream/5 hover:text-cream",
-                        )}
-                      >
-                        {t(child.labelKey)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* Collapsed only: the header loses this button (too tight next to the
+          logo at icon width), so it resurfaces here — pinned toward the
+          bottom of the rail, same row treatment as the items above so it
+          reads as one of the icon stack rather than a bolt-on, with a bit of
+          clearance from the sidebar's actual bottom edge. */}
+      {collapsed && (
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={t("expand")}
+          aria-expanded={false}
+          className="mt-auto mb-2 flex items-center rounded-[0.9rem] px-3 py-2.5 text-cream/60 transition-colors hover:bg-cream/5 hover:text-cream"
+        >
+          <Icon name="panelLeftOpen" className="h-[1.15rem] w-[1.15rem]" />
+        </button>
+      )}
     </nav>
   );
 
   return (
-    <div className="studio lg:grid lg:min-h-dvh lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+    <div ref={shellRef} className="studio lg:min-h-dvh">
       {/* Drawer scrim. Rendered only when open so it never eats taps on lg. */}
       {drawerOpen && (
         <button
@@ -173,25 +288,45 @@ export function CoachChrome({
       )}
 
       <aside
+        ref={asideRef}
         className={cn(
           // A flat lift is not enough separation at this width, so the rail gets
           // a faint caramel wash from the top-left corner — the same layering
           // trick the site's hero uses, at a tenth of the intensity.
-          "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 border-r border-cream/12 bg-rail px-4 py-5",
+          "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 overflow-x-hidden border-r border-cream/12 bg-rail px-4 py-5",
           "bg-[radial-gradient(115%_55%_at_0%_0%,rgba(217,160,91,0.11),transparent_62%)]",
-          "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:static lg:z-auto lg:translate-x-0",
+          // Genuinely fixed at every breakpoint — immune to scroll and to the
+          // overscroll rubber-band bounce, which `sticky` still visibly moves
+          // with. The content column carries a matching `--rail-w` offset below.
+          "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:w-[var(--rail-w,16.5rem)] lg:translate-x-0",
           drawerOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-start justify-between gap-2">
-          <Link href="/app/coach" className="group flex items-center gap-2.5">
+        {/* px-3 mirrors the nav links' own left inset (see `nav` below) so the
+            sun mark sits directly above the icon column, collapsed or not. */}
+        <div className="flex items-start justify-between gap-2 px-3">
+          <Link href="/app/coach" className="group flex min-w-0 items-center gap-2.5">
             <SolMark className="h-6 w-6 shrink-0 text-accent-ink transition-transform duration-500 group-hover:rotate-45" />
-            <span className="font-display text-base leading-[0.95] uppercase tracking-[0.06em] text-cream">
+            <span
+              data-sidebar-fade
+              className="overflow-hidden font-display text-base leading-[0.95] uppercase tracking-[0.06em] text-cream"
+            >
               Brigite&rsquo;s
               <br />
               <span className="text-accent-ink">Studio</span>
             </span>
           </Link>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={t("collapse")}
+              aria-expanded
+              className="hidden shrink-0 text-cream/60 transition-colors hover:text-cream lg:inline-flex"
+            >
+              <Icon name="panelLeftClose" className="h-[1.15rem] w-[1.15rem]" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
@@ -204,7 +339,7 @@ export function CoachChrome({
         {nav}
       </aside>
 
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-col lg:ml-[var(--rail-w,16.5rem)]">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
           <button
             type="button"
@@ -215,21 +350,11 @@ export function CoachChrome({
             <Icon name="menu" className="h-5 w-5" />
           </button>
 
-          <Link href="/app/coach/treinos" className={cn(buttonPrimary, "ml-auto px-5 py-2.5 text-xs")}>
-            <Icon name="plus" className="h-4 w-4" />
-            {tWorkouts("add")}
-          </Link>
+          {/* Slot rather than an import: the dialog is a server component, so
+              the layout hands it in already rendered. */}
+          <div className="ml-auto">{quickAdd}</div>
 
-          <Link
-            href="/app/coach"
-            aria-label={t("notifications")}
-            className="relative rounded-full p-2 text-cream/70 transition-colors hover:bg-cream/5 hover:text-cream"
-          >
-            <Icon name="bell" className="h-5 w-5" />
-            {pendingTotal > 0 && (
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-caramel ring-2 ring-background" />
-            )}
-          </Link>
+          <NotificationsMenu alerts={alerts} />
 
           <ThemeToggle initial={themeMode} />
 
