@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { all, get, run, tx, type Row } from "./db";
+import { newId } from "./id";
 import type {
   BlockKind,
   Exercise,
@@ -89,7 +89,7 @@ export function createExercise(input: {
   tracking?: Tracking;
   regressionOf?: string | null;
 }): Exercise {
-  const exerciseId = randomUUID();
+  const exerciseId = newId();
   run(
     `INSERT INTO exercises
        (id, name, cues, video_url, media_id, tags, tracking, regression_of, archived, created_at)
@@ -283,7 +283,7 @@ export function createWorkout(input: {
   focus?: string;
   notes?: string;
 }): string {
-  const workoutId = randomUUID();
+  const workoutId = newId();
   run(
     `INSERT INTO workouts (id, name, focus, notes, archived, created_at)
      VALUES (?, ?, ?, ?, 0, ?)`,
@@ -331,7 +331,7 @@ export function addBlock(
     "SELECT coalesce(max(position), -1) AS last FROM workout_blocks WHERE workout_id = ?",
     workoutId,
   );
-  const blockId = randomUUID();
+  const blockId = newId();
   run(
     `INSERT INTO workout_blocks (id, workout_id, position, kind, label, rounds, rest_seconds)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -394,7 +394,7 @@ export function addItem(
     "SELECT coalesce(max(position), -1) AS last FROM workout_items WHERE block_id = ?",
     blockId,
   );
-  const itemId = randomUUID();
+  const itemId = newId();
   run(
     `INSERT INTO workout_items
        (id, block_id, position, exercise_id, sets, reps, seconds, tempo, rest_seconds, rpe, notes)

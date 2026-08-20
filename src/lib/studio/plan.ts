@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { all, dayKey, get, run, shiftDay, tx, type Row } from "./db";
+import { newId } from "./id";
 import { findWorkout } from "./library";
 import type {
   Assignment,
@@ -66,7 +66,7 @@ export function assignWorkout(input: {
     notes: workout.notes,
     blocks: workout.blocks,
   };
-  const assignmentId = randomUUID();
+  const assignmentId = newId();
   run(
     `INSERT INTO assignments
        (id, client_id, workout_id, date, status, snapshot, note, created_at)
@@ -196,7 +196,7 @@ export function repeatWeek(clientId: string, mondayKey: string, weeks = 1): numb
           `INSERT INTO assignments
              (id, client_id, workout_id, date, status, snapshot, note, created_at)
            VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?)`,
-          randomUUID(),
+          newId(),
           clientId,
           assignment.workoutId,
           shiftDay(assignment.date, week * 7),
@@ -278,7 +278,7 @@ export function recordSet(input: {
     `INSERT INTO set_logs
        (id, assignment_id, item_id, exercise_id, set_index, reps, load_kg, seconds, rpe, notes, logged_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    randomUUID(),
+    newId(),
     input.assignmentId,
     input.itemId,
     input.exerciseId,

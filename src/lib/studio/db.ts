@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { DATA_DIR, DB_PATH } from "./paths";
 
 /**
  * Storage for the studio app (`/app`).
@@ -11,14 +11,12 @@ import { join } from "node:path";
  * means the swap to a durable Postgres/libSQL host later is mechanical —
  * replace `all`/`get`/`run` below and nothing else changes.
  *
- * Honest limitation: a file on disk does not survive a serverless deploy.
- * This is the right shape for building and for a single-trainer install on a
- * persistent host; it is NOT production-durable on Vercel. See
- * `docs/studio-app/plano.md` §9.
+ * Honest limitation: a file on disk does not survive a serverless deploy, and
+ * on Vercel the file lives in `/tmp` (see `paths.ts`) — rebuilt from the seed on
+ * every cold start. This is the right shape for building and for a
+ * single-trainer install on a persistent host; it is NOT production-durable on
+ * Vercel. See `docs/studio-app/plano.md` §9.
  */
-
-const DATA_DIR = join(process.cwd(), ".data");
-const DB_PATH = join(DATA_DIR, "studio.db");
 
 /** Rows come back as null-prototype objects; normalise to plain records. */
 export type Row = Record<string, string | number | bigint | null | Uint8Array>;

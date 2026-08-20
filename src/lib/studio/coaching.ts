@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { all, dayKey, get, run, shiftDay, weekKey, type Row } from "./db";
+import { newId } from "./id";
 import type {
   ActivityItem,
   Checkin,
@@ -86,7 +86,7 @@ export function createSubmission(input: {
   videoUrl?: string | null;
   note?: string;
 }): string {
-  const submissionId = randomUUID();
+  const submissionId = newId();
   run(
     `INSERT INTO submissions
        (id, client_id, assignment_id, exercise_id, media_id, video_url, note, status, created_at)
@@ -136,7 +136,7 @@ export function listSubmissions(
 export function addReviewComment(submissionId: string, tMs: number, body: string): void {
   run(
     "INSERT INTO review_comments (id, submission_id, t_ms, body, created_at) VALUES (?, ?, ?, ?, ?)",
-    randomUUID(),
+    newId(),
     submissionId,
     Math.max(0, Math.trunc(tMs)),
     body.trim(),
@@ -198,7 +198,7 @@ export function sendMessage(input: {
   run(
     `INSERT INTO messages (id, client_id, author_id, body, media_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    randomUUID(),
+    newId(),
     input.clientId,
     input.authorId,
     input.body.trim(),
@@ -294,7 +294,7 @@ export function submitCheckin(input: {
        wins = excluded.wins,
        blockers = excluded.blockers,
        submitted_at = excluded.submitted_at`,
-    randomUUID(),
+    newId(),
     input.clientId,
     week,
     input.energy ?? null,
@@ -330,7 +330,7 @@ export function recordMeasurement(input: {
 }): void {
   run(
     "INSERT INTO measurements (id, client_id, date, kind, value, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-    randomUUID(),
+    newId(),
     input.clientId,
     input.date ?? dayKey(),
     input.kind,

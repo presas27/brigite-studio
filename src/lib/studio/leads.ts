@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { all, get, run, type Row } from "./db";
+import { newId } from "./id";
 import type { Lead, LeadSource, LeadStatus, PlanId } from "./types";
 
 /**
@@ -64,7 +64,7 @@ export function createLead(input: {
   interest?: PlanId | null;
   source?: LeadSource;
 }): string {
-  const id = randomUUID();
+  const id = newId();
   const now = Date.now();
   run(
     `INSERT INTO leads (id, name, email, phone, message, interest, source, status, notes,
@@ -200,7 +200,7 @@ export function seedLeads(): void {
       `INSERT INTO leads (id, name, email, phone, message, interest, source, status, notes,
                           client_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', NULL, ?, ?)`,
-      randomUUID(),
+      newId(),
       mock.name,
       mock.email,
       mock.phone,

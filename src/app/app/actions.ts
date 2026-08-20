@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getUserLocale } from "@/i18n/locale";
 import { rateLimit } from "@/lib/rate-limit";
-import { createSignInToken, endSession } from "@/lib/studio/auth";
+import { createSignInToken, endSession, startSession } from "@/lib/studio/auth";
 import { sendSignInLink } from "@/lib/studio/email";
 import { seedStudio } from "@/lib/studio/seed";
-import { findUserByEmail } from "@/lib/studio/users";
+import { coach, findUserByEmail, listClients } from "@/lib/studio/users";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -64,6 +64,28 @@ export async function requestSignInLink(
   });
 
   return sent ? { status: "sent" } : { status: "sent", devUrl: url };
+}
+
+/**
+ * Demo sign-in, only on a deployment that sets `STUDIO_DEMO=1`.
+ *
+ * The magic-link flow cannot work there: the token lives in a database that
+ * dies with the lambda instance that minted it, and there is no mail provider
+ * configured anyway. So the demo hands a session straight to one of the two
+ * seeded accounts — never to a real one, because on a demo deployment those are
+ * the only accounts that exist.
+ */
+// oxlint-disable-next-line react-doctor/server-auth-actions -- deliberately unauthenticated, and inert unless STUDIO_DEMO=1 is set on the deployment.
+export async function signInAsDemo(formData: FormData): Promise<void> {
+  if (process.env.STUDIO_DEMO !== "1") redirect("/app/entrar");
+  seedStudio();
+
+  const asClient = formData.get("role") === "client";
+  const user = asClient ? listClients()[0] : coach();
+  if (!user) redirect("/app/entrar?erro=link");
+
+  await startSession(user.id);
+  redirect(asClient ? "/app/aluno" : "/app/coach");
 }
 
 /** Drop the session cookie and return to the sign-in screen. */

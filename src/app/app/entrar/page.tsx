@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { signInAsDemo } from "@/app/app/actions";
 import { SignInForm } from "@/components/studio/SignInForm";
-import { heading, muted } from "@/components/studio/theme";
+import { buttonGhost, buttonPrimary, eyebrow, heading, muted } from "@/components/studio/theme";
 import { SolMark } from "@/components/ui/SolMark";
 import { currentUser } from "@/lib/studio/auth";
 
@@ -52,6 +53,27 @@ export default async function SignInPage({
         <div className="mt-6">
           <SignInForm />
         </div>
+
+        {process.env.STUDIO_DEMO === "1" && (
+          <div className="mt-6 border-t border-cream/10 pt-6">
+            <p className={eyebrow}>{t("demoTitle")}</p>
+            <p className={`mt-2 ${muted}`}>{t("demoLead")}</p>
+            <div className="mt-4 space-y-2">
+              <form action={signInAsDemo}>
+                <input type="hidden" name="role" value="coach" />
+                <button type="submit" className={`${buttonPrimary} w-full`}>
+                  {t("demoAsCoach")}
+                </button>
+              </form>
+              <form action={signInAsDemo}>
+                <input type="hidden" name="role" value="client" />
+                <button type="submit" className={`${buttonGhost} w-full`}>
+                  {t("demoAsClient")}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         <Link
           href="/"

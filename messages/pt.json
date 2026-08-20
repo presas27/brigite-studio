@@ -180,7 +180,11 @@
       "backToSite": "Voltar ao site",
       "failedTitle": "Link inválido",
       "failedLead": "O link expirou ou já foi usado. Pede um novo.",
-      "retry": "Pedir novo link"
+      "retry": "Pedir novo link",
+      "demoTitle": "Modo demonstração",
+      "demoLead": "Este ambiente é uma pré-visualização com dados fictícios. Entra sem email e explora os dois lados da app.",
+      "demoAsCoach": "Entrar como Sara (treinadora)",
+      "demoAsClient": "Entrar como aluna demo"
     },
     "common": {
       "save": "Guardar",

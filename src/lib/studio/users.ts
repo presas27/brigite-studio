@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { hasLocale, type Locale } from "@/i18n/config";
 import { all, get, run, type Row } from "./db";
+import { newId } from "./id";
 import type { Client, ClientProfile, PlanId, User, UserStatus } from "./types";
 
 /**
@@ -72,7 +72,7 @@ export function createUser(input: {
   status?: UserStatus;
 }): User {
   const user: User = {
-    id: randomUUID(),
+    id: newId(),
     email: input.email.trim(),
     name: input.name.trim(),
     role: input.role,

@@ -1,22 +1,22 @@
-import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { readFile, writeFile, unlink } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { all, get, run, type Row } from "./db";
+import { newId } from "./id";
+import { UPLOAD_DIR } from "./paths";
 import type { Media } from "./types";
 
 /**
  * Media store for exercise demos and client technique clips.
  *
- * Files land on local disk under `.data/uploads`, never in `public/` — a
- * progress video is health-adjacent personal data and must only ever be
- * readable through the authenticated route at `/app/media/[id]`.
+ * Files land on disk under the data root's `uploads/` (see `paths.ts`), never in
+ * `public/` — a progress video is health-adjacent personal data and must only
+ * ever be readable through the authenticated route at `/app/media/[id]`.
  *
- * Same trade-off as `db.ts`: correct shape, local durability. Swapping to
- * Vercel Blob / S3 means replacing `store` and `load` and nothing else.
+ * Same trade-off as `db.ts`: correct shape, local durability. On Vercel the
+ * files live in `/tmp` and die with the instance. Swapping to Vercel Blob / S3
+ * means replacing `store` and `load` and nothing else.
  */
-
-const UPLOAD_DIR = join(process.cwd(), ".data", "uploads");
 
 /** 60 s of phone video comfortably fits; anything larger is a mistake. */
 export const MAX_UPLOAD_BYTES = 80 * 1024 * 1024;
@@ -53,7 +53,7 @@ export async function store(input: {
   const suffix = ALLOWED_MIME[file.type];
   if (!suffix) return { ok: false, reason: "type" };
 
-  const mediaId = randomUUID();
+  const mediaId = newId();
   mkdirSync(UPLOAD_DIR, { recursive: true });
   await writeFile(join(UPLOAD_DIR, `${mediaId}${suffix}`), Buffer.from(await file.arrayBuffer()));
 

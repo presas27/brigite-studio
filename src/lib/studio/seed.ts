@@ -1,4 +1,5 @@
 import { dayKey, shiftDay } from "./db";
+import { withStableIds } from "./id";
 import { addBlock, addItem, createExercise, createWorkout, listExercises } from "./library";
 import { assignWorkout } from "./plan";
 import { coach, createClient, createUser, setClientStatus } from "./users";
@@ -11,7 +12,8 @@ import { coach, createClient, createUser, setClientStatus } from "./users";
  *
  * Idempotent: it does nothing once a coach exists. `STUDIO_DEMO=1` additionally
  * creates one demo client with a week of plan, so the app is explorable
- * immediately.
+ * immediately — that is what makes the preview deployment a usable demo even
+ * though its database dies with the lambda instance.
  */
 
 const COACH_EMAIL = process.env.STUDIO_COACH_EMAIL ?? "hello@brigitestudio.com";
@@ -101,7 +103,15 @@ const STARTER_LIBRARY: Recipe[] = [
 /** Ensure the coach account and starter library exist. Safe to call often. */
 export function seedStudio(): void {
   if (coach()) return;
+  withStableIds(seed);
+}
 
+/**
+ * The seed itself, under deterministic ids: an ephemeral host rebuilds these
+ * rows on every cold start, and a link one instance rendered has to still
+ * resolve on the instance that serves the click. See `id.ts`.
+ */
+function seed(): void {
   createUser({
     email: COACH_EMAIL,
     name: "Sara Brigites",

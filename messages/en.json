@@ -180,7 +180,11 @@
       "backToSite": "Back to the site",
       "failedTitle": "Invalid link",
       "failedLead": "The link expired or was already used. Request a new one.",
-      "retry": "Request a new link"
+      "retry": "Request a new link",
+      "demoTitle": "Demo mode",
+      "demoLead": "This environment is a preview filled with mock data. Sign in without email and explore both sides of the app.",
+      "demoAsCoach": "Sign in as Sara (coach)",
+      "demoAsClient": "Sign in as demo client"
     },
     "common": {
       "save": "Save",
