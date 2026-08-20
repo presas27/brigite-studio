@@ -75,7 +75,7 @@ export default async function ClientCheckinPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} />
+      <PageHeader title={t("title")} lead={t("clientLead")} />
 
       {alreadyDone && (
         // Confirmation, not a warning: the week's check-in is done.
@@ -129,14 +129,14 @@ export default async function ClientCheckinPage() {
       </form>
 
       <section className="space-y-3">
-        <h2 className={cn(heading, "text-lg")}>{t("history")}</h2>
+        <h2 className={eyebrow}>{t("history")}</h2>
         {history.length === 0 ? (
           <Empty title={t("empty")} hint={t("emptyHint")} />
         ) : (
           <ul className="space-y-3">
             {history.map((entry) => (
               <li key={entry.id} className={cn(surface, "space-y-3 p-4 sm:p-5")}>
-                <p className="font-sans text-sm font-semibold text-cream">
+                <p className={cn(heading, "text-[1.35rem] text-cream")}>
                   {t("weekOf", { date: formatWeekLabel(entry.weekOf, locale) })}
                 </p>
                 <div className="flex flex-wrap gap-2">

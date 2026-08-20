@@ -6,6 +6,7 @@ import { listExercises } from "@/lib/studio/library";
 import { findAssignment } from "@/lib/studio/plan";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
+import { eyebrow } from "@/components/studio/theme";
 import { SubmissionCard } from "@/components/studio/video/SubmissionCard";
 import { VideoSubmitForm } from "@/components/studio/video/VideoSubmitForm";
 
@@ -33,7 +34,7 @@ export default async function ClientVideosPage({
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} />
+      <PageHeader title={t("title")} lead={t("clientLead")} />
 
       <VideoSubmitForm
         exercises={exercises}
@@ -41,15 +42,20 @@ export default async function ClientVideosPage({
         assignmentId={assignmentId}
       />
 
-      {submissions.length === 0 ? (
-        <Empty title={t("empty")} hint={t("clientEmptyHint")} />
-      ) : (
-        <div className="space-y-4">
-          {submissions.map((submission) => (
-            <SubmissionCard key={submission.id} submission={submission} />
-          ))}
-        </div>
-      )}
+      <section aria-labelledby="sent-clips" className="space-y-3">
+        <h2 id="sent-clips" className={eyebrow}>
+          {t("sentTitle")}
+        </h2>
+        {submissions.length === 0 ? (
+          <Empty title={t("empty")} hint={t("clientEmptyHint")} />
+        ) : (
+          <div className="space-y-4">
+            {submissions.map((submission) => (
+              <SubmissionCard key={submission.id} submission={submission} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

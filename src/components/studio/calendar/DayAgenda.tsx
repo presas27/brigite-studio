@@ -1,30 +1,39 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
-import { mondayOf, parseDayKey } from "../plan/date";
+import { parseDayKey } from "../plan/date";
 import type { Translate } from "../plan/types";
 import { eyebrow, heading, muted, surface } from "../theme";
-import { STATUS_MARK, type CalendarSession } from "./types";
+import { STATUS_MARK, type CalendarSession, type CalendarSubject } from "./types";
 
 /**
  * The selected day, in full — the half of the calendar that names names.
  *
  * The grid carries shape and volume; this carries identity and is the only
- * way off the page, straight into the week where that session can be edited.
+ * way off the page — into the week where a session can be edited, or into the
+ * session itself, depending on who is reading.
  */
 export function DayAgenda({
   date,
   sessions,
+  subject,
   isToday,
+  emptyTitle,
+  emptyHint,
   locale,
   t,
 }: {
   date: string;
   sessions: CalendarSession[];
+  subject: CalendarSubject;
   isToday: boolean;
+  /** Overrides for the aluna's own calendar, where "open an aluna" makes no sense. */
+  emptyTitle?: string;
+  emptyHint?: string;
   locale: string;
   t: Translate;
 }) {
+  const byClient = subject === "client";
   const day = parseDayKey(date);
   const weekday = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(day);
   const dayMonth = new Intl.DateTimeFormat(locale, {
@@ -50,15 +59,17 @@ export function DayAgenda({
 
       {sessions.length === 0 ? (
         <div className="mt-5 border-t border-cream/10 pt-4">
-          <p className="font-sans text-sm font-semibold text-cream/85">{t("calendar.dayEmpty")}</p>
-          <p className={cn(muted, "mt-1.5")}>{t("calendar.dayEmptyHint")}</p>
+          <p className="font-sans text-sm font-semibold text-cream/85">
+            {emptyTitle ?? t("calendar.dayEmpty")}
+          </p>
+          <p className={cn(muted, "mt-1.5")}>{emptyHint ?? t("calendar.dayEmptyHint")}</p>
         </div>
       ) : (
         <ul className="mt-5 space-y-1.5 border-t border-cream/10 pt-4">
           {sessions.map((session) => (
             <li key={session.id}>
               <Link
-                href={`/app/coach/alunos/${session.clientId}/plano?semana=${mondayOf(session.date)}`}
+                href={session.href}
                 className="group flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 transition-colors hover:bg-surface-hover"
               >
                 <span
@@ -69,11 +80,15 @@ export function DayAgenda({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-sans text-sm font-semibold text-cream">
-                    {session.clientName}
+                    {byClient ? session.clientName : session.workoutName}
                   </span>
                   <span className="block truncate font-sans text-xs text-cream/55">
-                    {session.workoutName}
-                    {session.status !== "scheduled" && ` · ${t(`status.${session.status}`)}`}
+                    {[
+                      byClient ? session.workoutName : session.focus,
+                      session.status !== "scheduled" ? t(`status.${session.status}`) : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </span>
                 <Icon

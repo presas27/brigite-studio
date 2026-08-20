@@ -1,5 +1,5 @@
 /**
- * Date and relative-time formatting for the coach console.
+ * Date and relative-time formatting for the studio app — both consoles.
  *
  * These are locale-aware via `Intl` directly rather than i18n message keys —
  * relative time ("há 3 dias" / "3 days ago") is inherently numeric/grammatical

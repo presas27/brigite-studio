@@ -4,6 +4,7 @@ import { bmiCategory, formatSigned, mergeBodyMetrics } from "@/lib/studio/bodyMe
 import { Empty } from "@/components/studio/Empty";
 import {
   chip,
+  eyebrow,
   eyebrowOnAccent,
   heading,
   mutedOnAccent,
@@ -52,7 +53,7 @@ export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
       )}
 
       <section className="space-y-3">
-        <h2 className={cn(heading, "text-lg")}>{t("history")}</h2>
+        <h2 className={eyebrow}>{t("history")}</h2>
         {entries.length === 0 ? (
           <Empty title={t("empty")} hint={t("emptyHint")} />
         ) : (
@@ -62,7 +63,7 @@ export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
                 key={entry.date}
                 className={cn(surface, "flex flex-wrap items-center justify-between gap-3 p-4")}
               >
-                <span className="text-sm text-cream/85">
+                <span className="font-sans text-sm font-semibold text-cream">
                   {dateFormat.format(new Date(`${entry.date}T12:00:00`))}
                 </span>
                 <div className="flex flex-wrap gap-2">

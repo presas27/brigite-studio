@@ -140,7 +140,6 @@
       "today": "Today",
       "clients": "Clients",
       "leads": "Leads",
-      "library": "Library",
       "workouts": "Workouts",
       "plan": "Plan",
       "calendar": "Calendar",
@@ -150,15 +149,14 @@
       "checkin": "Check-in",
       "medidas": "Measurements",
       "evolucao": "Trends",
-      "signOut": "Sign out",
-      "signedInAs": "Signed in as {name}",
-      "menu": "Training area menu",
       "mainMenu": "Menu",
       "overview": "Overview",
       "sections": {
         "coaching": "Coaching",
         "library": "Library",
-        "business": "Business"
+        "business": "Business",
+        "training": "Training",
+        "progress": "Numbers"
       },
       "exercises": "Exercises",
       "openMenu": "Open menu",
@@ -246,6 +244,70 @@
       "review": "Review video",
       "reply": "Reply",
       "openClient": "Open client"
+    },
+    "aluno": {
+      "greeting": "Hi, {name}.",
+      "lead": "Today's session, and what Sara has sent back.",
+      "needsYou": "For you",
+      "needsYouEmpty": "You're up to date.",
+      "needsYouEmptyHint": "Nothing left to train, no check-in to send, nothing unread.",
+      "viewAll": "See all",
+      "thisWeek": "This week",
+      "viewPlan": "See the plan",
+      "planTitle": "Plan",
+      "planDayEmpty": "Rest day.",
+      "planDayEmptyHint": "Nothing scheduled for this day.",
+      "stats": {
+        "weekSessions": "Sessions this week",
+        "adherence": "Adherence (28 days)",
+        "awaitingFeedback": "Clips awaiting feedback",
+        "unreadMessages": "Unread messages"
+      },
+      "alert": {
+        "session": "You have {name} to do today.",
+        "checkin": "The check-in for the week of {date} is still missing.",
+        "feedback": "Sara left feedback on your {subject} clip.",
+        "feedbackPlain": "Sara left feedback on one of your clips.",
+        "message": "{count, plural, =1 {# unread message} other {# unread messages}} from Sara.",
+        "missed": "{name} on {date} is still not done."
+      },
+      "activity": {
+        "title": "What happened",
+        "empty": "No history yet.",
+        "emptyHint": "From your first logged session on, everything lands here.",
+        "kind": {
+          "session": "You did {subject}.",
+          "skipped": "You couldn't do {subject}.",
+          "submission": "You sent a {subject} clip.",
+          "submissionPlain": "You sent a clip.",
+          "review": "Sara left feedback on your {subject} clip.",
+          "reviewPlain": "Sara left feedback on one of your clips.",
+          "checkin": "You sent the check-in for the week of {subject}.",
+          "checkinReply": "Sara replied to the check-in for the week of {subject}.",
+          "message": "You wrote to Sara.",
+          "coachMessage": "Sara wrote to you."
+        }
+      },
+      "sessions": {
+        "title": "Sessions",
+        "lead": "Everything you've done, and everything that's booked.",
+        "count": "{count, plural, =1 {# session} other {# sessions}}",
+        "items": "{count, plural, =1 {# exercise} other {# exercises}}",
+        "blocks": "{count, plural, =1 {# block} other {# blocks}}",
+        "today": "Today",
+        "statusFilter": "Session status",
+        "filter": {
+          "all": "All",
+          "upcoming": "To do",
+          "done": "Done",
+          "skipped": "Missed"
+        },
+        "noResults": "No session matches.",
+        "noResultsHint": "Clear the search or pick another status.",
+        "empty": "You have no sessions yet.",
+        "emptyHint": "As soon as Sara books the first one, it shows up here.",
+        "rangeNote": "Shows the last year and the weeks already booked ahead."
+      }
     },
     "leads": {
       "title": "Leads",
@@ -539,7 +601,8 @@
       "finishReview": "Send feedback",
       "reviewDone": "Feedback sent.",
       "unsupported": "Your browser cannot play this video.",
-      "externalHint": "External video — timestamped comments are not available here."
+      "externalHint": "External video — timestamped comments are not available here.",
+      "sentTitle": "Clips you sent"
     },
     "messages": {
       "title": "Messages",
@@ -600,7 +663,11 @@
       "emptyHint": "It shows up here after your first logged session.",
       "weightEmpty": "No weight logged yet.",
       "weightEmptyHint": "Shows up here after a check-in with weight.",
-      "weightAria": "Weight chart over time."
+      "weightAria": "Weight chart over time.",
+      "adherenceHint": "Sessions done out of the ones Sara booked in the last 28 days.",
+      "sinceFirst": "since the first entry",
+      "openTrends": "See the chart",
+      "openSessions": "See all"
     },
     "medidas": {
       "title": "Measurements",
@@ -619,7 +686,8 @@
       "weightDelta": "{delta} since last entry ({pct}%)",
       "history": "History",
       "empty": "No measurements yet.",
-      "emptyHint": "Log your weight and height above to get started."
+      "emptyHint": "Log your weight and height above to get started.",
+      "entryTitle": "New entry"
     },
     "evolucao": {
       "title": "Trends",

@@ -14,9 +14,20 @@ export type CalendarSession = {
   status: AssignmentStatus;
   workoutName: string;
   focus: string;
+  /** Where this session opens. The coach lands on the aluna's week; the aluna lands in the session itself. */
+  href: string;
 };
 
 export type CalendarView = "month" | "week";
+
+/**
+ * What each mark on the grid is *about*.
+ *
+ * The coach's calendar is a room full of people, so a cell names who; the
+ * aluna's calendar is one person's month, so naming her seven times a week
+ * would say nothing — there, a cell names the workout instead.
+ */
+export type CalendarSubject = "client" | "workout";
 
 /** Sessions keyed by `YYYY-MM-DD`. Days with none are simply absent. */
 export type SessionsByDay = Record<string, CalendarSession[]>;

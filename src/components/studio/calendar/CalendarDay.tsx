@@ -6,6 +6,7 @@ import {
   STATUS_MARK,
   STATUS_TAPE,
   type CalendarSession,
+  type CalendarSubject,
   type CalendarView,
 } from "./types";
 
@@ -20,6 +21,8 @@ type Props = {
   /** Position in the grid — drives the entrance stagger only. */
   index: number;
   view: CalendarView;
+  /** Whether a tape names the aluna or the workout. See `CalendarSubject`. */
+  subject: CalendarSubject;
   /** False for the leading/trailing days that complete the first and last weeks. */
   inMonth: boolean;
   isToday: boolean;
@@ -44,6 +47,7 @@ export function CalendarDay({
   date,
   index,
   view,
+  subject,
   inMonth,
   isToday,
   isSelected,
@@ -65,6 +69,7 @@ export function CalendarDay({
 
   const isWeekend = index % 7 >= 5;
   const isMonth = view === "month";
+  const byClient = subject === "client";
   const shown = isMonth ? sessions.slice(0, MONTH_TAPES) : sessions;
   const hidden = sessions.length - shown.length;
 
@@ -143,11 +148,15 @@ export function CalendarDay({
                   isMonth ? "text-[0.68rem]" : "text-[0.8rem]",
                 )}
               >
-                {isMonth ? firstName(session.clientName) : session.clientName}
+                {byClient
+                  ? isMonth
+                    ? firstName(session.clientName)
+                    : session.clientName
+                  : session.workoutName}
               </span>
-              {!isMonth && (
+              {!isMonth && (byClient || session.focus) && (
                 <span className="block truncate font-sans text-[0.7rem] leading-tight opacity-65">
-                  {session.workoutName}
+                  {byClient ? session.workoutName : session.focus}
                 </span>
               )}
             </span>

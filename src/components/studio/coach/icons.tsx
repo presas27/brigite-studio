@@ -1,6 +1,6 @@
 /**
  * The app's icon set. Hand-drawn 24×24 stroke paths rather than a dependency —
- * fourteen glyphs is not worth a package, and drawing them here keeps them all
+ * a couple of dozen glyphs is not worth a package, and drawing them here keeps them all
  * on the same grid, weight and cap style, which is what actually makes an icon
  * set look like a set.
  *
@@ -43,6 +43,14 @@ const PATHS: Record<string, string> = {
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.35-4.35",
   grid: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z",
   list: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01",
+  // Trend line with the arrow head drawn as two strokes off the same corner,
+  // so it stays a corner at 16px instead of collapsing into a blob.
+  trend: "M3.5 17.5 9.5 11.5 13 15 20.5 7.5M20.5 7.5H15.75M20.5 7.5V12.25",
+  // A ruler on the diagonal — the tick marks are what stop it reading as a
+  // plain rectangle at small sizes, so they are part of the glyph, not detail.
+  ruler:
+    "M3.1 15.3 15.3 3.1a1.4 1.4 0 0 1 2 0l3.6 3.6a1.4 1.4 0 0 1 0 2L8.7 20.9a1.4 1.4 0 0 1-2 0l-3.6-3.6a1.4 1.4 0 0 1 0-2ZM7 11.4l2.2 2.2M10.2 8.2l2.2 2.2M13.4 5l2.2 2.2",
+  flame: "M12.5 3c.4 2.6-.6 4.2-1.9 5.4-1.5 1.4-2.6 2.8-2.6 4.6a5 5 0 0 0 10 0c0-3.4-2.3-5.9-5.5-10ZM12 20a2.4 2.4 0 0 0 2.4-2.4c0-1.4-2.4-3.1-2.4-3.1s-2.4 1.7-2.4 3.1A2.4 2.4 0 0 0 12 20Z",
 };
 
 export type IconName = keyof typeof PATHS;

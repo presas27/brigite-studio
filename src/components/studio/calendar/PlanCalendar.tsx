@@ -10,7 +10,7 @@ import { parseDayKey, shortWeekday } from "../plan/date";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
 import { DayAgenda } from "./DayAgenda";
-import type { CalendarView, SessionsByDay } from "./types";
+import type { CalendarSubject, CalendarView, SessionsByDay } from "./types";
 
 /** Where each control points. Built on the server, which owns the date maths. */
 export type CalendarHrefs = {
@@ -23,6 +23,13 @@ export type CalendarHrefs = {
 
 type Props = {
   view: CalendarView;
+  /** Whether a mark names the aluna or the workout. Defaults to the coach's reading. */
+  subject?: CalendarSubject;
+  /** Masthead over the month name — "Plano" on the aluna's own calendar, absent on the studio's. */
+  eyebrowLabel?: string;
+  /** What the agenda says on a day with nothing on it. */
+  dayEmptyTitle?: string;
+  dayEmptyHint?: string;
   /** Every day the grid renders, in order. Always a whole number of weeks. */
   days: string[];
   /** `YYYY-MM` of the page. In month view, days outside it are the quiet ones. */
@@ -66,7 +73,19 @@ function tabClass(active: boolean) {
  * the next period rather than dead-ending, which is the whole point of a
  * calendar you can move through.
  */
-export function PlanCalendar({ view, days, month, today, sessions, locale, hrefs }: Props) {
+export function PlanCalendar({
+  view,
+  subject = "client",
+  eyebrowLabel,
+  dayEmptyTitle,
+  dayEmptyHint,
+  days,
+  month,
+  today,
+  sessions,
+  locale,
+  hrefs,
+}: Props) {
   const t = useTranslations("Studio.plan");
   const router = useRouter();
   const cells = useRef<(HTMLButtonElement | null)[]>([]);
@@ -159,10 +178,13 @@ export function PlanCalendar({ view, days, month, today, sessions, locale, hrefs
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-8">
       <div className="min-w-0 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
-          <h1 className={cn(heading, "flex flex-wrap items-baseline gap-x-3")}>
-            <span className="text-[2.25rem] sm:text-[2.75rem]">{monthName}</span>
-            <span className={cn(eyebrow, "text-sm normal-case tracking-normal")}>{period}</span>
-          </h1>
+          <div className="min-w-0">
+            {eyebrowLabel && <p className={eyebrow}>{eyebrowLabel}</p>}
+            <h1 className={cn(heading, "flex flex-wrap items-baseline gap-x-3", eyebrowLabel && "mt-1.5")}>
+              <span className="text-[2.25rem] capitalize sm:text-[2.75rem]">{monthName}</span>
+              <span className={cn(eyebrow, "text-sm normal-case tracking-normal")}>{period}</span>
+            </h1>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
@@ -249,6 +271,7 @@ export function PlanCalendar({ view, days, month, today, sessions, locale, hrefs
                 date={date}
                 index={index}
                 view={view}
+                subject={subject}
                 inMonth={belongs(date)}
                 isToday={date === today}
                 isSelected={index === selectedIndex}
@@ -269,7 +292,10 @@ export function PlanCalendar({ view, days, month, today, sessions, locale, hrefs
         <DayAgenda
           date={selectedDay}
           sessions={sessions[selectedDay] ?? []}
+          subject={subject}
           isToday={selectedDay === today}
+          emptyTitle={dayEmptyTitle}
+          emptyHint={dayEmptyHint}
           locale={locale}
           t={t}
         />

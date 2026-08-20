@@ -140,7 +140,6 @@
       "today": "Hoje",
       "clients": "Alunos",
       "leads": "Leads",
-      "library": "Biblioteca",
       "workouts": "Treinos",
       "plan": "Plano",
       "calendar": "Calendário",
@@ -150,15 +149,14 @@
       "checkin": "Check-in",
       "medidas": "Medidas",
       "evolucao": "Evolução",
-      "signOut": "Sair",
-      "signedInAs": "Sessão de {name}",
-      "menu": "Menu da área de treino",
       "mainMenu": "Menu",
       "overview": "Resumo",
       "sections": {
         "coaching": "Acompanhamento",
         "library": "Biblioteca",
-        "business": "Negócio"
+        "business": "Negócio",
+        "training": "Treinar",
+        "progress": "Números"
       },
       "exercises": "Exercícios",
       "openMenu": "Abrir menu",
@@ -246,6 +244,70 @@
       "review": "Ver vídeo",
       "reply": "Responder",
       "openClient": "Abrir aluno"
+    },
+    "aluno": {
+      "greeting": "Olá, {name}.",
+      "lead": "O teu treino de hoje e o que a Sara já te devolveu.",
+      "needsYou": "Para ti",
+      "needsYouEmpty": "Estás em dia.",
+      "needsYouEmptyHint": "Sem treino por fazer, check-in por enviar ou mensagem por ler.",
+      "viewAll": "Ver tudo",
+      "thisWeek": "Esta semana",
+      "viewPlan": "Ver o plano",
+      "planTitle": "Plano",
+      "planDayEmpty": "Dia de descanso.",
+      "planDayEmptyHint": "Nada marcado para este dia.",
+      "stats": {
+        "weekSessions": "Treinos esta semana",
+        "adherence": "Adesão (28 dias)",
+        "awaitingFeedback": "Vídeos à espera de feedback",
+        "unreadMessages": "Mensagens por ler"
+      },
+      "alert": {
+        "session": "Tens {name} para fazer hoje.",
+        "checkin": "Falta o check-in da semana de {date}.",
+        "feedback": "A Sara comentou o teu vídeo de {subject}.",
+        "feedbackPlain": "A Sara comentou um vídeo teu.",
+        "message": "{count, plural, =1 {# mensagem por ler} other {# mensagens por ler}} da Sara.",
+        "missed": "{name} de {date} continua por fazer."
+      },
+      "activity": {
+        "title": "O que aconteceu",
+        "empty": "Ainda sem histórico.",
+        "emptyHint": "A partir do primeiro treino registado, fica tudo aqui.",
+        "kind": {
+          "session": "Fizeste {subject}.",
+          "skipped": "Não conseguiste fazer {subject}.",
+          "submission": "Enviaste um vídeo de {subject}.",
+          "submissionPlain": "Enviaste um vídeo.",
+          "review": "A Sara comentou o teu vídeo de {subject}.",
+          "reviewPlain": "A Sara comentou um vídeo teu.",
+          "checkin": "Enviaste o check-in da semana de {subject}.",
+          "checkinReply": "A Sara respondeu ao check-in da semana de {subject}.",
+          "message": "Escreveste à Sara.",
+          "coachMessage": "A Sara escreveu-te."
+        }
+      },
+      "sessions": {
+        "title": "Treinos",
+        "lead": "Tudo o que já fizeste e o que tens marcado.",
+        "count": "{count, plural, =1 {# treino} other {# treinos}}",
+        "items": "{count, plural, =1 {# exercício} other {# exercícios}}",
+        "blocks": "{count, plural, =1 {# bloco} other {# blocos}}",
+        "today": "Hoje",
+        "statusFilter": "Estado do treino",
+        "filter": {
+          "all": "Tudo",
+          "upcoming": "Por fazer",
+          "done": "Feitos",
+          "skipped": "Falhados"
+        },
+        "noResults": "Nenhum treino corresponde.",
+        "noResultsHint": "Limpa a procura ou escolhe outro estado.",
+        "empty": "Ainda não tens treinos.",
+        "emptyHint": "Assim que a Sara marcar o primeiro, aparece aqui.",
+        "rangeNote": "Mostra o último ano e as semanas já marcadas à frente."
+      }
     },
     "leads": {
       "title": "Leads",
@@ -539,7 +601,8 @@
       "finishReview": "Enviar feedback",
       "reviewDone": "Feedback enviado.",
       "unsupported": "O teu navegador não consegue reproduzir este vídeo.",
-      "externalHint": "Vídeo externo — não é possível marcar comentários no tempo aqui."
+      "externalHint": "Vídeo externo — não é possível marcar comentários no tempo aqui.",
+      "sentTitle": "Vídeos enviados"
     },
     "messages": {
       "title": "Mensagens",
@@ -600,7 +663,11 @@
       "emptyHint": "Depois do primeiro treino registado aparece aqui.",
       "weightEmpty": "Ainda sem peso registado.",
       "weightEmptyHint": "Aparece aqui depois de um check-in com peso.",
-      "weightAria": "Gráfico de peso ao longo do tempo."
+      "weightAria": "Gráfico de peso ao longo do tempo.",
+      "adherenceHint": "Treinos feitos dos que a Sara marcou nos últimos 28 dias.",
+      "sinceFirst": "desde o primeiro registo",
+      "openTrends": "Ver gráfico",
+      "openSessions": "Ver todos"
     },
     "medidas": {
       "title": "Medidas",
@@ -619,7 +686,8 @@
       "weightDelta": "{delta} desde a última marcação ({pct}%)",
       "history": "Histórico",
       "empty": "Ainda sem medições.",
-      "emptyHint": "Regista o peso e a altura acima para começar."
+      "emptyHint": "Regista o peso e a altura acima para começar.",
+      "entryTitle": "Nova medição"
     },
     "evolucao": {
       "title": "Evolução",

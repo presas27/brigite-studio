@@ -5,7 +5,7 @@ import { BodyMetricsPanel } from "@/components/studio/body-metrics/BodyMetricsPa
 import { Field } from "@/components/studio/Field";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
-import { field, surface } from "@/components/studio/theme";
+import { eyebrow, field, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { submit } from "./actions";
 
@@ -22,6 +22,7 @@ export default async function AlunoMedidasPage() {
       <PageHeader title={t("title")} lead={t("lead")} />
 
       <form action={submit} className={cn(surface, "space-y-6 p-5 sm:p-6")}>
+        <p className={eyebrow}>{t("entryTitle")}</p>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label={t("weightLabel")} htmlFor="medidas-weight" required>
             <input
