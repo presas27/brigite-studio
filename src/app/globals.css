@@ -20,6 +20,50 @@
   --brown-deep: #6b3f24;
   --bronze: #9a7a58;
   --silk: #b31818;
+
+  /*
+   * Role tokens. The names above are literal brand colours; these carry a job,
+   * which is what lets the app flip to a light canvas without touching a single
+   * component. Anything the light theme repaints has to live here.
+   */
+  --rail: #1b1611; /* the coach sidebar */
+  --surface-hover: #241b13; /* hover on a flat surface */
+  --primary-hover: #efe0c8; /* hover on the primary button */
+  --accent-ink: #d9a05b; /* caramel used as TEXT, not as a fill */
+
+  /*
+   * Fixed in both themes. The gold surfaces, and the ink pills that sit on
+   * them, look identical light or dark — that is what keeps the brand
+   * recognisable — so anything inside them needs a colour that never inverts.
+   */
+  --on-dark: #faf5ec;
+  --ink-hover: #241b13;
+}
+
+/*
+ * Light theme, scoped to `.studio`. The marketing site is an editorial dark
+ * piece and must never invert, so the palette hangs off the app's own wrapper
+ * rather than `html`. The attribute lives on `html` only so the toggle can flip
+ * one thing, synchronously, inside a view transition.
+ */
+html[data-studio-theme="light"] .studio {
+  --background: #f7f2e7; /* warm paper, one step off `cream` */
+  --foreground: #1c1510;
+  --ink-lift: #fffdf8; /* surfaces lift towards white, not away from it */
+  --cream: #241c14; /* now "on surface": text, hairlines, subtle washes */
+  --butter: #d9a05b; /* the primary pill becomes the brand caramel */
+  --bronze: #7a5b3c;
+  --rail: #efe7d7;
+  --surface-hover: #f2ebdd;
+  --primary-hover: #c88f4c;
+  --accent-ink: #92622c; /* caramel is unreadable as text on paper */
+}
+
+/* The app canvas. Carries its own background so the light tokens above have
+   something to paint, independent of `body`. */
+.studio {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @theme inline {
@@ -34,6 +78,12 @@
   --color-brown-deep: var(--brown-deep);
   --color-bronze: var(--bronze);
   --color-silk: var(--silk);
+  --color-rail: var(--rail);
+  --color-surface-hover: var(--surface-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-dark: var(--on-dark);
+  --color-ink-hover: var(--ink-hover);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
@@ -110,6 +160,74 @@ body {
 .link-grow:hover,
 .link-grow:focus-visible {
   background-size: 100% 1px;
+}
+
+/*
+ * Theme switch — a circle that opens from the click point, ported from the
+ * Developh dashboard. Implemented with the View Transitions API: the browser
+ * snapshots the old and new paint, and we clip the new one in from a point, so
+ * nothing has to animate per-element.
+ *
+ * `.studio` also transitions its own colours, for browsers with no view
+ * transition support and for the reduced-motion path.
+ */
+.studio {
+  transition:
+    background-color 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* While the circle plays, the colour transition above is a second animation
+   describing the same change at a different speed — that is what makes the
+   toggle read as a stutter. */
+html[data-theme-transition="expanding"] .studio {
+  transition: none;
+}
+
+html[data-theme-transition="expanding"] {
+  view-transition-name: root;
+}
+
+html[data-theme-transition="expanding"]::view-transition-old(root),
+html[data-theme-transition="expanding"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-theme-transition="expanding"]::view-transition-old(root) {
+  z-index: 1;
+  animation: theme-circle-fade-out 160ms ease-out both;
+}
+
+html[data-theme-transition="expanding"]::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-circle-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes theme-circle-reveal {
+  from {
+    opacity: 0.52;
+    clip-path: circle(0px at var(--theme-transition-x, 50%) var(--theme-transition-y, 50%));
+  }
+  18% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 1;
+    clip-path: circle(
+      var(--theme-transition-radius, 150vmax) at var(--theme-transition-x, 50%)
+        var(--theme-transition-y, 50%)
+    );
+  }
+}
+
+@keyframes theme-circle-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.94;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

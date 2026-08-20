@@ -20,6 +20,9 @@
 # production
 /build
 
+# studio app local data (sqlite + uploads)
+/.data
+
 # misc
 .DS_Store
 *.pem
@@ -30,8 +33,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (can opt-in for committing if needed) — the template is documentation
+# of which variables exist, never their values, so it belongs in the repo.
 .env*
+!.env.example
 
 # vercel
 .vercel

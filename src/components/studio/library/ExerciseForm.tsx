@@ -1,0 +1,98 @@
+"use client";
+
+import { useActionState } from "react";
+import { useTranslations } from "next-intl";
+import type { ExerciseFormState } from "@/app/app/coach/biblioteca/actions";
+import type { Exercise, Tracking } from "@/lib/studio/types";
+import { Field } from "../Field";
+import { SubmitButton } from "../SubmitButton";
+import { field } from "../theme";
+
+const TRACKING: Tracking[] = ["reps", "time", "hold", "distance"];
+
+const initial: ExerciseFormState = { status: "idle" };
+
+/**
+ * Create/edit exercise form. Same fields either way — editing just seeds
+ * `defaultValue`s from the existing row. `idPrefix` keeps input ids unique
+ * when several instances of this form sit on the page at once (one create
+ * panel plus one inline edit per card).
+ */
+export function ExerciseForm({
+  action,
+  exercise,
+  idPrefix,
+}: {
+  action: (state: ExerciseFormState, formData: FormData) => Promise<ExerciseFormState>;
+  exercise?: Exercise;
+  idPrefix: string;
+}) {
+  const t = useTranslations("Studio.library");
+  const common = useTranslations("Studio.common");
+  const errors = useTranslations("Studio.errors");
+  const [state, formAction] = useActionState(action, initial);
+
+  const nameError = state.status === "error" && state.reason === "required" ? errors("required") : undefined;
+  const fileError = state.status === "error" && state.reason !== "required" ? errors(state.reason) : undefined;
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <Field label={t("nameLabel")} htmlFor={`${idPrefix}-name`} required error={nameError}>
+        <input
+          id={`${idPrefix}-name`}
+          name="name"
+          required
+          defaultValue={exercise?.name}
+          placeholder={t("namePlaceholder")}
+          className={field}
+        />
+      </Field>
+
+      <Field label={t("cuesLabel")} htmlFor={`${idPrefix}-cues`} hint={t("cuesHint")}>
+        <textarea id={`${idPrefix}-cues`} name="cues" rows={3} defaultValue={exercise?.cues} className={field} />
+      </Field>
+
+      <Field label={t("tagsLabel")} htmlFor={`${idPrefix}-tags`} hint={t("tagsHint")}>
+        <input
+          id={`${idPrefix}-tags`}
+          name="tags"
+          defaultValue={exercise?.tags.join(", ")}
+          className={field}
+        />
+      </Field>
+
+      <Field label={t("trackingLabel")} htmlFor={`${idPrefix}-tracking`}>
+        <select
+          id={`${idPrefix}-tracking`}
+          name="tracking"
+          defaultValue={exercise?.tracking ?? "reps"}
+          className={field}
+        >
+          {TRACKING.map((value) => (
+            <option key={value} value={value}>
+              {t(`tracking.${value}`)}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label={t("videoLabel")} htmlFor={`${idPrefix}-video`} hint={t("videoHint")}>
+        <input
+          id={`${idPrefix}-video`}
+          name="videoUrl"
+          type="url"
+          defaultValue={exercise?.videoUrl ?? ""}
+          className={field}
+        />
+      </Field>
+
+      <Field label={t("uploadLabel")} htmlFor={`${idPrefix}-file`} hint={t("uploadHint")} error={fileError}>
+        <input id={`${idPrefix}-file`} name="file" type="file" accept="video/*" className={field} />
+      </Field>
+
+      <SubmitButton pendingLabel={exercise ? common("saving") : common("adding")} className="w-full">
+        {exercise ? common("save") : common("add")}
+      </SubmitButton>
+    </form>
+  );
+}
