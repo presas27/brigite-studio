@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -29,13 +30,45 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
     return hit && tab.href.length > best.length ? tab.href : best;
   }, "");
 
+  // On a phone the strip is wider than the screen, so the tab you are actually
+  // on can start off-screen — the page then opens with no visible active tab.
+  // Jumped, not animated: this is the initial position, not a transition.
+  const stripRef = useRef<HTMLDivElement>(null);
+  // Which edges have more tabs behind them, so the fades only appear where
+  // there is actually something to scroll to.
+  const [edges, setEdges] = useState({ start: false, end: false });
+
+  const readEdges = useCallback(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const max = strip.scrollWidth - strip.clientWidth;
+    setEdges({ start: strip.scrollLeft > 1, end: strip.scrollLeft < max - 1 });
+  }, []);
+
+  useEffect(() => {
+    const strip = stripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (strip && active) {
+      strip.scrollLeft = Math.max(0, active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2);
+    }
+    readEdges();
+    window.addEventListener("resize", readEdges);
+    return () => window.removeEventListener("resize", readEdges);
+  }, [activeHref, readEdges]);
+
   return (
-    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-cream/10">
-      <ul className="flex min-w-max items-stretch px-1">
+    <nav aria-label={label} className="relative border-b border-cream/10">
+      {/* The strip scrolls sideways rather than wrapping or squeezing: six labels
+          plus badges do not fit a phone, and a tab row that reflows onto two lines
+          moves the panel below it every time a badge appears. `w-max` sizes the row
+          to its content and `shrink-0` per item is what actually holds it there —
+          without it flexbox compresses the labels into each other. */}
+      <div ref={stripRef} onScroll={readEdges} className="-mx-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex w-max items-stretch px-1">
         {tabs.map((tab) => {
           const active = tab.href === activeHref;
           return (
-            <li key={tab.href}>
+            <li key={tab.href} className="shrink-0">
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
@@ -48,7 +81,7 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
                 {tab.badge != null && tab.badge > 0 && (
                   <span
                     className={cn(
-                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-mono text-[0.65rem] leading-none",
+                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none",
                       active ? "bg-caramel text-ink" : "bg-caramel/20 text-accent-ink",
                     )}
                   >
@@ -66,7 +99,22 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
             </li>
           );
         })}
-      </ul>
+        </ul>
+      </div>
+      {/* Says "there is more this way" without a scrollbar — and only while
+          there is, so the last tab never sits under a permanent wash. */}
+      {edges.start && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent"
+        />
+      )}
+      {edges.end && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent"
+        />
+      )}
     </nav>
   );
 }

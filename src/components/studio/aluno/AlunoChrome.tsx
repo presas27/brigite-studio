@@ -33,11 +33,7 @@ const SECTIONS: ChromeSection[] = [
   },
   {
     titleKey: "sections.progress",
-    items: [
-      { href: "/app/aluno/progresso", labelKey: "progress", icon: "chart" },
-      { href: "/app/aluno/evolucao", labelKey: "evolucao", icon: "trend" },
-      { href: "/app/aluno/medidas", labelKey: "medidas", icon: "ruler" },
-    ],
+    items: [{ href: "/app/aluno/evolucao", labelKey: "evolucao", icon: "trend" }],
   },
 ];
 

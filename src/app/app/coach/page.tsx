@@ -4,6 +4,7 @@ import { ALERT_ICON, alertHref } from "@/components/studio/coach/alerts";
 import { ActivityFeed } from "@/components/studio/coach/ActivityFeed";
 import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
+import { shortWeekday } from "@/components/studio/format";
 import {
   buttonOnAccent,
   chip,
@@ -11,23 +12,27 @@ import {
   eyebrow,
   eyebrowOnAccent,
   heading,
-  muted,
   surfaceAccent,
   surfaceLink,
 } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
-import { coachAlerts, listSubmissions, recentActivity, unreadCount } from "@/lib/studio/coaching";
-import { dayKey, shiftDay, weekKey } from "@/lib/studio/db";
-import { assignmentsBetween, assignmentsOn } from "@/lib/studio/plan";
+import { coachAlerts, recentActivity, unreadCount } from "@/lib/studio/coaching";
+import { dayKey } from "@/lib/studio/db";
+import { assignmentsOn } from "@/lib/studio/plan";
 import { listClients } from "@/lib/studio/users";
 import { cn } from "@/lib/utils";
 
 /**
  * Overview — the screen Sara lands on.
  *
- * Three questions in priority order: what needs me, what is happening today,
- * and how is the studio doing. The gold surface goes to the first one, because
+ * Two questions in priority order: who is waiting on me, and what is happening
+ * today. The gold panel answers the first one by name — every client with a
+ * check-in, a message, a video or a missed session sitting unanswered — because
  * an unanswered client is the only thing on this page that costs money.
+ *
+ * The two counters above it are the only numbers left: how many alunas there
+ * are, and how many are mid-conversation. The other two this page used to print
+ * restated the gold panel in a smaller font.
  */
 export default async function OverviewPage() {
   const coach = await requireCoach();
@@ -44,46 +49,37 @@ export default async function OverviewPage() {
   const activity = recentActivity(24);
 
   const today = dayKey();
-  const monday = weekKey();
   const todaySessions = clients.flatMap((client) =>
     assignmentsOn(client.id, today).map((assignment) => ({ client, assignment })),
-  );
-  const weekSessions = clients.reduce(
-    (total, client) =>
-      total + assignmentsBetween(client.id, monday, shiftDay(monday, 6)).length,
-    0,
   );
   const unreadMessages = clients.reduce(
     (total, client) => total + unreadCount(client.id, coach.id),
     0,
   );
 
+  // Two, not four. "Vídeos por ver" and "treinos esta semana" were already in
+  // the gold panel underneath, spelled out client by client — a number on top
+  // of the list it summarises is a second thing to read for no second fact.
   const stats: { key: string; value: number; href: string }[] = [
     { key: "activeClients", value: clients.length, href: "/app/coach/alunos" },
-    {
-      key: "pendingVideos",
-      value: listSubmissions({ status: "pending" }).length,
-      href: "/app/coach/videos",
-    },
     { key: "unreadMessages", value: unreadMessages, href: "/app/coach/mensagens" },
-    { key: "sessionsThisWeek", value: weekSessions, href: "/app/coach/calendario" },
   ];
 
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-8">
+      <div className="min-w-0 space-y-6">
         <header>
-          <p className={eyebrow}>{t("title")}</p>
-          <h1 className={cn(heading, "mt-1.5 text-[2rem] sm:text-[2.5rem]")}>
+          <h1 className={cn(heading, "text-[2rem] sm:text-[2.5rem]")}>
             {t("greeting", { name: coach.name.split(" ")[0] })}
           </h1>
-          <p className={cn(muted, "mt-2")}>{t("lead")}</p>
         </header>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           {stats.map((stat) => (
-            <Link key={stat.key} href={stat.href} className={cn(surfaceLink, "p-4")}>
-              <p className={cn(heading, "text-[1.75rem] text-cream")}>{stat.value}</p>
+            <Link key={stat.key} href={stat.href} className={cn(surfaceLink, "p-4 sm:p-5")}>
+              <p className={cn(heading, "text-[1.75rem] text-cream sm:text-[2rem]")}>
+                {stat.value}
+              </p>
               <p className={cn(eyebrow, "mt-2 leading-snug")}>{t(`stats.${stat.key}`)}</p>
             </Link>
           ))}
@@ -96,7 +92,7 @@ export default async function OverviewPage() {
               {t("needsYou")}
             </h2>
             {alerts.length > 0 && (
-              <span className="font-mono text-sm text-ink/60">{alerts.length}</span>
+              <span className="font-sans tabular-nums text-sm text-ink/60">{alerts.length}</span>
             )}
           </div>
 
@@ -132,7 +128,7 @@ export default async function OverviewPage() {
                 ))}
               </ol>
               {alerts.length > 6 && (
-                <p className="mt-3 font-mono text-xs text-ink/60">+{alerts.length - 6}</p>
+                <p className="mt-3 font-sans tabular-nums text-xs text-ink/60">+{alerts.length - 6}</p>
               )}
             </>
           )}
@@ -179,9 +175,7 @@ export default async function OverviewPage() {
                       </span>
                     </span>
                     <span className={assignment.status === "done" ? chipAccent : chip}>
-                      {new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
-                        new Date(`${assignment.date}T12:00:00`),
-                      )}
+                      {shortWeekday(assignment.date, locale)}
                     </span>
                   </Link>
                 </li>

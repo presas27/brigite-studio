@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { saveNotes } from "@/app/app/coach/actions";
-import { formatDayKey, formatMonthYear } from "@/components/studio/coach/format";
+import { formatDayKey, formatMonthYear } from "@/components/studio/format";
 import { Empty } from "@/components/studio/Empty";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import {
@@ -17,6 +17,7 @@ import {
   mutedOnAccent,
   surface,
   surfaceAccent,
+  surfaceLink,
 } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { weekKey } from "@/lib/studio/db";
@@ -73,6 +74,7 @@ export default async function ClientOverviewPage({
   const { done, total } = adherence(client.id);
   const [lastSession] = history;
   const planHref = `/app/coach/alunos/${client.id}/plano`;
+  const sessionsHref = `/app/coach/alunos/${client.id}/treinos`;
 
   return (
     <div className="space-y-6">
@@ -99,7 +101,7 @@ export default async function ClientOverviewPage({
         <Stat label={tProgress("adherence")} value={`${done}/${total}`} />
         <Stat
           label={t("lastSession")}
-          value={lastSession ? formatDayKey(lastSession.date, locale) : t("never")}
+          value={lastSession?.date ? formatDayKey(lastSession.date, locale) : t("never")}
           text={!lastSession}
         />
         <Stat label={t("planLabel")} value={t(`plan.${client.profile.plan}`)} text />
@@ -164,25 +166,41 @@ export default async function ClientOverviewPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className={eyebrow}>{tProgress("history")}</h2>
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className={eyebrow}>{tProgress("history")}</h2>
+          {history.length > 0 && (
+            <Link href={sessionsHref} className="font-sans text-xs text-accent-ink hover:underline">
+              {tProgress("openSessions")}
+            </Link>
+          )}
+        </div>
         {history.length === 0 ? (
           <Empty title={tProgress("empty")} hint={tProgress("emptyHint")} />
         ) : (
           <ul className="space-y-2">
             {history.map((assignment) => (
-              <li
-                key={assignment.id}
-                className={cn(surface, "flex items-center justify-between gap-4 p-4")}
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-sans text-sm text-cream">
-                    {assignment.snapshot.name}
-                  </p>
-                  <p className={muted}>{formatDayKey(assignment.date, locale)}</p>
-                </div>
-                <span className={assignment.status === "done" ? chipAccent : chip}>
-                  {tPlan(`status.${assignment.status}`)}
-                </span>
+              <li key={assignment.id}>
+                {/* Every row opens that session's report — a list of past
+                    workouts you cannot open is a list of things you have to
+                    take on trust. */}
+                <Link
+                  href={`${sessionsHref}/${assignment.id}`}
+                  className={cn(surfaceLink, "flex items-center justify-between gap-4 p-4")}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-sans text-sm text-cream">
+                      {assignment.snapshot.name}
+                    </span>
+                    {assignment.date && (
+                      <span className={cn(muted, "block")}>
+                        {formatDayKey(assignment.date, locale)}
+                      </span>
+                    )}
+                  </span>
+                  <span className={assignment.status === "done" ? chipAccent : chip}>
+                    {tPlan(`status.${assignment.status}`)}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

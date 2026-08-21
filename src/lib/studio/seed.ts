@@ -1,7 +1,8 @@
 import { dayKey, shiftDay } from "./db";
 import { withStableIds } from "./id";
 import { addBlock, addItem, createExercise, createWorkout, listExercises } from "./library";
-import { assignWorkout } from "./plan";
+import { recordMeasurement } from "./coaching";
+import { assignWorkout, setAssignmentStatus } from "./plan";
 import { coach, createClient, createUser, setClientStatus } from "./users";
 
 /**
@@ -17,6 +18,11 @@ import { coach, createClient, createUser, setClientStatus } from "./users";
  */
 
 const COACH_EMAIL = process.env.STUDIO_COACH_EMAIL ?? "hello@brigitestudio.com";
+
+/** Midday on a `YYYY-MM-DD`, so a seeded session never lands on the wrong day. */
+function noonOf(key: string): number {
+  return Date.parse(`${key}T12:00:00Z`);
+}
 
 type Recipe = {
   name: string;
@@ -200,7 +206,58 @@ function seed(): void {
     [strength, 4],
     [mobility, 5],
   ];
+  // Days of the current week already behind us are done — an aluna opening the
+  // demo on a Thursday should find Monday and Tuesday closed, not three red
+  // rings telling her she has already failed the week she just started.
+  const todayKey = dayKey();
   for (const [workoutId, offset] of plan) {
-    assignWorkout({ clientId: demo.id, workoutId, date: shiftDay(monday, offset) });
+    const date = shiftDay(monday, offset);
+    const assignmentId = assignWorkout({ clientId: demo.id, workoutId, date });
+    if (assignmentId && date < todayKey) {
+      setAssignmentStatus(assignmentId, "done", noonOf(date));
+    }
   }
+
+  // Four weeks behind the current one, so the demo lands on an aluna mid-block
+  // rather than on her first day. An overview built out of adherence, streaks
+  // and a weight line has nothing to draw without a past, and a grid of empty
+  // states is a fair picture of an empty database but a useless preview.
+  //
+  // The misses are placed, not random: the seed has to produce the same
+  // screenshot on every boot, and one skipped session in the oldest week is
+  // what makes the dot grid read as a real month instead of a full house.
+  const past: { weeksBack: number; skipped: number[] }[] = [
+    { weeksBack: 4, skipped: [3] },
+    { weeksBack: 3, skipped: [] },
+    { weeksBack: 2, skipped: [1] },
+    { weeksBack: 1, skipped: [] },
+  ];
+  for (const week of past) {
+    const from = shiftDay(monday, -7 * week.weeksBack);
+    for (const [workoutId, offset] of plan) {
+      const assignmentId = assignWorkout({
+        clientId: demo.id,
+        workoutId,
+        date: shiftDay(from, offset),
+      });
+      if (!assignmentId) continue;
+      setAssignmentStatus(
+        assignmentId,
+        week.skipped.includes(offset) ? "skipped" : "done",
+        noonOf(shiftDay(from, offset)),
+      );
+    }
+  }
+
+  // A weight reading a week, drifting down and back up the way a real one does
+  // — a monotonic line would draw a chart nobody's body has ever produced.
+  const weights = [64.8, 64.5, 64.6, 64.1, 63.9];
+  weights.forEach((value, index) => {
+    recordMeasurement({
+      clientId: demo.id,
+      kind: "weight",
+      value,
+      date: shiftDay(monday, -7 * (weights.length - 1 - index)),
+    });
+  });
 }

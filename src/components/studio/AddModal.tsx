@@ -41,6 +41,8 @@ export function AddModal({
   title,
   lead,
   width,
+  compact = false,
+  iconOnlyOnPhone = false,
   children,
 }: {
   /** The noun being added — "Aluno", "Exercício". The plus supplies the verb. */
@@ -48,6 +50,17 @@ export function AddModal({
   title: string;
   lead?: string;
   width?: string;
+  /**
+   * Smaller pill, for a control that shares a row with other controls — the
+   * topbar, or the plan's week nav — rather than heading a page.
+   */
+  compact?: boolean;
+  /**
+   * Drops the noun below `sm`, leaving the plus alone with the label as its
+   * `aria-label`. For the topbar, where a full pill wrapped onto two lines and
+   * made the bar taller than the content under it.
+   */
+  iconOnlyOnPhone?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -59,10 +72,16 @@ export function AddModal({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className={cn(buttonPrimary, "px-5 py-2.5")}
+        aria-label={iconOnlyOnPhone ? label : undefined}
+        className={cn(
+          buttonPrimary,
+          "whitespace-nowrap",
+          compact ? "gap-1.5 px-4 py-2 text-xs" : "px-5 py-2.5",
+          iconOnlyOnPhone && "px-2.5 sm:px-4",
+        )}
       >
         <Icon name="plus" className="h-4 w-4" />
-        {label}
+        <span className={iconOnlyOnPhone ? "hidden sm:inline" : undefined}>{label}</span>
       </button>
 
       <Modal open={open} onCloseAction={close} title={title} lead={lead} width={width}>

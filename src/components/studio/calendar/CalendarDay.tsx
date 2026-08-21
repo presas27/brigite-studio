@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
-import { parseDayKey, shortWeekday } from "../plan/date";
+import { capitalize, cn } from "@/lib/utils";
+import { shortWeekday } from "../format";
+import { parseDayKey } from "../plan/date";
 import type { Translate } from "../plan/types";
 import {
   firstName,
@@ -108,7 +109,7 @@ export function CalendarDay({
           {dayNumber}
         </span>
         {!isMonth && (
-          <span className="font-sans text-xs font-medium capitalize text-cream/55">{weekday}</span>
+          <span className="font-sans text-xs font-medium text-cream/55">{weekday}</span>
         )}
       </span>
 
@@ -156,7 +157,7 @@ export function CalendarDay({
               </span>
               {!isMonth && (byClient || session.focus) && (
                 <span className="block truncate font-sans text-[0.7rem] leading-tight opacity-65">
-                  {byClient ? session.workoutName : session.focus}
+                  {byClient ? session.workoutName : capitalize(session.focus)}
                 </span>
               )}
             </span>

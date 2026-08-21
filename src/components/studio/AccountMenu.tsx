@@ -90,7 +90,7 @@ export function AccountMenu({
           >
             <div className="border-b border-cream/10 px-4 py-3.5">
               <p className="truncate font-sans text-sm font-semibold text-cream">{name}</p>
-              <p className="mt-0.5 truncate font-mono text-xs text-cream/45">{email}</p>
+              <p className="mt-0.5 truncate font-sans text-xs text-cream/45">{email}</p>
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-caramel/15 px-2.5 py-0.5 font-sans text-[0.7rem] text-accent-ink ring-1 ring-caramel/25">
                 {t(`role.${role}`)}
               </p>

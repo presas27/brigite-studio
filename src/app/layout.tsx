@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Anton, Geist, Playfair_Display } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getThemeMode } from "@/lib/studio/theme-mode";
@@ -8,11 +8,6 @@ import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -71,7 +66,7 @@ export default async function RootLayout({
       lang={locale}
       data-scroll-behavior="smooth"
       data-studio-theme={themeMode}
-      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${anton.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>

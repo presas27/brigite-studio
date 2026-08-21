@@ -51,7 +51,7 @@ export const field =
 
 /** Compact variant for inline numeric entry (set logging, sets/reps grids). */
 export const fieldCompact =
-  "w-full rounded-[0.75rem] bg-cream/5 px-3 py-2 text-center font-mono text-base text-cream placeholder:text-cream/30 ring-1 ring-cream/15 outline-none transition focus:ring-2 focus:ring-caramel/70";
+  "w-full rounded-[0.75rem] bg-cream/5 px-3 py-2 text-center font-sans tabular-nums text-base text-cream placeholder:text-cream/30 ring-1 ring-cream/15 outline-none transition focus:ring-2 focus:ring-caramel/70";
 
 /** Primary action. Cream pill, dark ink text. */
 export const buttonPrimary =
@@ -60,6 +60,14 @@ export const buttonPrimary =
 /** Secondary action. Outlined, sits on any surface. */
 export const buttonGhost =
   "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream ring-1 ring-cream/20 transition-colors hover:bg-cream/5 hover:ring-cream/35 disabled:opacity-50";
+
+/**
+ * Third action tier, below `buttonGhost`: row actions that must not compete
+ * with the row's content. An outlined pill per action turns a list into a wall
+ * of buttons; these read as text until the pointer is on them.
+ */
+export const buttonQuiet =
+  "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream disabled:opacity-50";
 
 /** Destructive action. Never the visual default. */
 export const buttonDanger =

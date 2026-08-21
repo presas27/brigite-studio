@@ -76,7 +76,7 @@ export function SubmissionCard({ submission }: { submission: Submission }) {
                 type="button"
                 onClick={() => seek(comment.tMs)}
                 disabled={!submission.mediaId}
-                className="font-mono text-xs text-accent-ink underline decoration-caramel/40 underline-offset-2 disabled:text-cream/45 disabled:no-underline"
+                className="font-sans tabular-nums text-xs text-accent-ink underline decoration-caramel/40 underline-offset-2 disabled:text-cream/45 disabled:no-underline"
               >
                 {t("atTime", { time: formatClipTime(comment.tMs) })}
               </button>

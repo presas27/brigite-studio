@@ -162,6 +162,16 @@ export function StudioChrome({
     return () => query.removeEventListener("change", handleChange);
   }, []);
 
+  // `<main>` carries its own scrollbar at `lg` (see below), so Next.js's
+  // built-in scroll restoration — which only resets the window — never
+  // touches it. Without this, switching tabs on a client page (e.g. Plano
+  // back to Visão geral) after scrolling down keeps the old scrollTop: the
+  // new, shorter page opens mid-content with the sticky masthead already
+  // pinned over it, which reads as the header rendering broken.
+  useEffect(() => {
+    document.getElementById("main")?.scrollTo({ top: 0 });
+  }, [pathname]);
+
   // Exact match for the landing screen, prefix match for everything else, so
   // `/app/aluno/treino/<id>` lights up its section without the root lighting
   // up on every page.
@@ -203,7 +213,7 @@ export function StudioChrome({
                   {badge != null &&
                     badge > 0 &&
                     (item.urgentBadge ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-mono text-[0.6rem] leading-none text-on-dark ring-2 ring-rail">
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-sans tabular-nums text-[0.6rem] leading-none text-on-dark ring-2 ring-rail">
                         {badge > 9 ? "9+" : badge}
                       </span>
                     ) : (
@@ -217,7 +227,7 @@ export function StudioChrome({
                   {!item.urgentBadge && badge != null && badge > 0 && (
                     <span
                       className={cn(
-                        "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-mono text-[0.65rem] leading-none",
+                        "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none",
                         active ? "bg-ink/15 text-ink" : "bg-caramel/20 text-accent-ink",
                       )}
                     >
@@ -251,7 +261,12 @@ export function StudioChrome({
   );
 
   return (
-    <div ref={shellRef} className="studio lg:min-h-dvh">
+    // `lg:h-dvh` + `lg:overflow-hidden`, not `min-h-dvh`: a page taller than the viewport used
+    // to grow the whole document, so the browser's own rubber-band overscroll could nudge it a
+    // few px past its edges and flash the near-black `body` underneath `.studio`. Pinning the
+    // shell to exactly the viewport and letting `<main>` below carry its own scrollbar keeps
+    // that motion (and the reveal) contained inside `<main>` instead of on the document.
+    <div ref={shellRef} className="studio min-h-dvh lg:h-dvh lg:overflow-hidden">
       {/* Drawer scrim. Rendered only when open so it never eats taps on lg. */}
       {drawerOpen && (
         <button
@@ -314,8 +329,11 @@ export function StudioChrome({
         {nav}
       </aside>
 
-      <div className="flex min-w-0 flex-col lg:ml-[var(--rail-w,16.5rem)]">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
+      <div className="flex min-w-0 flex-col lg:h-full lg:ml-[var(--rail-w,16.5rem)]">
+        {/* Opaque, not a translucent blur: `<main>` scrolls directly under this bar,
+            and a gold hero card or a display heading passing beneath a 95% wash reads
+            as a rendering fault, not as depth. */}
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -336,7 +354,10 @@ export function StudioChrome({
           <AccountMenu name={name} email={email} role={role} />
         </header>
 
-        <main id="main" className="min-w-0 grow px-4 py-6 sm:px-6 sm:py-8">
+        <main
+          id="main"
+          className="min-w-0 grow px-4 py-6 sm:px-6 sm:py-8 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+        >
           {children}
         </main>
       </div>

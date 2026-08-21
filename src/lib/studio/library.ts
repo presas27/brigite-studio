@@ -228,7 +228,7 @@ export function workoutBlocks(workoutId: string): WorkoutBlock[] {
 
 export function findWorkout(workoutId: string): Workout | undefined {
   const row = get<Row>(
-    "SELECT id, name, focus, notes, archived, created_at FROM workouts WHERE id = ?",
+    "SELECT id, name, focus, notes, archived, created_at, updated_at FROM workouts WHERE id = ?",
     workoutId,
   );
   if (!row) return undefined;
@@ -239,6 +239,7 @@ export function findWorkout(workoutId: string): Workout | undefined {
     notes: String(row.notes ?? ""),
     archived: Number(row.archived) === 1,
     createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
     blocks: workoutBlocks(workoutId),
   };
 }
@@ -246,7 +247,7 @@ export function findWorkout(workoutId: string): Workout | undefined {
 export function listWorkouts(search?: string): WorkoutSummary[] {
   const like = search?.trim() ? `%${search.trim()}%` : null;
   const rows = all<Row>(
-    `SELECT w.id, w.name, w.focus, w.notes, w.archived, w.created_at,
+    `SELECT w.id, w.name, w.focus, w.notes, w.archived, w.created_at, w.updated_at,
             (SELECT count(*) FROM workout_items i
                JOIN workout_blocks b ON b.id = i.block_id
               WHERE b.workout_id = w.id) AS item_count
@@ -262,6 +263,7 @@ export function listWorkouts(search?: string): WorkoutSummary[] {
     notes: String(row.notes ?? ""),
     archived: Number(row.archived) === 1,
     createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
     itemCount: Number(row.item_count),
   }));
 }
@@ -284,14 +286,16 @@ export function createWorkout(input: {
   notes?: string;
 }): string {
   const workoutId = newId();
+  const now = Date.now();
   run(
-    `INSERT INTO workouts (id, name, focus, notes, archived, created_at)
-     VALUES (?, ?, ?, ?, 0, ?)`,
+    `INSERT INTO workouts (id, name, focus, notes, archived, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, ?, ?)`,
     workoutId,
     input.name.trim(),
     input.focus ?? "",
     input.notes ?? "",
-    Date.now(),
+    now,
+    now,
   );
   return workoutId;
 }
@@ -301,7 +305,7 @@ export function updateWorkout(
   patch: { name?: string; focus?: string; notes?: string },
 ): void {
   const fields: string[] = [];
-  const values: string[] = [];
+  const values: (string | number)[] = [];
   if (patch.name !== undefined) {
     fields.push("name = ?");
     values.push(patch.name.trim());
@@ -315,11 +319,33 @@ export function updateWorkout(
     values.push(patch.notes);
   }
   if (fields.length === 0) return;
+  fields.push("updated_at = ?");
+  values.push(Date.now());
   run(`UPDATE workouts SET ${fields.join(", ")} WHERE id = ?`, ...values, workoutId);
 }
 
 export function archiveWorkout(workoutId: string): void {
   run("UPDATE workouts SET archived = 1 WHERE id = ?", workoutId);
+}
+
+/** Stamps the parent workout as edited — called after any block/item mutation. */
+function touchWorkout(workoutId: string): void {
+  run("UPDATE workouts SET updated_at = ? WHERE id = ?", Date.now(), workoutId);
+}
+
+function workoutIdForBlock(blockId: string): string | undefined {
+  const row = get<Row>("SELECT workout_id FROM workout_blocks WHERE id = ?", blockId);
+  return row ? String(row.workout_id) : undefined;
+}
+
+function workoutIdForItem(itemId: string): string | undefined {
+  const row = get<Row>(
+    `SELECT b.workout_id AS workout_id FROM workout_items i
+       JOIN workout_blocks b ON b.id = i.block_id
+      WHERE i.id = ?`,
+    itemId,
+  );
+  return row ? String(row.workout_id) : undefined;
 }
 
 /** Append a block at the end of a workout. Returns the new block id. */
@@ -343,6 +369,7 @@ export function addBlock(
     input.rounds ?? 1,
     input.restSeconds ?? 60,
   );
+  touchWorkout(workoutId);
   return blockId;
 }
 
@@ -370,10 +397,14 @@ export function updateBlock(
   }
   if (fields.length === 0) return;
   run(`UPDATE workout_blocks SET ${fields.join(", ")} WHERE id = ?`, ...values, blockId);
+  const workoutId = workoutIdForBlock(blockId);
+  if (workoutId) touchWorkout(workoutId);
 }
 
 export function removeBlock(blockId: string): void {
+  const workoutId = workoutIdForBlock(blockId);
   run("DELETE FROM workout_blocks WHERE id = ?", blockId);
+  if (workoutId) touchWorkout(workoutId);
 }
 
 /** Append an exercise to a block. Returns the new item id. */
@@ -411,6 +442,8 @@ export function addItem(
     input.rpe ?? "",
     input.notes ?? "",
   );
+  const workoutId = workoutIdForBlock(blockId);
+  if (workoutId) touchWorkout(workoutId);
   return itemId;
 }
 
@@ -458,10 +491,14 @@ export function updateItem(
   }
   if (fields.length === 0) return;
   run(`UPDATE workout_items SET ${fields.join(", ")} WHERE id = ?`, ...values, itemId);
+  const workoutId = workoutIdForItem(itemId);
+  if (workoutId) touchWorkout(workoutId);
 }
 
 export function removeItem(itemId: string): void {
+  const workoutId = workoutIdForItem(itemId);
   run("DELETE FROM workout_items WHERE id = ?", itemId);
+  if (workoutId) touchWorkout(workoutId);
 }
 
 /** Move an item one slot up or down within its block. */
@@ -483,6 +520,8 @@ export function moveItem(itemId: string, direction: -1 | 1): void {
     run("UPDATE workout_items SET position = ? WHERE id = ?", Number(item.position), String(neighbour.id));
     run("UPDATE workout_items SET position = ? WHERE id = ?", Number(neighbour.position), itemId);
   });
+  const workoutId = workoutIdForBlock(String(item.block_id));
+  if (workoutId) touchWorkout(workoutId);
 }
 
 /**
@@ -503,6 +542,8 @@ export function reorderItems(blockId: string, itemIds: string[]): void {
       );
     });
   });
+  const workoutId = workoutIdForBlock(blockId);
+  if (workoutId) touchWorkout(workoutId);
 }
 
 /** Deep-copy a workout, blocks and items included. */

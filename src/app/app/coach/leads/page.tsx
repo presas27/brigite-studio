@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { formatRelative } from "@/components/studio/coach/format";
+import { formatRelative } from "@/components/studio/format";
 import { Empty } from "@/components/studio/Empty";
 import { LeadRow } from "@/components/studio/leads/LeadRow";
 import { PageHeader } from "@/components/studio/PageHeader";
@@ -59,7 +59,7 @@ export default async function LeadsPage({
             className={status === option ? chipAccent : chip}
           >
             {t(`status.${option}`)}
-            <span className="font-mono text-[0.7rem] opacity-60">{counts[option]}</span>
+            <span className="font-sans tabular-nums text-[0.7rem] opacity-60">{counts[option]}</span>
           </Link>
         ))}
       </nav>

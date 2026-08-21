@@ -15,14 +15,17 @@ async function assertCoach(clientId: string): Promise<void> {
   if (viewer.role !== "coach") redirect("/app/aluno");
 }
 
-/** Place a workout template on the client's calendar, freezing it into a snapshot. */
+/**
+ * Place a workout template on the client's calendar, freezing it into a
+ * snapshot. An empty day leaves it unscheduled — see `assignWorkout`.
+ */
 export async function assign(clientId: string, formData: FormData): Promise<void> {
   await assertCoach(clientId);
   const workoutId = String(formData.get("workoutId") ?? "");
-  const date = String(formData.get("date") ?? "");
+  const date = String(formData.get("date") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim();
-  if (!workoutId || !date) return;
-  assignWorkout({ clientId, workoutId, date, note: note || undefined });
+  if (!workoutId) return;
+  assignWorkout({ clientId, workoutId, date: date || null, note: note || undefined });
   revalidatePath(planPath(clientId));
 }
 

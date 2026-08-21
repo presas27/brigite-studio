@@ -2,26 +2,32 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/studio/Empty";
-import { SubmitButton } from "@/components/studio/SubmitButton";
-import { AssignPanel } from "@/components/studio/plan/AssignPanel";
-import { DayColumn } from "@/components/studio/plan/DayColumn";
-import { buttonGhost, surface } from "@/components/studio/theme";
-import { cn } from "@/lib/utils";
+import { AssignWorkoutModal } from "@/components/studio/plan/AssignWorkoutModal";
+import { UnscheduledList } from "@/components/studio/plan/UnscheduledList";
+import { WeekGrid } from "@/components/studio/plan/WeekGrid";
+import { Icon } from "@/components/studio/coach/icons";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { dayKey, shiftDay, weekKey } from "@/lib/studio/db";
 import { listWorkouts } from "@/lib/studio/library";
-import { assignmentsBetween } from "@/lib/studio/plan";
+import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
 import type { Assignment } from "@/lib/studio/types";
-import { assign, markSkipped, move, remove, repeat } from "./actions";
+import { assign, markSkipped, move, remove } from "./actions";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The day-range label in the period-nav pill — not interactive, just orientation. */
+const weekRangeLabel = "rounded-full px-3 py-1.5 font-sans text-xs font-semibold text-cream/70";
+
+/** Round prev/next icon button in the period-nav pill. */
+const weekStepButton =
+  "inline-flex h-8 w-8 items-center justify-center rounded-full text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream";
 
 export default async function CoachPlanPage({
   params,
   searchParams,
 }: {
   params: Promise<{ clientId: string }>;
-  searchParams: Promise<{ semana?: string; repetido?: string }>;
+  searchParams: Promise<{ semana?: string }>;
 }) {
   const { clientId } = await params;
   const { viewer } = await requireClientAccess(clientId);
@@ -35,7 +41,6 @@ export default async function CoachPlanPage({
   const monday = parsed && !Number.isNaN(parsed.getTime()) ? weekKey(parsed) : weekKey();
   const sunday = shiftDay(monday, 6);
   const today = dayKey();
-  const repeated = sp.repetido ? Number(sp.repetido) : undefined;
 
   const [t, tWorkouts, locale] = await Promise.all([
     getTranslations("Studio.plan"),
@@ -45,69 +50,71 @@ export default async function CoachPlanPage({
 
   const workouts = listWorkouts();
   const assignments = assignmentsBetween(clientId, monday, sunday);
+  const unscheduled = unscheduledAssignments(clientId);
 
   const byDate: Record<string, Assignment[]> = {};
   for (const assignment of assignments) {
-    (byDate[assignment.date] ??= []).push(assignment);
+    (byDate[assignment.date as string] ??= []).push(assignment);
   }
   const days = Array.from({ length: 7 }, (_, i) => shiftDay(monday, i));
+  // Fixed dd/mm, not locale-formatted — this pill reads as a date stamp, not prose.
+  const asDdMm = (key: string) => `${key.slice(8, 10)}/${key.slice(5, 7)}`;
+  const weekRange = `${asDdMm(monday)} - ${asDdMm(sunday)}`;
 
   const assignAction = assign.bind(null, clientId);
   const removeAction = remove.bind(null, clientId);
   const markSkippedAction = markSkipped.bind(null, clientId);
   const moveAction = move.bind(null, clientId);
-  const repeatAction = repeat.bind(null, clientId);
 
   const basePath = `/app/coach/alunos/${clientId}/plano`;
+  const weekHref = (key: string) => `${basePath}?semana=${key}`;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <nav className="flex flex-wrap items-center gap-2">
-          <Link href={`${basePath}?semana=${shiftDay(monday, -7)}`} className={buttonGhost}>
-            {t("prevWeek")}
+      {/* Week nav and the one action that changes the week, on the same row —
+          the assign button used to head the tab on a line of its own, which on
+          a phone meant a full screen width spent on one pill. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
+          <Link href={weekHref(shiftDay(monday, -7))} aria-label={t("prevWeek")} className={weekStepButton}>
+            <Icon name="chevron" className="h-4 w-4 rotate-180" />
           </Link>
-          <Link href={`${basePath}?semana=${weekKey()}`} className={buttonGhost}>
-            {t("thisWeek")}
+          <span className={weekRangeLabel}>{weekRange}</span>
+          <Link href={weekHref(shiftDay(monday, 7))} aria-label={t("nextWeek")} className={weekStepButton}>
+            <Icon name="chevron" className="h-4 w-4" />
           </Link>
-          <Link href={`${basePath}?semana=${shiftDay(monday, 7)}`} className={buttonGhost}>
-            {t("nextWeek")}
-          </Link>
-        </nav>
-        <div className="flex flex-wrap items-center gap-2">
-          <form action={repeatAction}>
-            <input type="hidden" name="monday" value={monday} />
-            <SubmitButton variant="ghost" pendingLabel={t("repeatWeek")}>
-              {t("repeatWeek")}
-            </SubmitButton>
-          </form>
-          <AssignPanel workouts={workouts} defaultDate={monday} assignAction={assignAction} />
         </div>
+
+        <AssignWorkoutModal
+          workouts={workouts}
+          defaultDate={monday}
+          assignAction={assignAction}
+          compact
+        />
       </div>
 
-      {repeated != null && repeated > 0 && (
-        <p className={cn(surface, "px-4 py-3 text-sm text-cream/80")}>{t("repeated", { count: repeated })}</p>
-      )}
+      <UnscheduledList
+        assignments={unscheduled}
+        t={t}
+        tWorkouts={tWorkouts}
+        removeAction={removeAction}
+        moveAction={moveAction}
+      />
 
       {assignments.length === 0 ? (
         <Empty title={t("empty")} hint={t("emptyHint")} />
       ) : (
-        <div className="space-y-3">
-          {days.map((date) => (
-            <DayColumn
-              key={date}
-              date={date}
-              assignments={byDate[date] ?? []}
-              locale={locale}
-              isToday={date === today}
-              t={t}
-              tWorkouts={tWorkouts}
-              removeAction={removeAction}
-              markSkippedAction={markSkippedAction}
-              moveAction={moveAction}
-            />
-          ))}
-        </div>
+        <WeekGrid
+          days={days}
+          byDate={byDate}
+          locale={locale}
+          today={today}
+          t={t}
+          tWorkouts={tWorkouts}
+          removeAction={removeAction}
+          markSkippedAction={markSkippedAction}
+          moveAction={moveAction}
+        />
       )}
     </div>
   );

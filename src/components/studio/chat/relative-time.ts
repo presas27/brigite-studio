@@ -10,10 +10,8 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 /**
  * "3h ago" style label for a thread-list preview, in the active locale.
  *
- * Render this in `font-sans`, never `font-mono`. The output is words, not
- * digits — "ontem", "há 3 dias", "last week" — and the mono face is reserved
- * here for things that are actually numeric: counts, clock times, loads, set
- * indices. Words set in Geist Mono read as a code sample sitting in the UI.
+ * The output is words, not digits — "ontem", "há 3 dias", "last week" — so it
+ * sets in the body face like every other label in the app.
  *
  * Returned in sentence case ("Ontem", not "ontem"). Every place this is
  * rendered is a standalone caption rather than a fragment inside a sentence,

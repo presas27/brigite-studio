@@ -3,7 +3,7 @@ import type { ClientSession } from "@/lib/studio/clientConsole";
 import type { Translate } from "@/components/studio/plan/types";
 import { Icon } from "@/components/studio/coach/icons";
 import { eyebrow, muted, surfaceLink } from "@/components/studio/theme";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { StatusChip } from "./SessionStatus";
 
 /** One session as a row: date on the left, name and shape in the middle, status on the right. */
@@ -43,7 +43,7 @@ export function SessionListRow({
           )}
         >
           <span className="font-display text-[1.15rem]">{dayNumber}</span>
-          <span className="mt-0.5 font-sans text-[0.6rem] capitalize opacity-70">{weekday}</span>
+          <span className="mt-0.5 font-sans text-[0.6rem] opacity-70">{weekday}</span>
         </span>
 
         <span className="min-w-0 flex-1">
@@ -51,14 +51,14 @@ export function SessionListRow({
             {session.name}
           </span>
           <span className={cn(muted, "block truncate")}>
-            {[session.focus, t("sessions.items", { count: session.itemCount })]
+            {[capitalize(session.focus), t("sessions.items", { count: session.itemCount })]
               .filter(Boolean)
               .join(" · ")}
           </span>
         </span>
 
         <span className="hidden shrink-0 sm:block">
-          <span className={cn(eyebrow, "font-mono")}>{dateLabel}</span>
+          <span className={eyebrow}>{dateLabel}</span>
         </span>
 
         <StatusChip status={session.status} label={tPlan(`status.${session.status}`)} />

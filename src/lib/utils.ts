@@ -22,7 +22,24 @@ export function searchKey(value: string): string {
     .toLowerCase();
 }
 
-/** Display form for a raw tag: first letter capitalized, rest untouched. */
-export function capitalize(value: string): string {
-  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+/**
+ * Display form for a label: the first *letter* uppercased, everything else
+ * untouched.
+ *
+ * Not `text-transform: capitalize` — CSS treats every hyphen as a word break
+ * and turns "segunda-feira" into "Segunda-Feira", which is wrong in Portuguese.
+ * Skipping non-letters is what makes counted labels work too: "5 exercícios"
+ * becomes "5 Exercícios" and not "5 exercícios".
+ */
+export function capitalize(value: string, locale?: string): string {
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    const upper = char.toLocaleUpperCase(locale);
+    // A character has case when its upper and lower forms differ — true for
+    // letters, false for digits, spaces and punctuation.
+    if (upper !== char.toLocaleLowerCase(locale)) {
+      return value.slice(0, i) + upper + value.slice(i + 1);
+    }
+  }
+  return value;
 }

@@ -1,6 +1,6 @@
 import type { Message } from "@/lib/studio/types";
 import { chip } from "@/components/studio/theme";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { groupThread } from "./group";
 
 /**
@@ -44,7 +44,7 @@ export function MessageThread({
           return (
             <div key={`day-${entry.key}`} className="flex justify-center py-1">
               <span className={cn(chip, "text-[0.7rem] text-cream/45")}>
-                {dayFormatter.format(entry.date)}
+                {capitalize(dayFormatter.format(entry.date), locale)}
               </span>
             </div>
           );
@@ -69,7 +69,7 @@ export function MessageThread({
                 <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{message.body}</p>
               </div>
             ))}
-            <span className="px-1 font-mono text-[0.65rem] text-cream/35">
+            <span className="px-1 font-sans tabular-nums text-[0.65rem] text-cream/35">
               {timeFormatter.format(new Date(last.createdAt))}
             </span>
           </div>

@@ -36,7 +36,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
       themeMode={await getThemeMode()}
       badges={badges}
       alerts={coachAlerts(coach.id)}
-      quickAdd={<AddWorkoutModal />}
+      quickAdd={<AddWorkoutModal compact />}
     >
       {children}
     </CoachChrome>

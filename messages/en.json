@@ -247,7 +247,6 @@
     },
     "aluno": {
       "greeting": "Hi, {name}.",
-      "lead": "Today's session, and what Sara has sent back.",
       "needsYou": "For you",
       "needsYouEmpty": "You're up to date.",
       "needsYouEmptyHint": "Nothing left to train, no check-in to send, nothing unread.",
@@ -257,11 +256,40 @@
       "planTitle": "Plan",
       "planDayEmpty": "Rest day.",
       "planDayEmptyHint": "Nothing scheduled for this day.",
-      "stats": {
-        "weekSessions": "Sessions this week",
-        "adherence": "Adherence (28 days)",
-        "awaitingFeedback": "Clips awaiting feedback",
-        "unreadMessages": "Unread messages"
+      "upNext": "Up next",
+      "upNextEmpty": "Nothing booked after today.",
+      "askSara": "Message Sara",
+      "weekDay": {
+        "done": "{date}: {count, plural, =1 {session done} other {# sessions done}}.",
+        "scheduled": "{date}: {count, plural, =1 {# session to do} other {# sessions to do}}.",
+        "skipped": "{date}: {count, plural, =1 {session missed} other {# sessions missed}}.",
+        "rest": "{date}: rest."
+      },
+      "adherence": {
+        "title": "Adherence · 28 days",
+        "of": "{done} of {total} sessions done",
+        "empty": "No sessions booked in the last month."
+      },
+      "focus": {
+        "title": "This week's focus",
+        "sessions": "Sessions",
+        "other": "Other",
+        "empty": "No sessions booked this week yet.",
+        "aria": "This week's sessions split by focus."
+      },
+      "weight": {
+        "title": "Weight",
+        "up": "{value} kg above your first reading",
+        "down": "{value} kg below your first reading",
+        "flat": "Same as your first reading",
+        "single": "First reading.",
+        "aria": "Weight over time."
+      },
+      "streak": {
+        "title": "Weeks in a row",
+        "weeks": "{count, plural, =1 {# week} other {# weeks}} with the whole plan done",
+        "none": "The count starts on your first complete week.",
+        "hint": "Log your weight and this space shows how it's moving."
       },
       "alert": {
         "session": "You have {name} to do today.",
@@ -291,19 +319,12 @@
       "sessions": {
         "title": "Sessions",
         "lead": "Everything you've done, and everything that's booked.",
-        "count": "{count, plural, =1 {# session} other {# sessions}}",
-        "items": "{count, plural, =1 {# exercise} other {# exercises}}",
-        "blocks": "{count, plural, =1 {# block} other {# blocks}}",
+        "count": "{count, plural, =1 {# Session} other {# Sessions}}",
+        "items": "{count, plural, =1 {# Exercise} other {# Exercises}}",
+        "blocks": "{count, plural, =1 {# Block} other {# Blocks}}",
         "today": "Today",
-        "statusFilter": "Session status",
-        "filter": {
-          "all": "All",
-          "upcoming": "To do",
-          "done": "Done",
-          "skipped": "Missed"
-        },
         "noResults": "No session matches.",
-        "noResultsHint": "Clear the search or pick another status.",
+        "noResultsHint": "Clear the search or pick another focus.",
         "empty": "You have no sessions yet.",
         "emptyHint": "As soon as Sara books the first one, it shows up here.",
         "rangeNote": "Shows the last year and the weeks already booked ahead."
@@ -341,7 +362,7 @@
     "clients": {
       "title": "Clients",
       "lead": "Who you are coaching.",
-      "add": "Client",
+      "add": "New Client",
       "addTitle": "Add client",
       "addLead": "They get an email invite with their sign-in link.",
       "nameLabel": "Name",
@@ -356,7 +377,7 @@
       "duplicateEmail": "An account with that email already exists.",
       "empty": "No clients yet.",
       "emptyHint": "Add the first one and they get their sign-in link by email.",
-      "count": "{count, plural, =1 {# client} other {# clients}}",
+      "count": "{count, plural, =1 {# Client} other {# Clients}}",
       "noResults": "No client matches.",
       "status": {
         "invited": "Invited",
@@ -392,6 +413,7 @@
       "tab": {
         "overview": "Overview",
         "plan": "Plan",
+        "sessions": "Sessions",
         "checkins": "Check-ins",
         "progresso": "Progress",
         "messages": "Messages",
@@ -424,7 +446,7 @@
       "empty": "The library is empty.",
       "emptyHint": "Add the first exercise — a name and cues are enough to start.",
       "archive": "Archive",
-      "count": "{count, plural, =1 {# exercise} other {# exercises}}",
+      "count": "{count, plural, =1 {# Exercise} other {# Exercises}}",
       "noResults": "No exercise matches.",
       "demo": "Watch demo",
       "noCues": "No cues yet.",
@@ -434,7 +456,7 @@
     "workouts": {
       "title": "Workouts",
       "lead": "Reusable blocks you assign to any client.",
-      "add": "Workout",
+      "add": "New Workout",
       "addTitle": "Create workout",
       "nameLabel": "Name",
       "namePlaceholder": "Strength — full body A",
@@ -444,14 +466,18 @@
       "notesPlaceholder": "Warm up for 8 minutes. Film the last set.",
       "empty": "No workouts yet.",
       "emptyHint": "Create a workout and add blocks of exercises to it.",
-      "count": "{count, plural, =1 {# workout} other {# workouts}}",
+      "count": "{count, plural, =1 {# Workout} other {# Workouts}}",
       "noResults": "No workout matches.",
       "noBlocks": "This workout has no blocks yet.",
       "noBlocksHint": "Add a block to start building the workout.",
-      "items": "{count, plural, =1 {# exercise} other {# exercises}}",
+      "items": "{count, plural, =1 {# Exercise} other {# Exercises}}",
+      "editedOn": "Edited {date}",
       "duplicate": "Duplicate",
       "copySuffix": "(copy)",
       "archive": "Archive",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete workout",
+      "deleteConfirmBody": "\"{name}\" will be removed from your workouts list.",
       "addBlock": "Add block",
       "blockKindLabel": "Block type",
       "blockKind": {
@@ -482,7 +508,7 @@
       "removeBlock": "Remove block",
       "blockEmpty": "Empty block. Add an exercise.",
       "details": "Details",
-      "rounds": "{count, plural, =1 {# round} other {# rounds}}"
+      "rounds": "{count, plural, =1 {# Round} other {# Rounds}}"
     },
     "plan": {
       "title": "Plan",
@@ -491,6 +517,7 @@
       "assignTitle": "Assign workout",
       "chooseWorkout": "Workout",
       "dateLabel": "Day",
+      "dateHint": "Leave blank to assign with no day.",
       "noteLabel": "Note for this day",
       "empty": "No workouts this week.",
       "emptyHint": "Assign a workout to a day to start.",
@@ -501,7 +528,10 @@
       "repeated": "{count, plural, =1 {# workout copied} other {# workouts copied}}.",
       "remove": "Remove from plan",
       "move": "Move",
+      "schedule": "Schedule",
       "moveLabel": "New day",
+      "unscheduledTitle": "No day set",
+      "unscheduledHint": "Workouts waiting for a day. Schedule them whenever it fits.",
       "restDay": "Rest",
       "calendar": {
         "viewMonth": "Month",
@@ -510,9 +540,9 @@
         "nextMonth": "Next month",
         "today": "Today",
         "grid": "Training calendar",
-        "sessions": "{count, plural, =0 {no workouts} =1 {# workout} other {# workouts}}",
-        "done": "{count, plural, =1 {# done} other {# done}}",
-        "missed": "{count, plural, =1 {# missed} other {# missed}}",
+        "sessions": "{count, plural, =0 {No workouts} =1 {# Workout} other {# Workouts}}",
+        "done": "{count, plural, =1 {# Done} other {# Done}}",
+        "missed": "{count, plural, =1 {# Missed} other {# Missed}}",
         "emptyMonth": "No workouts this month.",
         "emptyWeek": "No workouts this week.",
         "dayEmpty": "Nothing scheduled.",
@@ -524,7 +554,9 @@
         "skipped": "Missed"
       },
       "markSkipped": "Mark as missed",
-      "studioLead": "Who is training what, this week."
+      "studioLead": "Who is training what, this week.",
+      "effort": "Effort {value}/10",
+      "extraRest": "+{minutes} min rest"
     },
     "session": {
       "title": "Session",
@@ -532,15 +564,8 @@
       "resume": "Resume session",
       "finish": "Finish session",
       "finishing": "Finishing…",
-      "finished": "Session logged. Good work.",
       "skip": "I could not train",
-      "setLabel": "Set {index}",
-      "previous": "Previous: {value}",
-      "noPrevious": "First time",
       "restTimer": "Rest",
-      "startRest": "Start rest",
-      "stopRest": "Stop",
-      "keepScreenOn": "Keep screen on",
       "offlineQueued": "Offline — saved on your phone.",
       "offlineSyncing": "Syncing…",
       "offlineSynced": "Synced.",
@@ -548,18 +573,115 @@
       "watchDemo": "Watch demo",
       "holdSeconds": "Seconds",
       "distanceMeters": "Metres",
-      "summary": "Summary",
-      "doneSets": "{done} of {total} sets",
-      "sendVideo": "Send a video of this set",
       "coachNote": "Note from Sara",
       "todayLead": "What you're training right now.",
-      "todayEmpty": "No session scheduled",
-      "todayEmptyHint": "Ask Sara if you think you should have a session today.",
       "nextUp": "Next session",
       "checkinNudge": "You haven't sent this week's check-in yet. Tap to do it.",
       "planLead": "Your training plan, week by week.",
       "planEmpty": "No sessions this week.",
-      "planEmptyHint": "Rest, or ask Sara about your plan."
+      "planEmptyHint": "Rest, or ask Sara about your plan.",
+      "setOf": "Set {set} of {total}",
+      "roundOf": "Round {round} of {total}",
+      "repeatPrevious": "Repeat {value}",
+      "nextExercise": "Next exercise",
+      "nextSet": "Next set",
+      "addRest": "+{seconds}s",
+      "skipRest": "Skip rest",
+      "nextStep": "Next",
+      "lastSet": "Finish sets",
+      "backToApp": "Back to start",
+      "emptyWorkout": "This workout has no exercises.",
+      "exitTitle": "Stop the session?",
+      "exitLead": "You logged {done} of {total} sets.",
+      "submitWorkout": "Submit session",
+      "leaveForLater": "Leave and come back",
+      "discardWorkout": "Discard log",
+      "discardConfirm": "This erases everything you logged in this session. There is no undo.",
+      "discardYes": "Discard",
+      "discarding": "Discarding…",
+      "keepLogs": "Keep",
+      "skipping": "Saving…",
+      "effortTitle": "How hard was it?",
+      "effortPrompt": "1 to 10",
+      "effortLabel": "Session effort, 1 to 10",
+      "effortValue": "Effort {value}/10",
+      "effortBand": {
+        "light": "Light",
+        "moderate": "Moderate",
+        "hard": "Hard",
+        "max": "All out"
+      },
+      "stopSession": "Stop the session",
+      "saveFailed": "Could not save. Try again.",
+      "setShort": "Set {set}/{total}",
+      "roundShort": "Round {round}/{total}",
+      "startSetShort": "Start",
+      "stopSet": "Stop",
+      "previousStep": "Previous",
+      "openList": "Open the session list",
+      "offlineShort": "Offline",
+      "secondsShort": "Sec",
+      "metersShort": "M",
+      "workTimer": "Time",
+      "extraRestSeconds": "+{seconds}s rest",
+      "extraRestMinutes": "+{minutes} min rest",
+      "goBack": "Go back",
+      "outcome": {
+        "full": {
+          "title": "Session closed",
+          "line": "Nothing left undone. This is how it gets built."
+        },
+        "most": {
+          "title": "Almost all of it",
+          "line": "A little short, and what you did still counts."
+        },
+        "half": {
+          "title": "Half done",
+          "line": "Half is more than none. Close it next time."
+        },
+        "some": {
+          "title": "You started",
+          "line": "Not much, but it's logged. That's where it starts."
+        },
+        "none": {
+          "title": "Nothing logged",
+          "line": "No sets recorded. If you trained, tell Sara."
+        },
+        "skipped": {
+          "title": "Not trained",
+          "line": "It happens. The week goes on."
+        }
+      },
+      "ofSets": "of {total} sets",
+      "statDuration": "Duration",
+      "statVolume": "Volume",
+      "statExtraRest": "Extra rest",
+      "minutes": "{value} min",
+      "doneSets": "{done} of {total} sets"
+    },
+    "report": {
+      "title": "Sessions",
+      "empty": "No sessions logged yet.",
+      "emptyHint": "As soon as this client closes their first workout, it shows up here with everything they logged.",
+      "back": "All sessions",
+      "noDate": "No day",
+      "sets": "{done}/{total} sets",
+      "setsLong": "{done} of {total} sets",
+      "minutes": "{value} min",
+      "effort": "Effort {value}/10",
+      "statDuration": "Duration",
+      "statVolume": "Volume",
+      "statExtraRest": "Extra rest",
+      "itemCount": "{count, plural, =1 {# exercise} other {# exercises}}",
+      "coachNote": "Note for this session",
+      "clientNotes": "Client notes",
+      "noteOn": "{exercise} · set {set}",
+      "notLogged": "Set not logged",
+      "block": {
+        "superset": "Superset",
+        "circuit": "Circuit",
+        "interval": "Intervals"
+      }
     },
     "videos": {
       "title": "Videos",
@@ -616,7 +738,7 @@
       "you": "You",
       "coach": "Sara",
       "threadsTitle": "Threads",
-      "unread": "{count, plural, =1 {# unread} other {# unread}}"
+      "unread": "{count, plural, =1 {# Unread} other {# Unread}}"
     },
     "checkin": {
       "title": "Check-in",
@@ -630,7 +752,6 @@
       "winsPlaceholder": "Held a 20 second handstand.",
       "blockersLabel": "What got in the way",
       "blockersPlaceholder": "Busy week at work, slept badly.",
-      "scaleHint": "1 = very poor · 5 = very good",
       "submit": "Send check-in",
       "submitted": "Check-in sent.",
       "alreadyDone": "You already sent this week's check-in. You can update it.",
@@ -715,16 +836,13 @@
     "overview": {
       "title": "Overview",
       "greeting": "Hi, {name}.",
-      "lead": "The state of the studio, on one screen.",
       "needsYou": "Needs you",
       "needsYouEmpty": "Nothing pending.",
       "needsYouEmptyHint": "No videos to review, check-ins to answer or unread messages. Good work.",
       "viewAll": "View all",
       "stats": {
         "activeClients": "Active clients",
-        "pendingVideos": "Videos to review",
-        "unreadMessages": "Unread messages",
-        "sessionsThisWeek": "Sessions this week"
+        "unreadMessages": "Unread messages"
       },
       "todaySessions": "Today's sessions",
       "todaySessionsEmpty": "Nobody has a session scheduled today.",

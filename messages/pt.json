@@ -247,7 +247,6 @@
     },
     "aluno": {
       "greeting": "Olá, {name}.",
-      "lead": "O teu treino de hoje e o que a Sara já te devolveu.",
       "needsYou": "Para ti",
       "needsYouEmpty": "Estás em dia.",
       "needsYouEmptyHint": "Sem treino por fazer, check-in por enviar ou mensagem por ler.",
@@ -257,11 +256,40 @@
       "planTitle": "Plano",
       "planDayEmpty": "Dia de descanso.",
       "planDayEmptyHint": "Nada marcado para este dia.",
-      "stats": {
-        "weekSessions": "Treinos esta semana",
-        "adherence": "Adesão (28 dias)",
-        "awaitingFeedback": "Vídeos à espera de feedback",
-        "unreadMessages": "Mensagens por ler"
+      "upNext": "A seguir",
+      "upNextEmpty": "Nada marcado depois de hoje.",
+      "askSara": "Falar com a Sara",
+      "weekDay": {
+        "done": "{date}: {count, plural, =1 {treino feito} other {# treinos feitos}}.",
+        "scheduled": "{date}: {count, plural, =1 {# treino por fazer} other {# treinos por fazer}}.",
+        "skipped": "{date}: {count, plural, =1 {treino falhado} other {# treinos falhados}}.",
+        "rest": "{date}: descanso."
+      },
+      "adherence": {
+        "title": "Adesão · 28 dias",
+        "of": "{done} de {total} treinos feitos",
+        "empty": "Sem treinos marcados no último mês."
+      },
+      "focus": {
+        "title": "Foco da semana",
+        "sessions": "Treinos",
+        "other": "Outros",
+        "empty": "A semana ainda não tem treinos marcados.",
+        "aria": "Treinos da semana repartidos por foco."
+      },
+      "weight": {
+        "title": "Peso",
+        "up": "{value} kg acima do primeiro registo",
+        "down": "{value} kg abaixo do primeiro registo",
+        "flat": "Igual ao primeiro registo",
+        "single": "Primeiro registo.",
+        "aria": "Gráfico de peso ao longo do tempo."
+      },
+      "streak": {
+        "title": "Semanas seguidas",
+        "weeks": "{count, plural, =1 {# semana} other {# semanas}} com o plano todo feito",
+        "none": "A contagem começa na primeira semana completa.",
+        "hint": "Regista o teu peso e este espaço passa a mostrar a tua evolução."
       },
       "alert": {
         "session": "Tens {name} para fazer hoje.",
@@ -291,19 +319,12 @@
       "sessions": {
         "title": "Treinos",
         "lead": "Tudo o que já fizeste e o que tens marcado.",
-        "count": "{count, plural, =1 {# treino} other {# treinos}}",
-        "items": "{count, plural, =1 {# exercício} other {# exercícios}}",
-        "blocks": "{count, plural, =1 {# bloco} other {# blocos}}",
+        "count": "{count, plural, =1 {# Treino} other {# Treinos}}",
+        "items": "{count, plural, =1 {# Exercício} other {# Exercícios}}",
+        "blocks": "{count, plural, =1 {# Bloco} other {# Blocos}}",
         "today": "Hoje",
-        "statusFilter": "Estado do treino",
-        "filter": {
-          "all": "Tudo",
-          "upcoming": "Por fazer",
-          "done": "Feitos",
-          "skipped": "Falhados"
-        },
         "noResults": "Nenhum treino corresponde.",
-        "noResultsHint": "Limpa a procura ou escolhe outro estado.",
+        "noResultsHint": "Limpa a procura ou escolhe outro foco.",
         "empty": "Ainda não tens treinos.",
         "emptyHint": "Assim que a Sara marcar o primeiro, aparece aqui.",
         "rangeNote": "Mostra o último ano e as semanas já marcadas à frente."
@@ -341,7 +362,7 @@
     "clients": {
       "title": "Alunos",
       "lead": "Quem estás a acompanhar.",
-      "add": "Aluno",
+      "add": "Novo aluno",
       "addTitle": "Adicionar aluno",
       "addLead": "Recebe um convite por email com o link de acesso.",
       "nameLabel": "Nome",
@@ -356,7 +377,7 @@
       "duplicateEmail": "Já existe uma conta com esse email.",
       "empty": "Ainda não tens alunos.",
       "emptyHint": "Adiciona o primeiro e ele recebe o link de acesso por email.",
-      "count": "{count, plural, =1 {# aluno} other {# alunos}}",
+      "count": "{count, plural, =1 {# Aluno} other {# Alunos}}",
       "noResults": "Nenhum aluno corresponde.",
       "status": {
         "invited": "Convidado",
@@ -392,6 +413,7 @@
       "tab": {
         "overview": "Visão geral",
         "plan": "Plano",
+        "sessions": "Treinos",
         "checkins": "Check-ins",
         "progresso": "Progresso",
         "messages": "Mensagens",
@@ -401,7 +423,7 @@
     "library": {
       "title": "Exercícios",
       "lead": "Os teus exercícios, com os teus cues e os teus vídeos.",
-      "add": "Novo Exercício",
+      "add": "Novo exercício",
       "addTitle": "Adicionar exercício",
       "editTitle": "Editar exercício",
       "nameLabel": "Nome",
@@ -424,7 +446,7 @@
       "empty": "A biblioteca está vazia.",
       "emptyHint": "Adiciona o primeiro exercício — nome e cues bastam para começar.",
       "archive": "Arquivar",
-      "count": "{count, plural, =1 {# exercício} other {# exercícios}}",
+      "count": "{count, plural, =1 {# Exercício} other {# Exercícios}}",
       "noResults": "Nenhum exercício corresponde.",
       "demo": "Ver demo",
       "noCues": "Ainda sem cues.",
@@ -434,7 +456,7 @@
     "workouts": {
       "title": "Treinos",
       "lead": "Blocos reutilizáveis que atribuis a qualquer aluno.",
-      "add": "Treino",
+      "add": "Novo treino",
       "addTitle": "Criar treino",
       "nameLabel": "Nome",
       "namePlaceholder": "Força — corpo inteiro A",
@@ -444,14 +466,18 @@
       "notesPlaceholder": "Aquece 8 minutos antes. Filma a última série.",
       "empty": "Ainda não tens treinos.",
       "emptyHint": "Cria um treino e adiciona-lhe blocos de exercícios.",
-      "count": "{count, plural, =1 {# treino} other {# treinos}}",
+      "count": "{count, plural, =1 {# Treino} other {# Treinos}}",
       "noResults": "Nenhum treino corresponde.",
       "noBlocks": "Este treino ainda não tem blocos.",
       "noBlocksHint": "Adiciona um bloco para começares a construir o treino.",
-      "items": "{count, plural, =1 {# exercício} other {# exercícios}}",
+      "items": "{count, plural, =1 {# Exercício} other {# Exercícios}}",
+      "editedOn": "Editado {date}",
       "duplicate": "Duplicar",
       "copySuffix": "(cópia)",
       "archive": "Arquivar",
+      "delete": "Eliminar",
+      "deleteConfirmTitle": "Eliminar treino",
+      "deleteConfirmBody": "\"{name}\" deixa de aparecer na tua lista de treinos.",
       "addBlock": "Adicionar bloco",
       "blockKindLabel": "Tipo de bloco",
       "blockKind": {
@@ -482,7 +508,7 @@
       "removeBlock": "Remover bloco",
       "blockEmpty": "Bloco vazio. Adiciona um exercício.",
       "details": "Detalhes",
-      "rounds": "{count, plural, =1 {# volta} other {# voltas}}"
+      "rounds": "{count, plural, =1 {# Volta} other {# Voltas}}"
     },
     "plan": {
       "title": "Plano",
@@ -491,6 +517,7 @@
       "assignTitle": "Atribuir treino",
       "chooseWorkout": "Treino",
       "dateLabel": "Dia",
+      "dateHint": "Deixa em branco para atribuir sem dia.",
       "noteLabel": "Nota para este dia",
       "empty": "Semana sem treinos.",
       "emptyHint": "Atribui um treino a um dia para começar.",
@@ -501,7 +528,10 @@
       "repeated": "{count, plural, =1 {# treino copiado} other {# treinos copiados}}.",
       "remove": "Remover do plano",
       "move": "Mover",
+      "schedule": "Agendar",
       "moveLabel": "Novo dia",
+      "unscheduledTitle": "Sem dia definido",
+      "unscheduledHint": "Treinos à espera de um dia. Agenda-os quando fizer sentido.",
       "restDay": "Descanso",
       "calendar": {
         "viewMonth": "Mês",
@@ -510,9 +540,9 @@
         "nextMonth": "Mês seguinte",
         "today": "Hoje",
         "grid": "Calendário de treinos",
-        "sessions": "{count, plural, =0 {sem treinos} =1 {# treino} other {# treinos}}",
-        "done": "{count, plural, =1 {# feito} other {# feitos}}",
-        "missed": "{count, plural, =1 {# falhado} other {# falhados}}",
+        "sessions": "{count, plural, =0 {Sem treinos} =1 {# Treino} other {# Treinos}}",
+        "done": "{count, plural, =1 {# Feito} other {# Feitos}}",
+        "missed": "{count, plural, =1 {# Falhado} other {# Falhados}}",
         "emptyMonth": "Sem treinos este mês.",
         "emptyWeek": "Sem treinos esta semana.",
         "dayEmpty": "Nada marcado.",
@@ -524,7 +554,9 @@
         "skipped": "Falhado"
       },
       "markSkipped": "Marcar como falhado",
-      "studioLead": "Quem está a treinar o quê, esta semana."
+      "studioLead": "Quem está a treinar o quê, esta semana.",
+      "effort": "Esforço {value}/10",
+      "extraRest": "+{minutes} min descanso"
     },
     "session": {
       "title": "Treino",
@@ -532,15 +564,8 @@
       "resume": "Continuar treino",
       "finish": "Terminar treino",
       "finishing": "A terminar…",
-      "finished": "Treino registado. Bom trabalho.",
       "skip": "Não consegui treinar",
-      "setLabel": "Série {index}",
-      "previous": "Anterior: {value}",
-      "noPrevious": "Primeira vez",
       "restTimer": "Descanso",
-      "startRest": "Iniciar descanso",
-      "stopRest": "Parar",
-      "keepScreenOn": "Ecrã sempre ligado",
       "offlineQueued": "Sem rede — guardado no telemóvel.",
       "offlineSyncing": "A sincronizar…",
       "offlineSynced": "Sincronizado.",
@@ -548,18 +573,115 @@
       "watchDemo": "Ver demo",
       "holdSeconds": "Segundos",
       "distanceMeters": "Metros",
-      "summary": "Resumo",
-      "doneSets": "{done} de {total} séries",
-      "sendVideo": "Enviar vídeo desta execução",
       "coachNote": "Nota da Sara",
       "todayLead": "O que tens para treinar agora.",
-      "todayEmpty": "Sem treino agendado",
-      "todayEmptyHint": "Fala com a Sara se achavas que tinhas treino hoje.",
       "nextUp": "Próximo treino",
       "checkinNudge": "Ainda não enviaste o check-in desta semana. Toca para o fazer.",
       "planLead": "O teu plano de treino, semana a semana.",
       "planEmpty": "Semana sem treinos marcados.",
-      "planEmptyHint": "Descansa, ou fala com a Sara sobre o teu plano."
+      "planEmptyHint": "Descansa, ou fala com a Sara sobre o teu plano.",
+      "setOf": "Série {set} de {total}",
+      "roundOf": "Ronda {round} de {total}",
+      "repeatPrevious": "Repetir {value}",
+      "nextExercise": "Próximo exercício",
+      "nextSet": "Próxima série",
+      "addRest": "+{seconds}s",
+      "skipRest": "Saltar descanso",
+      "nextStep": "Seguinte",
+      "lastSet": "Concluir séries",
+      "backToApp": "Voltar ao início",
+      "emptyWorkout": "Este treino não tem exercícios.",
+      "exitTitle": "Parar o treino?",
+      "exitLead": "Registaste {done} de {total} séries.",
+      "submitWorkout": "Submeter treino",
+      "leaveForLater": "Sair e continuar depois",
+      "discardWorkout": "Descartar registos",
+      "discardConfirm": "Apaga tudo o que registaste nesta sessão. Não dá para voltar atrás.",
+      "discardYes": "Descartar",
+      "discarding": "A descartar…",
+      "keepLogs": "Manter",
+      "skipping": "A guardar…",
+      "effortTitle": "Como foi o esforço?",
+      "effortPrompt": "De 1 a 10",
+      "effortLabel": "Esforço da sessão, de 1 a 10",
+      "effortValue": "Esforço {value}/10",
+      "effortBand": {
+        "light": "Leve",
+        "moderate": "Moderado",
+        "hard": "Forte",
+        "max": "Máximo"
+      },
+      "stopSession": "Parar o treino",
+      "saveFailed": "Não deu para guardar. Tenta outra vez.",
+      "setShort": "Série {set}/{total}",
+      "roundShort": "Ronda {round}/{total}",
+      "startSetShort": "Começar",
+      "stopSet": "Parar",
+      "previousStep": "Anterior",
+      "openList": "Ver a lista da sessão",
+      "offlineShort": "Sem rede",
+      "secondsShort": "Seg",
+      "metersShort": "M",
+      "workTimer": "Tempo",
+      "extraRestSeconds": "+{seconds}s de descanso",
+      "extraRestMinutes": "+{minutes} min de descanso",
+      "goBack": "Voltar",
+      "outcome": {
+        "full": {
+          "title": "Treino fechado",
+          "line": "Não ficou nada por fazer. É assim que se constrói."
+        },
+        "most": {
+          "title": "Quase tudo",
+          "line": "Faltou pouco, e o que fizeste conta na mesma."
+        },
+        "half": {
+          "title": "Ficou a meio",
+          "line": "Metade é mais do que nada. Para a próxima fecha-a."
+        },
+        "some": {
+          "title": "Começaste",
+          "line": "Pouco, mas ficou registado. É por onde se começa."
+        },
+        "none": {
+          "title": "Sem registos",
+          "line": "Não ficou nenhuma série registada. Se treinaste, diz à Sara."
+        },
+        "skipped": {
+          "title": "Não treinaste",
+          "line": "Acontece. A semana continua."
+        }
+      },
+      "ofSets": "de {total} séries",
+      "statDuration": "Duração",
+      "statVolume": "Volume",
+      "statExtraRest": "Descanso extra",
+      "minutes": "{value} min",
+      "doneSets": "{done} de {total} séries"
+    },
+    "report": {
+      "title": "Treinos",
+      "empty": "Ainda sem treinos registados.",
+      "emptyHint": "Assim que o aluno fechar o primeiro treino, aparece aqui com tudo o que registou.",
+      "back": "Todos os treinos",
+      "noDate": "Sem dia",
+      "sets": "{done}/{total} séries",
+      "setsLong": "{done} de {total} séries",
+      "minutes": "{value} min",
+      "effort": "Esforço {value}/10",
+      "statDuration": "Duração",
+      "statVolume": "Volume",
+      "statExtraRest": "Descanso extra",
+      "itemCount": "{count, plural, =1 {# exercício} other {# exercícios}}",
+      "coachNote": "Nota para este treino",
+      "clientNotes": "Notas do aluno",
+      "noteOn": "{exercise} · série {set}",
+      "notLogged": "Série não registada",
+      "block": {
+        "superset": "Superset",
+        "circuit": "Circuito",
+        "interval": "Intervalado"
+      }
     },
     "videos": {
       "title": "Vídeos",
@@ -616,7 +738,7 @@
       "you": "Tu",
       "coach": "Sara",
       "threadsTitle": "Conversas",
-      "unread": "{count, plural, =1 {# por ler} other {# por ler}}"
+      "unread": "{count, plural, =1 {# Por ler} other {# Por ler}}"
     },
     "checkin": {
       "title": "Check-in",
@@ -630,7 +752,6 @@
       "winsPlaceholder": "Consegui 20 segundos de parada de mãos.",
       "blockersLabel": "O que atrapalhou",
       "blockersPlaceholder": "Semana cheia no trabalho, dormi mal.",
-      "scaleHint": "1 = muito mau · 5 = muito bom",
       "submit": "Enviar check-in",
       "submitted": "Check-in enviado.",
       "alreadyDone": "Já enviaste o check-in desta semana. Podes atualizar.",
@@ -715,16 +836,13 @@
     "overview": {
       "title": "Resumo",
       "greeting": "Olá, {name}.",
-      "lead": "O estado do estúdio, num ecrã.",
       "needsYou": "Precisa de ti",
       "needsYouEmpty": "Nada pendente.",
       "needsYouEmptyHint": "Sem vídeos por ver, check-ins por responder ou mensagens por ler. Bom trabalho.",
       "viewAll": "Ver tudo",
       "stats": {
         "activeClients": "Alunos ativos",
-        "pendingVideos": "Vídeos por ver",
-        "unreadMessages": "Mensagens por ler",
-        "sessionsThisWeek": "Treinos esta semana"
+        "unreadMessages": "Mensagens por ler"
       },
       "todaySessions": "Treinos de hoje",
       "todaySessionsEmpty": "Ninguém tem treino marcado para hoje.",

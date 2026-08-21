@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
+import { formatWeekday } from "../format";
 import { parseDayKey } from "../plan/date";
 import type { Translate } from "../plan/types";
 import { eyebrow, heading, muted, surface } from "../theme";
@@ -35,7 +36,7 @@ export function DayAgenda({
 }) {
   const byClient = subject === "client";
   const day = parseDayKey(date);
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(day);
+  const weekday = formatWeekday(date, locale);
   const dayMonth = new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
@@ -46,7 +47,7 @@ export function DayAgenda({
   return (
     <aside className={cn(surface, "p-5 xl:sticky xl:top-6")}>
       <div className="flex items-baseline justify-between gap-3">
-        <p className={cn(eyebrow, "capitalize")}>{weekday}</p>
+        <p className={eyebrow}>{weekday}</p>
         {isToday && (
           <span className={cn(eyebrow, "text-accent-ink")}>{t("calendar.today")}</span>
         )}
@@ -84,7 +85,7 @@ export function DayAgenda({
                   </span>
                   <span className="block truncate font-sans text-xs text-cream/55">
                     {[
-                      byClient ? session.workoutName : session.focus,
+                      byClient ? session.workoutName : capitalize(session.focus),
                       session.status !== "scheduled" ? t(`status.${session.status}`) : "",
                     ]
                       .filter(Boolean)

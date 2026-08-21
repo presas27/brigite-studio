@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ClientAlert } from "@/lib/studio/clientConsole";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "../chat/relative-time";
-import { formatDayKey } from "../coach/format";
+import { formatDayKey } from "../format";
 import { Icon } from "../coach/icons";
 import { clientAlertHref, clientAlertKey, clientAlertLabel, CLIENT_ALERT_ICON } from "./alerts";
 
@@ -57,7 +57,7 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
       >
         <Icon name="bell" className="h-5 w-5" />
         {alerts.length > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-mono text-[0.6rem] leading-none text-on-dark ring-2 ring-background">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-sans tabular-nums text-[0.6rem] leading-none text-on-dark ring-2 ring-background">
             {alerts.length > 9 ? "9+" : alerts.length}
           </span>
         )}

@@ -66,6 +66,14 @@ html[data-studio-theme="light"] .studio {
   color: var(--foreground);
 }
 
+/* Trackpad rubber-band bounce scrolls the document a few px past its own
+   content even on a page with nothing to scroll, which is exactly what
+   exposes the near-black `body` beneath `.studio` at the edges. Scoped to
+   app pages only — the marketing site keeps its normal overscroll feel. */
+body:has(.studio) {
+  overscroll-behavior-y: none;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -85,13 +93,25 @@ html[data-studio-theme="light"] .studio {
   --color-on-dark: var(--on-dark);
   --color-ink-hover: var(--ink-hover);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, monospace;
+  /* No webfont: the app speaks Anton and Geist only. Kept as a token so a
+     stray `font-mono` degrades to the system mono instead of breaking. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
 }
 
-* {
-  min-width: 0;
+/*
+ * Flex and grid children default to `min-width: auto`, which refuses to shrink
+ * below their content and is why a long name blows out a row instead of
+ * truncating. Zeroing it globally is the fix — but it has to sit in `@layer
+ * base`: unlayered, it outranks every layered rule in the sheet, including
+ * Tailwind's own `min-w-*` utilities, and silently kills every intentional
+ * minimum width in the app (tab strips that should scroll, badges, fields).
+ */
+@layer base {
+  * {
+    min-width: 0;
+  }
 }
 
 html {

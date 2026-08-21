@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { clearSet, findAssignment, recordSet, setAssignmentStatus, startAssignment } from "@/lib/studio/plan";
+import {
+  clearSet,
+  completeAssignment,
+  discardAssignment,
+  findAssignment,
+  recordSet,
+  setAssignmentStatus,
+  startAssignment,
+} from "@/lib/studio/plan";
 import type { Assignment } from "@/lib/studio/types";
 
 /**
@@ -65,19 +73,46 @@ export async function beginSession(assignmentId: string): Promise<void> {
   revalidatePath(`/app/aluno/treino/${assignment.id}`);
 }
 
-export async function finishSession(assignmentId: string): Promise<void> {
+/**
+ * Close the session. `effort` is the 1-10 the player asks for on the way out —
+ * `null` when she chose not to answer, which is a legitimate answer and not a
+ * reason to refuse the write. `extraRestSeconds` is how much she added to the
+ * prescribed rests, which is Sara's signal that a session was pitched too hard.
+ * A session submitted half-finished is still a session that happened.
+ */
+export async function finishSession(
+  assignmentId: string,
+  input: { effort: number | null; extraRestSeconds: number },
+): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
-  setAssignmentStatus(assignment.id, "done");
-  revalidatePath(`/app/aluno/treino/${assignment.id}`);
-  revalidatePath("/app/aluno");
-  revalidatePath("/app/aluno/plano");
+  const effort =
+    input.effort == null || Number.isNaN(input.effort) ? null : input.effort;
+  const extraRestSeconds = Number.isFinite(input.extraRestSeconds) ? input.extraRestSeconds : 0;
+  completeAssignment(assignment.id, { effort, extraRestSeconds });
+  revalidateSession(assignment.id);
   revalidatePath("/app/aluno/progresso");
 }
 
 export async function skipSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   setAssignmentStatus(assignment.id, "skipped");
-  revalidatePath(`/app/aluno/treino/${assignment.id}`);
+  revalidateSession(assignment.id);
+}
+
+/**
+ * Throw the session away and put it back to never-opened: logs deleted,
+ * `startedAt` cleared, status back to scheduled. Deliberately distinct from
+ * skipping — "I opened this by mistake" and "I could not train this week" are
+ * different facts, and only the second one is Sara's business.
+ */
+export async function discardSession(assignmentId: string): Promise<void> {
+  const assignment = await assignmentFor(assignmentId);
+  discardAssignment(assignment.id);
+  revalidateSession(assignment.id);
+}
+
+function revalidateSession(assignmentId: string): void {
+  revalidatePath(`/app/aluno/treino/${assignmentId}`);
   revalidatePath("/app/aluno");
   revalidatePath("/app/aluno/plano");
 }

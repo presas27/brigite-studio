@@ -26,7 +26,7 @@ export async function VideoQueueRow({ submission }: { submission: Submission }) 
           <source src={`/app/media/${submission.mediaId}`} />
         </video>
       ) : (
-        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-[0.75rem] bg-cream/5 font-mono text-[0.6rem] uppercase text-cream/45">
+        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-[0.75rem] bg-cream/5 font-sans text-[0.6rem] uppercase text-cream/45">
           URL
         </div>
       )}

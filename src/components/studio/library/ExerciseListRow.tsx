@@ -12,7 +12,7 @@ import { ExerciseThumb } from "./ExerciseThumb";
  */
 export function ExerciseListRow({ exercise }: { exercise: Exercise }) {
   const t = useTranslations("Studio.library");
-  const context = [t(`tracking.${exercise.tracking}`), ...exercise.tags.map(capitalize)].join(
+  const context = [t(`tracking.${exercise.tracking}`), ...exercise.tags.map((tag) => capitalize(tag))].join(
     " · ",
   );
 

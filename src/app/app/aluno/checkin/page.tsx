@@ -2,65 +2,17 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { requireClient } from "@/lib/studio/auth";
 import { findCheckin, listCheckins } from "@/lib/studio/coaching";
 import { weekKey } from "@/lib/studio/db";
-import { Empty } from "@/components/studio/Empty";
+import { ArcRating } from "@/components/studio/checkin/ArcRating";
+import { CheckinHistory } from "@/components/studio/checkin/CheckinHistory";
+import { CheckinPanel } from "@/components/studio/checkin/CheckinPanel";
+import { WeightField } from "@/components/studio/checkin/WeightField";
 import { Field } from "@/components/studio/Field";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
-import {
-  chip,
-  eyebrow,
-  field,
-  fieldCompact,
-  heading,
-  muted,
-  surface,
-  surfaceAccent,
-} from "@/components/studio/theme";
+import { field, surface, surfaceAccent } from "@/components/studio/theme";
+import { SCALE_MAX } from "@/lib/studio/scale";
 import { cn } from "@/lib/utils";
 import { submit } from "./actions";
-
-const SCALE_VALUES = [1, 2, 3, 4, 5] as const;
-
-/** One 1-5 scale rendered as tappable pills — no `<select>`, no slider, 44px targets. */
-function ScaleField({
-  name,
-  label,
-  value,
-}: {
-  name: string;
-  label: string;
-  value: number | null | undefined;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <span className={eyebrow}>{label}</span>
-      <div className="flex gap-1.5">
-        {SCALE_VALUES.map((n) => (
-          <label
-            key={n}
-            className={cn(
-              "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full font-mono text-sm text-cream/70 ring-1 ring-cream/15 transition-colors hover:bg-cream/5",
-              "has-checked:bg-butter has-checked:text-ink has-checked:ring-butter",
-            )}
-          >
-            <input type="radio" name={name} value={n} defaultChecked={value === n} className="sr-only" />
-            {n}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** `weekOf` is a `YYYY-MM-DD` Monday key; parsed at noon so no timezone can shift it to another day. */
-function formatWeekLabel(weekOf: string, locale: string): string {
-  const date = new Date(`${weekOf}T12:00:00`);
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Lisbon",
-  }).format(date);
-}
 
 export default async function ClientCheckinPage() {
   const client = await requireClient();
@@ -84,104 +36,65 @@ export default async function ClientCheckinPage() {
         </div>
       )}
 
-      <form action={submit} className={cn(surface, "space-y-6 p-5 sm:p-6")}>
-        <div className="space-y-3">
-          <p className={muted}>{t("scaleHint")}</p>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <ScaleField name="energy" label={t("energyLabel")} value={checkin?.energy} />
-            <ScaleField name="sleep" label={t("sleepLabel")} value={checkin?.sleep} />
-            <ScaleField name="soreness" label={t("sorenessLabel")} value={checkin?.soreness} />
-            <Field label={t("weightLabel")} htmlFor="checkin-weight" hint={common("optional")}>
-              <input
-                id="checkin-weight"
-                name="weightKg"
-                type="number"
-                step="0.1"
-                min="0"
-                inputMode="decimal"
-                defaultValue={checkin?.weightKg ?? ""}
-                className={fieldCompact}
+      <CheckinPanel
+        formLabel={t("title")}
+        historyLabel={t("history")}
+        form={
+          <form action={submit} className={cn(surface, "space-y-7 p-5 sm:p-6")}>
+            <div className="space-y-5">
+              {/* Three dials and the weight box share one row and one column
+                  width, so the four answers read as one instrument. */}
+              <div className="grid grid-cols-2 justify-items-center gap-x-4 gap-y-6 sm:grid-cols-4">
+                <ArcRating name="energy" label={t("energyLabel")} defaultValue={checkin?.energy} />
+                <ArcRating name="sleep" label={t("sleepLabel")} defaultValue={checkin?.sleep} />
+                <ArcRating
+                  name="soreness"
+                  label={t("sorenessLabel")}
+                  defaultValue={checkin?.soreness}
+                />
+                <WeightField
+                  label={t("weightLabel")}
+                  hint={common("optional")}
+                  unit={common("kg")}
+                  defaultValue={checkin?.weightKg}
+                />
+              </div>
+            </div>
+            <Field label={t("winsLabel")} htmlFor="checkin-wins">
+              <textarea
+                id="checkin-wins"
+                name="wins"
+                rows={2}
+                placeholder={t("winsPlaceholder")}
+                defaultValue={checkin?.wins ?? ""}
+                className={field}
               />
             </Field>
-          </div>
-        </div>
-        <Field label={t("winsLabel")} htmlFor="checkin-wins">
-          <textarea
-            id="checkin-wins"
-            name="wins"
-            rows={2}
-            placeholder={t("winsPlaceholder")}
-            defaultValue={checkin?.wins ?? ""}
-            className={field}
+            <Field label={t("blockersLabel")} htmlFor="checkin-blockers">
+              <textarea
+                id="checkin-blockers"
+                name="blockers"
+                rows={2}
+                placeholder={t("blockersPlaceholder")}
+                defaultValue={checkin?.blockers ?? ""}
+                className={field}
+              />
+            </Field>
+            <div className="flex justify-end">
+              <SubmitButton pendingLabel={common("sending")}>{t("submit")}</SubmitButton>
+            </div>
+          </form>
+        }
+        history={
+          <CheckinHistory
+            entries={history}
+            locale={locale}
+            t={t}
+            unit={common("kg")}
+            scaleMax={SCALE_MAX}
           />
-        </Field>
-        <Field label={t("blockersLabel")} htmlFor="checkin-blockers">
-          <textarea
-            id="checkin-blockers"
-            name="blockers"
-            rows={2}
-            placeholder={t("blockersPlaceholder")}
-            defaultValue={checkin?.blockers ?? ""}
-            className={field}
-          />
-        </Field>
-        <SubmitButton pendingLabel={common("sending")}>{t("submit")}</SubmitButton>
-      </form>
-
-      <section className="space-y-3">
-        <h2 className={eyebrow}>{t("history")}</h2>
-        {history.length === 0 ? (
-          <Empty title={t("empty")} hint={t("emptyHint")} />
-        ) : (
-          <ul className="space-y-3">
-            {history.map((entry) => (
-              <li key={entry.id} className={cn(surface, "space-y-3 p-4 sm:p-5")}>
-                <p className={cn(heading, "text-[1.35rem] text-cream")}>
-                  {t("weekOf", { date: formatWeekLabel(entry.weekOf, locale) })}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {entry.energy != null && (
-                    <span className={chip}>
-                      {t("energyLabel")} {entry.energy}
-                    </span>
-                  )}
-                  {entry.sleep != null && (
-                    <span className={chip}>
-                      {t("sleepLabel")} {entry.sleep}
-                    </span>
-                  )}
-                  {entry.soreness != null && (
-                    <span className={chip}>
-                      {t("sorenessLabel")} {entry.soreness}
-                    </span>
-                  )}
-                  {entry.weightKg != null && (
-                    <span className={chip}>
-                      {t("weightLabel")} {entry.weightKg} {common("kg")}
-                    </span>
-                  )}
-                </div>
-                {(entry.wins || entry.blockers) && (
-                  <div className="space-y-1.5">
-                    {entry.wins && <p className={muted}>{entry.wins}</p>}
-                    {entry.blockers && <p className={muted}>{entry.blockers}</p>}
-                  </div>
-                )}
-                <div className="border-t border-cream/10 pt-3">
-                  {entry.reply ? (
-                    <>
-                      <p className={eyebrow}>{t("coachReply")}</p>
-                      <p className="mt-1 font-sans text-sm text-cream/80">{entry.reply}</p>
-                    </>
-                  ) : (
-                    <p className={muted}>{t("awaitingReply")}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        }
+      />
     </div>
   );
 }

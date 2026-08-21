@@ -126,7 +126,7 @@ export function ReviewPlayer({ submission }: { submission: Submission }) {
               <button type="button" onClick={() => stepFrame(-1)} className={buttonGhost}>
                 ◀ 1/30s
               </button>
-              <span className="min-w-[5ch] font-mono text-sm text-cream/85 tabular-nums">
+              <span className="min-w-[5ch] font-sans text-sm text-cream/85 tabular-nums">
                 {formatClipTime(currentMs)}
               </span>
               <button type="button" onClick={() => stepFrame(1)} className={buttonGhost}>
@@ -185,7 +185,7 @@ export function ReviewPlayer({ submission }: { submission: Submission }) {
                   disabled={!pinnable}
                   className="text-left disabled:cursor-default"
                 >
-                  <span className="block font-mono text-xs text-accent-ink underline decoration-caramel/40 underline-offset-2">
+                  <span className="block font-sans tabular-nums text-xs text-accent-ink underline decoration-caramel/40 underline-offset-2">
                     {t("jumpTo", { time: formatClipTime(comment.tMs) })}
                   </span>
                   <span className="font-sans text-sm text-cream/85">{comment.body}</span>

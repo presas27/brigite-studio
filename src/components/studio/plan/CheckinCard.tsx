@@ -37,7 +37,7 @@ export function CheckinCard({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className={cn(heading, "text-lg")}>{t("weekOf", { date: dateLabel })}</p>
         {checkin.weightKg != null && (
-          <p className="font-mono text-sm text-cream/70">
+          <p className="font-sans text-sm text-cream/70">
             {t("weightLabel")} · {checkin.weightKg} kg
           </p>
         )}

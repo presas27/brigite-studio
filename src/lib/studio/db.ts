@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS workouts (
   focus       TEXT NOT NULL DEFAULT '',
   notes       TEXT NOT NULL DEFAULT '',
   archived    INTEGER NOT NULL DEFAULT 0,
-  created_at  INTEGER NOT NULL
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS workout_blocks (
@@ -121,13 +122,15 @@ CREATE TABLE IF NOT EXISTS assignments (
   id          TEXT PRIMARY KEY,
   client_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   workout_id  TEXT REFERENCES workouts(id) ON DELETE SET NULL,
-  date        TEXT NOT NULL,
+  date        TEXT,
   status      TEXT NOT NULL DEFAULT 'scheduled'
               CHECK (status IN ('scheduled', 'done', 'skipped')),
   snapshot    TEXT NOT NULL,
   note        TEXT NOT NULL DEFAULT '',
   started_at  INTEGER,
   done_at     INTEGER,
+  effort      INTEGER CHECK (effort IS NULL OR effort BETWEEN 1 AND 10),
+  extra_rest_seconds INTEGER NOT NULL DEFAULT 0,
   created_at  INTEGER NOT NULL
 );
 
@@ -233,12 +236,93 @@ CREATE INDEX IF NOT EXISTS idx_measurements_client ON measurements (client_id, d
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at);
 `;
 
+/**
+ * `assignments.date` used to be `NOT NULL`; assigning a workout with no day
+ * needs it nullable. `CREATE TABLE IF NOT EXISTS` above no-ops on a database
+ * that already has the old constraint, so a database created before this
+ * change needs the column rebuilt by hand — SQLite has no `ALTER COLUMN`.
+ */
+function migrateAssignmentsNullableDate(handle: DatabaseSync): void {
+  const dateCol = (handle.prepare("PRAGMA table_info(assignments)").all() as { name: string; notnull: number }[]).find(
+    (col) => col.name === "date",
+  );
+  if (!dateCol || dateCol.notnull === 0) return;
+
+  handle.exec(`
+    BEGIN;
+    CREATE TABLE assignments_new (
+      id          TEXT PRIMARY KEY,
+      client_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      workout_id  TEXT REFERENCES workouts(id) ON DELETE SET NULL,
+      date        TEXT,
+      status      TEXT NOT NULL DEFAULT 'scheduled'
+                  CHECK (status IN ('scheduled', 'done', 'skipped')),
+      snapshot    TEXT NOT NULL,
+      note        TEXT NOT NULL DEFAULT '',
+      started_at  INTEGER,
+      done_at     INTEGER,
+      effort      INTEGER CHECK (effort IS NULL OR effort BETWEEN 1 AND 10),
+      extra_rest_seconds INTEGER NOT NULL DEFAULT 0,
+      created_at  INTEGER NOT NULL
+    );
+    INSERT INTO assignments_new
+      SELECT id, client_id, workout_id, date, status, snapshot, note, started_at, done_at, NULL, 0, created_at
+      FROM assignments;
+    DROP TABLE assignments;
+    ALTER TABLE assignments_new RENAME TO assignments;
+    COMMIT;
+  `);
+  // The index above lived on the dropped table; recreate it (and anything else idempotent).
+  handle.exec(SCHEMA);
+}
+
+/**
+ * Two things the session player records that the original table had no room
+ * for: the effort score (1-10) it asks for on the way out, and how much rest
+ * the client added to the coach's prescribed rests — a number Sara reads as a
+ * signal about whether the session was pitched right.
+ *
+ * `CREATE TABLE IF NOT EXISTS` above no-ops on a database that predates either
+ * column, so they go in by hand. SQLite takes `ADD COLUMN` in place, unlike the
+ * `date` rebuild above.
+ */
+function migrateAssignmentsColumns(handle: DatabaseSync): void {
+  const columns = (handle.prepare("PRAGMA table_info(assignments)").all() as { name: string }[]).map(
+    (col) => col.name,
+  );
+  if (!columns.includes("effort")) {
+    handle.exec(
+      "ALTER TABLE assignments ADD COLUMN effort INTEGER CHECK (effort IS NULL OR effort BETWEEN 1 AND 10)",
+    );
+  }
+  if (!columns.includes("extra_rest_seconds")) {
+    handle.exec("ALTER TABLE assignments ADD COLUMN extra_rest_seconds INTEGER NOT NULL DEFAULT 0");
+  }
+}
+
+/**
+ * The workout card shows when a workout was last touched — not just created —
+ * so `CREATE TABLE IF NOT EXISTS` above no-ops on a database that predates the
+ * column, same shape as `migrateAssignmentsEffort`. Existing rows backfill from
+ * `created_at`, the closest honest answer for a workout nobody has edited yet.
+ */
+function migrateWorkoutsUpdatedAt(handle: DatabaseSync): void {
+  const columns = handle.prepare("PRAGMA table_info(workouts)").all() as { name: string }[];
+  if (!columns.some((col) => col.name === "updated_at")) {
+    handle.exec("ALTER TABLE workouts ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0");
+  }
+  handle.exec("UPDATE workouts SET updated_at = created_at WHERE updated_at = 0");
+}
+
 function open(): DatabaseSync {
   mkdirSync(DATA_DIR, { recursive: true });
   const db = new DatabaseSync(DB_PATH);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
   db.exec(SCHEMA);
+  migrateAssignmentsNullableDate(db);
+  migrateAssignmentsColumns(db);
+  migrateWorkoutsUpdatedAt(db);
   return db;
 }
 

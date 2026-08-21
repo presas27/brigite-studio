@@ -4,6 +4,7 @@ import { findWorkout } from "./library";
 import type {
   Assignment,
   AssignmentStatus,
+  ScheduledAssignment,
   SetLog,
   WorkoutSnapshot,
 } from "./types";
@@ -38,24 +39,30 @@ function mapAssignment(row: Row): Assignment {
     id: String(row.id),
     clientId: String(row.client_id),
     workoutId: row.workout_id == null ? null : String(row.workout_id),
-    date: String(row.date),
+    date: row.date == null ? null : String(row.date),
     status: String(row.status) as AssignmentStatus,
     note: String(row.note ?? ""),
     startedAt: row.started_at == null ? null : Number(row.started_at),
     doneAt: row.done_at == null ? null : Number(row.done_at),
+    effort: row.effort == null ? null : Number(row.effort),
+    extraRestSeconds: Number(row.extra_rest_seconds ?? 0),
     createdAt: Number(row.created_at),
     snapshot: parseSnapshot(row.snapshot),
   };
 }
 
 const ASSIGNMENT_COLUMNS =
-  "id, client_id, workout_id, date, status, note, snapshot, started_at, done_at, created_at";
+  "id, client_id, workout_id, date, status, note, snapshot, started_at, done_at, effort, extra_rest_seconds, created_at";
 
-/** Place a workout on a client's calendar, freezing the template as it is now. */
+/**
+ * Place a workout on a client's calendar, freezing the template as it is now.
+ * `date: null` leaves it unscheduled — it lands in the "sem dia" bucket until
+ * the coach assigns it a day.
+ */
 export function assignWorkout(input: {
   clientId: string;
   workoutId: string;
-  date: string;
+  date: string | null;
   note?: string;
 }): string | undefined {
   const workout = findWorkout(input.workoutId);
@@ -91,7 +98,7 @@ export function findAssignment(assignmentId: string): Assignment | undefined {
 }
 
 /** Assignments for a client between two `YYYY-MM-DD` keys, inclusive. */
-export function assignmentsBetween(clientId: string, from: string, to: string): Assignment[] {
+export function assignmentsBetween(clientId: string, from: string, to: string): ScheduledAssignment[] {
   const rows = all<Row>(
     `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
       WHERE client_id = ? AND date BETWEEN ? AND ?
@@ -99,6 +106,17 @@ export function assignmentsBetween(clientId: string, from: string, to: string): 
     clientId,
     from,
     to,
+  );
+  return rows.map(mapAssignment) as ScheduledAssignment[];
+}
+
+/** A client's workouts assigned with no day yet, oldest first. */
+export function unscheduledAssignments(clientId: string): Assignment[] {
+  const rows = all<Row>(
+    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
+      WHERE client_id = ? AND date IS NULL
+      ORDER BY created_at`,
+    clientId,
   );
   return rows.map(mapAssignment);
 }
@@ -111,7 +129,7 @@ export function assignmentsBetween(clientId: string, from: string, to: string): 
 export function studioAssignmentsBetween(
   from: string,
   to: string,
-): (Assignment & { clientName: string })[] {
+): (ScheduledAssignment & { clientName: string })[] {
   const rows = all<Row>(
     `SELECT a.id, a.client_id, a.workout_id, a.date, a.status, a.note, a.snapshot,
             a.started_at, a.done_at, a.created_at, u.name AS client_name
@@ -122,21 +140,23 @@ export function studioAssignmentsBetween(
     from,
     to,
   );
-  return rows.map((row) => ({ ...mapAssignment(row), clientName: String(row.client_name) }));
+  return rows.map((row) => ({ ...mapAssignment(row), clientName: String(row.client_name) })) as (ScheduledAssignment & {
+    clientName: string;
+  })[];
 }
 
-export function assignmentsOn(clientId: string, date: string): Assignment[] {
+export function assignmentsOn(clientId: string, date: string): ScheduledAssignment[] {
   const rows = all<Row>(
     `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
       WHERE client_id = ? AND date = ? ORDER BY created_at`,
     clientId,
     date,
   );
-  return rows.map(mapAssignment);
+  return rows.map(mapAssignment) as ScheduledAssignment[];
 }
 
 /** The client's next unfinished session — today's if there is one, else the soonest ahead. */
-export function nextAssignment(clientId: string, from: string = dayKey()): Assignment | undefined {
+export function nextAssignment(clientId: string, from: string = dayKey()): ScheduledAssignment | undefined {
   const row = get<Row>(
     `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
       WHERE client_id = ? AND date >= ? AND status = 'scheduled'
@@ -144,7 +164,7 @@ export function nextAssignment(clientId: string, from: string = dayKey()): Assig
     clientId,
     from,
   );
-  return row && mapAssignment(row);
+  return row && (mapAssignment(row) as ScheduledAssignment);
 }
 
 /** Completed sessions, newest first. */
@@ -175,13 +195,63 @@ export function startAssignment(assignmentId: string): void {
   );
 }
 
-export function setAssignmentStatus(assignmentId: string, status: AssignmentStatus): void {
+/**
+ * `at` overrides when the session was finished. The app never passes it — a
+ * session is done at the moment it is marked done — but the demo seed builds a
+ * month of history in one boot, and stamping all of it with `Date.now()` would
+ * put four weeks of training in the same second of the activity feed.
+ */
+export function setAssignmentStatus(
+  assignmentId: string,
+  status: AssignmentStatus,
+  at: number = Date.now(),
+): void {
   run(
     "UPDATE assignments SET status = ?, done_at = ? WHERE id = ?",
     status,
-    status === "done" ? Date.now() : null,
+    status === "done" ? at : null,
     assignmentId,
   );
+}
+
+/**
+ * Close a session and record what it cost her: the effort she reported, and how
+ * much rest she took beyond what Sara prescribed. Separate from
+ * `setAssignmentStatus` because only this path has those two answers — marking
+ * a session skipped from the week grid never does.
+ */
+export function completeAssignment(
+  assignmentId: string,
+  input: { effort: number | null; extraRestSeconds: number; at?: number },
+): void {
+  run(
+    `UPDATE assignments
+        SET status = 'done', done_at = ?, effort = ?, extra_rest_seconds = ?
+      WHERE id = ?`,
+    input.at ?? Date.now(),
+    input.effort == null ? null : Math.min(10, Math.max(1, Math.round(input.effort))),
+    Math.max(0, Math.round(input.extraRestSeconds)),
+    assignmentId,
+  );
+}
+
+/**
+ * Throw away everything logged against a session and put it back the way it was
+ * before it was ever opened. This is the client discarding a workout she started
+ * by mistake or abandoned — not the same as skipping it, which is a fact about
+ * the week that Sara needs to see.
+ */
+export function discardAssignment(assignmentId: string): void {
+  tx(() => {
+    run("DELETE FROM set_logs WHERE assignment_id = ?", assignmentId);
+    run(
+      `UPDATE assignments
+          SET status = 'scheduled', started_at = NULL, done_at = NULL,
+              effort = NULL, extra_rest_seconds = 0
+        WHERE id = ?`,
+      assignmentId,
+    );
+  });
 }
 
 /** Copy a whole week of assignments forward by `weeks`. Returns how many landed. */

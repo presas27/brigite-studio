@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ClientSession } from "@/lib/studio/clientConsole";
 import type { Translate } from "@/components/studio/plan/types";
 import { eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { StatusChip } from "./SessionStatus";
 
 /**
@@ -34,16 +34,16 @@ export function SessionCard({
         )}
       >
         <div className="flex items-start justify-between gap-3">
-          <p className={cn(eyebrow, "capitalize")}>{isToday ? t("sessions.today") : dateLabel}</p>
+          <p className={eyebrow}>{isToday ? t("sessions.today") : dateLabel}</p>
           <StatusChip status={session.status} label={tPlan(`status.${session.status}`)} />
         </div>
 
         <div className="min-w-0 flex-1">
           <p className={cn(heading, "line-clamp-2 text-[1.35rem] text-cream")}>{session.name}</p>
-          {session.focus && <p className={cn(muted, "mt-1.5 truncate")}>{session.focus}</p>}
+          {session.focus && <p className={cn(muted, "mt-1.5 truncate")}>{capitalize(session.focus)}</p>}
         </div>
 
-        <p className={cn(eyebrow, "border-t border-cream/10 pt-3 font-mono")}>
+        <p className={cn(eyebrow, "border-t border-cream/10 pt-3")}>
           {t("sessions.items", { count: session.itemCount })} ·{" "}
           {t("sessions.blocks", { count: session.blockCount })}
         </p>

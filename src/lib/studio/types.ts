@@ -92,6 +92,7 @@ export type Workout = {
   notes: string;
   archived: boolean;
   createdAt: number;
+  updatedAt: number;
   blocks: WorkoutBlock[];
 };
 
@@ -103,19 +104,30 @@ export type AssignmentStatus = "scheduled" | "done" | "skipped";
 /**
  * A workout placed on a client's calendar. `snapshot` is the frozen workout as
  * it existed when assigned — editing the template never rewrites history.
+ * `date` is `null` for a workout assigned with no day yet — it sits in the
+ * "sem dia" bucket until the coach schedules it.
  */
 export type Assignment = {
   id: string;
   clientId: string;
   workoutId: string | null;
-  date: string;
+  date: string | null;
   status: AssignmentStatus;
   note: string;
   startedAt: number | null;
   doneAt: number | null;
+  /** Session-level effort, 1-10, answered once when the workout is submitted. */
+  effort: number | null;
+  /** Seconds of rest the client added on top of the prescribed rests. */
+  extraRestSeconds: number;
   createdAt: number;
   snapshot: WorkoutSnapshot;
 };
+
+/** An assignment that has a day. Every query scoped by a date range returns
+ * only these — SQL excludes `NULL` from a `BETWEEN`/`=` comparison — so
+ * callers that read from one of those don't have to null-check the date. */
+export type ScheduledAssignment = Assignment & { date: string };
 
 export type WorkoutSnapshot = {
   name: string;

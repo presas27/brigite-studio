@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { StatusChip } from "@/components/studio/aluno/SessionStatus";
-import { formatDayKey } from "@/components/studio/coach/format";
+import { formatDayKey } from "@/components/studio/format";
 import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
@@ -113,7 +113,7 @@ export default async function AlunoProgressoPage() {
         </h2>
         <p className={cn(heading, "mt-2 flex items-baseline gap-3 text-[2.5rem] sm:text-[3.25rem]")}>
           {t("sessionsDone", { done: stats.done, total: stats.total })}
-          {stats.total > 0 && <span className="font-mono text-lg text-ink/55">{pct}%</span>}
+          {stats.total > 0 && <span className="font-sans tabular-nums text-lg text-ink/55">{pct}%</span>}
         </p>
         {stats.total > 0 && (
           <div
@@ -174,7 +174,7 @@ export default async function AlunoProgressoPage() {
                 {latestWeight.value} {common("kg")}
               </p>
               {delta != null && delta !== 0 && (
-                <p className={cn(eyebrow, "font-mono")}>
+                <p className={eyebrow}>
                   {delta > 0 ? "+" : ""}
                   {delta} {common("kg")} · {t("sinceFirst")}
                 </p>
@@ -215,7 +215,10 @@ export default async function AlunoProgressoPage() {
                       {assignment.snapshot.name}
                     </span>
                     <span className={cn(muted, "block truncate")}>
-                      {[assignment.snapshot.focus, formatDayKey(assignment.date, locale)]
+                      {[
+                        assignment.snapshot.focus,
+                        assignment.date ? formatDayKey(assignment.date, locale) : null,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>

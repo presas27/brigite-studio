@@ -20,16 +20,3 @@ export function mondayOf(key: string): string {
   utc.setUTCDate(utc.getUTCDate() - ((utc.getUTCDay() + 6) % 7));
   return utc.toISOString().slice(0, 10);
 }
-
-/**
- * Short weekday name for a day key.
- *
- * Portuguese abbreviations come back from `Intl` with a trailing period
- * ("seg."); seven of those across a calendar header is seven full stops of
- * noise, so the period goes.
- */
-export function shortWeekday(key: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" })
-    .format(parseDayKey(key))
-    .replace(/\.$/, "");
-}

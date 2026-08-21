@@ -49,7 +49,7 @@ export function CheckinReplyCard({
           <p className={cn(heading, "text-lg")}>{t("weekOf", { date: dateLabel })}</p>
         </div>
         {checkin.weightKg != null && (
-          <p className="font-mono text-sm text-cream/70">
+          <p className="font-sans text-sm text-cream/70">
             {t("weightLabel")} · {checkin.weightKg} kg
           </p>
         )}

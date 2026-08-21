@@ -43,7 +43,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
         themeMode={themeMode}
         badges={badges}
         alerts={coachAlerts(user.id)}
-        quickAdd={<AddWorkoutModal />}
+        quickAdd={<AddWorkoutModal compact />}
       >
         {children}
       </CoachChrome>

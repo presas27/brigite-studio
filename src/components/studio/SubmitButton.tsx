@@ -1,14 +1,14 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { buttonGhost, buttonPrimary } from "./theme";
+import { buttonGhost, buttonPrimary, buttonQuiet } from "./theme";
 import { cn } from "@/lib/utils";
 
 type SubmitButtonProps = {
   children: React.ReactNode;
   /** Shown while the enclosing form is submitting. Falls back to `children`. */
   pendingLabel?: string;
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "ghost" | "quiet";
   className?: string;
   /** Passed through for `<button formAction>` multi-action forms. */
   formAction?: (formData: FormData) => void | Promise<void>;
@@ -16,6 +16,8 @@ type SubmitButtonProps = {
   value?: string;
   disabled?: boolean;
 };
+
+const VARIANT = { primary: buttonPrimary, ghost: buttonGhost, quiet: buttonQuiet } as const;
 
 /**
  * Submit control that disables itself and swaps its label while the server
@@ -41,7 +43,7 @@ export function SubmitButton({
       value={value}
       disabled={pending || disabled}
       aria-busy={pending}
-      className={cn(variant === "primary" ? buttonPrimary : buttonGhost, className)}
+      className={cn(VARIANT[variant], className)}
     >
       {pending && pendingLabel ? pendingLabel : children}
     </button>

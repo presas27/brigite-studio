@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { formatDayKey } from "@/components/studio/coach/format";
+import { formatDayKey } from "@/components/studio/format";
 import { chip, chipAccent, muted, surfaceLink } from "@/components/studio/theme";
 import type { Client } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";

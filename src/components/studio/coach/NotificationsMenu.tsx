@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { CoachAlert } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ALERT_ICON, alertHref } from "./alerts";
-import { formatDayKey } from "./format";
+import { formatDayKey } from "../format";
 import { relativeTime } from "../chat/relative-time";
 import { Icon } from "./icons";
 
@@ -72,7 +72,7 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
       >
         <Icon name="bell" className="h-5 w-5" />
         {alerts.length > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-mono text-[0.6rem] leading-none text-on-dark ring-2 ring-background">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-silk px-0.5 font-sans tabular-nums text-[0.6rem] leading-none text-on-dark ring-2 ring-background">
             {alerts.length > 9 ? "9+" : alerts.length}
           </span>
         )}

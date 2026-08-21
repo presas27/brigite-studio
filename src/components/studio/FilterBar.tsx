@@ -9,8 +9,13 @@ import { cn } from "@/lib/utils";
 
 /**
  * The filter row every browsable list in the app shares: live text search,
- * a searchable category dropdown, and a grid/list switch. The search box
- * takes whatever width the category dropdown and view toggle leave it.
+ * a searchable category dropdown, and a grid/list switch.
+ *
+ * One line from `sm` up, where the search box takes whatever the dropdown and
+ * the toggle leave it. On a phone that leftover is about 80px — a search field
+ * too narrow to read its own placeholder — so the search takes the full first
+ * line and the two controls wrap underneath it, the toggle pushed to the far
+ * edge to bracket the row.
  */
 export function FilterBar({
   query,
@@ -32,8 +37,8 @@ export function FilterBar({
   const common = useTranslations("Studio.common");
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="relative flex-1">
+    <div className="flex flex-wrap items-center gap-2.5">
+      <div className="relative w-full sm:w-auto sm:flex-1">
         <Icon
           name="search"
           className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cream/40"
@@ -54,7 +59,9 @@ export function FilterBar({
         onChangeAction={onCategoryChangeAction}
       />
 
-      <ViewToggle view={view} onChangeAction={onViewChangeAction} />
+      <div className="ml-auto sm:ml-0">
+        <ViewToggle view={view} onChangeAction={onViewChangeAction} />
+      </div>
     </div>
   );
 }

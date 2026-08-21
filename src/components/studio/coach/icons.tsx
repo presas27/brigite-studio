@@ -19,6 +19,7 @@ const PATHS: Record<string, string> = {
   dumbbell: "M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10",
   bell: "M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9ZM10 18a2 2 0 0 0 4 0",
   plus: "M12 5v14M5 12h14",
+  check: "m5 12.6 4.6 4.6L19 8",
   chevron: "m9 6 6 6-6 6",
   arrowLeft: "M20 12H4.5M11 5l-7 7 7 7",
   grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
@@ -34,6 +35,11 @@ const PATHS: Record<string, string> = {
   panelLeftOpen:
     "M6.5 4.5H17.5A3 3 0 0 1 20.5 7.5V16.5A3 3 0 0 1 17.5 19.5H6.5A3 3 0 0 1 3.5 16.5V7.5A3 3 0 0 1 6.5 4.5ZM9 4.5V19.5M13.5 9.5 16 12 13.5 14.5",
   close: "M6 6l12 12M18 6 6 18",
+  // The set's own transport, for an exercise measured in seconds. Drawn as
+  // outlines like everything else here rather than the solid glyphs a media
+  // player uses — a filled triangle in this set reads as a different family.
+  play: "M9 6.2 17.8 12 9 17.8Z",
+  pause: "M9.5 6v12M14.5 6v12",
   // Six teeth on a true 60° grid: flanks step out from a 5.9 root circle to an
   // 8.5 tip circle, hub at 2.7. Fewer, wider teeth survive the 16px rendering.
   settings:
@@ -50,6 +56,11 @@ const PATHS: Record<string, string> = {
   // plain rectangle at small sizes, so they are part of the glyph, not detail.
   ruler:
     "M3.1 15.3 15.3 3.1a1.4 1.4 0 0 1 2 0l3.6 3.6a1.4 1.4 0 0 1 0 2L8.7 20.9a1.4 1.4 0 0 1-2 0l-3.6-3.6a1.4 1.4 0 0 1 0-2ZM7 11.4l2.2 2.2M10.2 8.2l2.2 2.2M13.4 5l2.2 2.2",
+  // History: a clock the arrow winds backwards. The near-full ring leaves a gap
+  // on the left exactly wide enough for the arrow head, so the two read as one
+  // gesture rather than a clock with a tick stuck to it.
+  history:
+    "M4.4 8.6A8.5 8.5 0 1 1 3.5 12.4M4.4 8.6 3.5 4.2M4.4 8.6 8.8 7.7M12 7.6V12l3.4 2",
   flame: "M12.5 3c.4 2.6-.6 4.2-1.9 5.4-1.5 1.4-2.6 2.8-2.6 4.6a5 5 0 0 0 10 0c0-3.4-2.3-5.9-5.5-10ZM12 20a2.4 2.4 0 0 0 2.4-2.4c0-1.4-2.4-3.1-2.4-3.1s-2.4 1.7-2.4 3.1A2.4 2.4 0 0 0 12 20Z",
 };
 

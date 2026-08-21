@@ -29,7 +29,7 @@ export function SignInForm() {
         <p className="font-sans text-base font-semibold text-cream">{t("sentTitle")}</p>
         <p className={`mt-2 ${muted}`}>{t("sentLead")}</p>
         {state.devUrl && (
-          <p className="mt-4 border-t border-cream/10 pt-4 font-mono text-xs break-all text-accent-ink">
+          <p className="mt-4 border-t border-cream/10 pt-4 font-sans text-xs break-all text-accent-ink">
             <span className="mb-1 block text-cream/45">{t("devLink")}</span>
             <a className="underline" href={state.devUrl}>
               {state.devUrl}

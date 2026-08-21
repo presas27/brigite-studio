@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { measurements } from "@/lib/studio/coaching";
 import { bmiCategory, formatSigned, mergeBodyMetrics } from "@/lib/studio/bodyMetrics";
 import { Empty } from "@/components/studio/Empty";
+import { formatDayKey } from "@/components/studio/format";
 import {
   chip,
   eyebrow,
@@ -24,7 +25,6 @@ export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
   const weightEntries = measurements(clientId, "weight", HISTORY_LIMIT);
   const heightEntries = measurements(clientId, "height", HISTORY_LIMIT);
   const entries = mergeBodyMetrics(weightEntries, heightEntries);
-  const dateFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
 
   const latest = entries[0];
   const weightDeltaKg =
@@ -64,7 +64,7 @@ export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
                 className={cn(surface, "flex flex-wrap items-center justify-between gap-3 p-4")}
               >
                 <span className="font-sans text-sm font-semibold text-cream">
-                  {dateFormat.format(new Date(`${entry.date}T12:00:00`))}
+                  {formatDayKey(entry.date, locale)}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {entry.weightKg != null && (

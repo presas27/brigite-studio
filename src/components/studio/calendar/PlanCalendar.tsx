@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
-import { parseDayKey, shortWeekday } from "../plan/date";
+import { formatMonth, shortWeekday } from "../format";
+import { parseDayKey } from "../plan/date";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
 import { DayAgenda } from "./DayAgenda";
@@ -107,10 +108,7 @@ export function PlanCalendar({
   const scheduled = visible.length - done - skipped;
 
   const anchor = parseDayKey(isMonth ? `${month}-01` : days[0]);
-  const monthName = new Intl.DateTimeFormat(locale, {
-    month: "long",
-    timeZone: "UTC",
-  }).format(anchor);
+  const monthName = formatMonth(isMonth ? month : days[0], locale);
   // Beside the month name, a week inside one month only needs its day numbers
   // ("17 – 23"); a week that straddles two carries the months too. `formatRange`
   // writes both the way each locale does.
@@ -181,7 +179,7 @@ export function PlanCalendar({
           <div className="min-w-0">
             {eyebrowLabel && <p className={eyebrow}>{eyebrowLabel}</p>}
             <h1 className={cn(heading, "flex flex-wrap items-baseline gap-x-3", eyebrowLabel && "mt-1.5")}>
-              <span className="text-[2.25rem] capitalize sm:text-[2.75rem]">{monthName}</span>
+              <span className="text-[2.25rem] sm:text-[2.75rem]">{monthName}</span>
               <span className={cn(eyebrow, "text-sm normal-case tracking-normal")}>{period}</span>
             </h1>
           </div>
@@ -249,7 +247,7 @@ export function PlanCalendar({
           {isMonth && (
             <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
               {days.slice(0, 7).map((date) => (
-                <p key={date} className={cn(eyebrow, "truncate px-1.5 capitalize sm:px-2")}>
+                <p key={date} className={cn(eyebrow, "truncate px-1.5 sm:px-2")}>
                   {shortWeekday(date, locale)}
                 </p>
               ))}

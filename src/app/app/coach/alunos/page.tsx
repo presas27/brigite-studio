@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AddClientModal } from "@/components/studio/coach/AddClientModal";
 import { ClientLibrary } from "@/components/studio/coach/ClientLibrary";
 import type { ClientRow } from "@/components/studio/coach/ClientListRow";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
-import { chip, chipAccent } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
 import { assignmentHistory, adherence } from "@/lib/studio/plan";
 import type { PlanId } from "@/lib/studio/types";
@@ -47,15 +45,6 @@ export default async function ClientsPage({
   return (
     <div className="space-y-8">
       <PageHeader title={t("title")} action={<AddClientModal />} />
-
-      <div className="flex flex-wrap gap-2">
-        <Link href="/app/coach/alunos" className={showArchived ? chip : chipAccent}>
-          {t("status.active")}
-        </Link>
-        <Link href="/app/coach/alunos?arquivados=1" className={showArchived ? chipAccent : chip}>
-          {t("status.archived")}
-        </Link>
-      </div>
 
       {clients.length === 0 ? (
         <Empty title={t("empty")} hint={t("emptyHint")} />
