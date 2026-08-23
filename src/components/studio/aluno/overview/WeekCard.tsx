@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 /** The ring, by what the day turned out to be. `rest` is a day with nothing on it. */
 const RING: Record<AssignmentStatus | "rest", string> = {
-  done: "bg-caramel text-ink",
+  done: "bg-accent-fill text-ink",
   scheduled: "text-cream/70 ring-1 ring-cream/20",
   skipped: "text-cream/45 ring-1 ring-silk/55",
   rest: "text-cream/25",
@@ -55,7 +55,7 @@ export async function WeekCard({
         </h2>
         <Link
           href="/app/aluno/plano"
-          className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-butter"
+          className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-cream"
         >
           {t("viewPlan")}
         </Link>
@@ -86,7 +86,7 @@ export async function WeekCard({
                     // Today keeps its own mark whatever the status underneath —
                     // an offset ring, so it reads on the gold fill too.
                     isToday &&
-                      "ring-2 ring-caramel ring-offset-2 ring-offset-ink-lift",
+                      "ring-2 ring-accent-ink ring-offset-2 ring-offset-ink-lift",
                   )}
                 >
                   {day.status === "done" ? (

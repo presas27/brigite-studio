@@ -91,7 +91,7 @@ export function TestimonialBanner() {
   return (
     <section
       ref={scope}
-      className="grain relative overflow-hidden bg-[linear-gradient(170deg,#d9a05b,#c98e4c)] py-24 text-ink md:py-36"
+      className="gradient-band grain relative overflow-hidden py-24 text-ink md:py-36"
     >
       <div
         ref={markRef}

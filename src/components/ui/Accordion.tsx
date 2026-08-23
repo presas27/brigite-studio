@@ -50,11 +50,11 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
               >
                 <span
                   aria-hidden
-                  className="font-display text-3xl leading-none text-caramel md:text-4xl"
+                  className="font-display text-3xl leading-none text-bronze md:text-4xl"
                 >
                   {i + 1}
                 </span>
-                <span className="font-display text-xl uppercase tracking-wide text-cream transition-colors duration-200 group-hover:text-butter md:text-2xl">
+                <span className="font-display text-xl uppercase tracking-wide text-cream transition-colors duration-200 group-hover:text-accent-ink md:text-2xl">
                   {item.q}
                 </span>
                 <svg
@@ -66,7 +66,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className={cn(
-                    "h-4 w-4 self-center justify-self-end text-caramel transition-transform duration-300 ease-out motion-reduce:transition-none",
+                    "h-4 w-4 self-center justify-self-end text-bronze transition-transform duration-300 ease-out motion-reduce:transition-none",
                     isOpen && "-rotate-180",
                   )}
                 >

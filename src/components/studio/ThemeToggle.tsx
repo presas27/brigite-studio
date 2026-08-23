@@ -85,7 +85,7 @@ export function ThemeToggle({ initial, className }: { initial: ThemeMode; classN
       whileHover={{ scale: 1.04, rotate: isLight ? -8 : 8 }}
       whileTap={{ scale: 0.94 }}
       className={cn(
-        "group relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-cream/70 ring-1 ring-cream/12 transition-colors hover:text-cream hover:ring-cream/25 focus-visible:ring-2 focus-visible:ring-caramel/70 focus-visible:outline-none",
+        "group relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-cream/70 ring-1 ring-cream/12 transition-colors hover:text-cream hover:ring-cream/25 focus-visible:ring-2 focus-visible:ring-accent-ink/70 focus-visible:outline-none",
         className,
       )}
     >

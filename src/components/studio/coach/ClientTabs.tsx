@@ -82,7 +82,7 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
                   <span
                     className={cn(
                       "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none",
-                      active ? "bg-caramel text-ink" : "bg-caramel/20 text-accent-ink",
+                      active ? "bg-accent-fill text-ink" : "bg-caramel/20 text-accent-ink",
                     )}
                   >
                     {tab.badge}
@@ -92,7 +92,7 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
                   aria-hidden
                   className={cn(
                     "absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-colors sm:inset-x-3",
-                    active ? "bg-caramel" : "bg-transparent",
+                    active ? "bg-accent-ink" : "bg-transparent",
                   )}
                 />
               </Link>

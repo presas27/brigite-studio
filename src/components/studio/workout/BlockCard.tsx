@@ -99,7 +99,7 @@ export function BlockCard({
             <span
               aria-hidden
               className={cn(
-                "absolute inset-y-0.5 left-0.5 w-[5.5rem] rounded-full bg-caramel transition-transform duration-300 ease-out motion-reduce:transition-none",
+                "absolute inset-y-0.5 left-0.5 w-[5.5rem] rounded-full bg-accent-ink transition-transform duration-300 ease-out motion-reduce:transition-none",
                 circuit ? "translate-x-full" : "translate-x-0",
               )}
             />

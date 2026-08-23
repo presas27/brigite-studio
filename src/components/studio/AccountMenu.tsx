@@ -63,7 +63,7 @@ export function AccountMenu({
         aria-expanded={open}
         className="flex items-center gap-2.5 rounded-full bg-cream/5 py-1.5 pr-2.5 pl-1.5 ring-1 ring-cream/12 transition-colors hover:bg-cream/8 hover:ring-cream/25"
       >
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-caramel font-sans text-xs font-semibold text-ink">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-fill font-sans text-xs font-semibold text-ink">
           {name.trim().charAt(0).toUpperCase()}
         </span>
         <span className="hidden max-w-[10rem] truncate font-sans text-sm text-cream/85 sm:inline">
@@ -86,7 +86,7 @@ export function AccountMenu({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(20,16,12,0.65)]"
+            className="absolute right-0 z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)]"
           >
             <div className="border-b border-cream/10 px-4 py-3.5">
               <p className="truncate font-sans text-sm font-semibold text-cream">{name}</p>

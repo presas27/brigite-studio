@@ -50,7 +50,7 @@ export function CountdownRing({
           strokeDashoffset={RING_LENGTH * (1 - progress)}
           className={cn(
             "transition-[stroke-dashoffset] duration-200 ease-linear",
-            running ? "stroke-caramel" : "stroke-cream/25",
+            running ? "stroke-accent-ink" : "stroke-cream/25",
           )}
         />
       </svg>

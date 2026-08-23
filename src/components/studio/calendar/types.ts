@@ -43,7 +43,7 @@ export type SessionsByDay = Record<string, CalendarSession[]>;
  * the status survives being read in greyscale.
  */
 export const STATUS_MARK: Record<AssignmentStatus, string> = {
-  done: "bg-caramel",
+  done: "bg-accent-ink",
   scheduled: "bg-cream/30",
   skipped: "bg-silk",
 };

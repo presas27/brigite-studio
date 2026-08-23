@@ -36,7 +36,7 @@ export function StepProgress({
     return (
       <span aria-hidden className="block h-[3px] w-full overflow-hidden rounded-full bg-cream/12">
         <span
-          className="block h-full rounded-full bg-caramel transition-[width] duration-500 ease-out"
+          className="block h-full rounded-full bg-accent-ink transition-[width] duration-500 ease-out"
           style={{ width: `${percent}%` }}
         />
       </span>
@@ -58,8 +58,8 @@ export function StepProgress({
             key={step.key}
             className={cn(
               "flex-1 rounded-[2px] transition-[height,background-color] duration-300",
-              current ? "h-2.5 bg-caramel" : "h-1.5",
-              !current && logged && "bg-caramel/70",
+              current ? "h-2.5 bg-accent-ink" : "h-1.5",
+              !current && logged && "bg-accent-ink/70",
               !current && !logged && passed && "bg-cream/25",
               !current && !logged && !passed && "bg-cream/15",
               index > 0 && (newBlock ? "ml-2.5" : newExercise ? "ml-1.5" : "ml-[3px]"),

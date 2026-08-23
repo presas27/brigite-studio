@@ -174,7 +174,7 @@ export function EffortDial({
             pathLength={ARC_LENGTH}
             strokeDasharray={ARC_LENGTH}
             strokeDashoffset={ARC_LENGTH}
-            className="stroke-caramel"
+            className="stroke-accent-ink"
           />
 
           {Array.from({ length: MAX - MIN + 1 }, (_, index) => {

@@ -9,8 +9,8 @@ type ButtonProps = {
 };
 
 const variants = {
-  cream: "bg-butter text-ink hover:bg-[#efe0c8]",
-  dark: "bg-ink text-cream hover:bg-[#241b13]",
+  cream: "bg-butter text-on-primary hover:bg-primary-hover",
+  dark: "bg-ink text-cream hover:bg-ink-hover",
 };
 
 /**

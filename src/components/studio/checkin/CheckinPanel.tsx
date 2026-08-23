@@ -26,7 +26,7 @@ function ViewTab({
       aria-pressed={active}
       className={cn(
         "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-        active ? "bg-butter text-ink" : "text-cream/55 hover:bg-cream/5 hover:text-cream",
+        active ? "bg-butter text-on-primary" : "text-cream/55 hover:bg-cream/5 hover:text-cream",
       )}
     >
       <Icon name={icon} className="h-[1.15rem] w-[1.15rem]" />

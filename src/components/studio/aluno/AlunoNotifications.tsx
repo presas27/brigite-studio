@@ -71,7 +71,7 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 z-50 mt-2 w-[min(90vw,22rem)] origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(20,16,12,0.65)]"
+            className="absolute right-0 z-50 mt-2 w-[min(90vw,22rem)] origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)]"
           >
             <p className="border-b border-cream/10 px-4 py-3 font-sans text-sm font-semibold text-cream">
               {t("needsYou")}
@@ -117,7 +117,7 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
                 href="/app/aluno"
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "block border-t border-cream/10 px-4 py-2.5 text-center font-sans text-xs text-accent-ink transition-colors hover:text-butter",
+                  "block border-t border-cream/10 px-4 py-2.5 text-center font-sans text-xs text-accent-ink transition-colors hover:text-cream",
                 )}
               >
                 {t("viewAll")}

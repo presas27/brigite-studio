@@ -36,13 +36,13 @@ const copy = {
 } as const;
 
 function layout(name: string, lead: string, url: string, cta: string, ignore: string): string {
-  return `<div style="margin:0;padding:32px 16px;background:#14100c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
-  <div style="max-width:480px;margin:0 auto;background:#1d1712;border-radius:20px;padding:32px;color:#faf5ec">
-    <p style="margin:0 0 24px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9a7a58">Brigite's Studio</p>
+  return `<div style="margin:0;padding:32px 16px;background:#121114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <div style="max-width:480px;margin:0 auto;background:#1c1a1e;border-radius:20px;padding:32px;color:#efe3d8">
+    <p style="margin:0 0 24px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9e8375">Brigite's Studio</p>
     <p style="margin:0 0 8px;font-size:20px;line-height:1.3">Olá, ${name}.</p>
-    <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:rgba(250,245,236,.75)">${lead}</p>
-    <a href="${url}" style="display:inline-block;background:#f5e9d6;color:#14100c;text-decoration:none;font-weight:600;font-size:15px;padding:14px 28px;border-radius:999px">${cta}</a>
-    <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:rgba(250,245,236,.45)">${ignore}</p>
+    <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:rgba(239,227,216,.75)">${lead}</p>
+    <a href="${url}" style="display:inline-block;background:#efe3d8;color:#121114;text-decoration:none;font-weight:600;font-size:15px;padding:14px 28px;border-radius:999px">${cta}</a>
+    <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:rgba(239,227,216,.45)">${ignore}</p>
   </div>
 </div>`;
 }

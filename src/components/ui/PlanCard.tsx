@@ -26,7 +26,7 @@ export function PlanCard({
       className={cn(
         "relative flex h-full min-h-[26rem] flex-col rounded-[1.25rem] p-8 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
         featured
-          ? "gradient-caramel grain overflow-hidden text-ink hover:shadow-[0_32px_64px_-24px_rgba(217,160,91,0.25)]"
+          ? "gradient-band grain overflow-hidden text-ink hover:shadow-[0_32px_64px_-24px_rgba(198,179,160,0.28)]"
           : "bg-ink-lift text-cream ring-1 ring-cream/10 hover:-translate-y-1 hover:ring-cream/20",
       )}
     >
@@ -50,7 +50,7 @@ export function PlanCard({
             <SolMark
               className={cn(
                 "mt-1 h-2.5 w-2.5 shrink-0",
-                featured ? "text-brown-deep/70" : "text-caramel/60",
+                featured ? "text-brown-deep/70" : "text-accent-ink/70",
               )}
             />
             {bullet}

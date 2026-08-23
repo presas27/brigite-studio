@@ -78,7 +78,7 @@ export function ExerciseCard({
         className={cn(
           "group relative rounded-[1rem] bg-cream/[0.04] p-2 ring-1 transition",
           dragging ? "opacity-40" : "opacity-100",
-          over ? "ring-2 ring-caramel" : "ring-cream/10 hover:ring-cream/25",
+          over ? "ring-2 ring-accent-ink" : "ring-cream/10 hover:ring-cream/25",
         )}
       >
         <button

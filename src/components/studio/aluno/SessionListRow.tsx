@@ -39,7 +39,7 @@ export function SessionListRow({
         <span
           className={cn(
             "grid h-12 w-12 shrink-0 place-content-center rounded-[0.9rem] text-center leading-none",
-            isToday ? "bg-caramel text-ink" : "bg-cream/5 text-cream/70 ring-1 ring-cream/10",
+            isToday ? "bg-accent-fill text-ink" : "bg-cream/5 text-cream/70 ring-1 ring-cream/10",
           )}
         >
           <span className="font-display text-[1.15rem]">{dayNumber}</span>

@@ -98,7 +98,7 @@ export function SessionReportView({
           >
             <span
               aria-hidden
-              className="block h-full rounded-full bg-caramel"
+              className="block h-full rounded-full bg-accent-ink"
               style={{ width: `${ratio * 100}%` }}
             />
           </div>

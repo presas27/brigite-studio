@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  */
 
 const DOT: Record<AssignmentStatus, string> = {
-  done: "bg-caramel",
+  done: "bg-accent-ink",
   scheduled: "ring-1 ring-inset ring-cream/25",
   skipped: "bg-silk/75",
 };

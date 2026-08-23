@@ -365,7 +365,7 @@ export function SessionPlayer({
                 aria-hidden
                 className={cn(
                   "h-1.5 w-1.5 shrink-0 rounded-full",
-                  syncStatus === "synced" ? "bg-caramel" : "animate-pulse bg-butter",
+                  syncStatus === "synced" ? "bg-accent-ink" : "animate-pulse bg-butter",
                 )}
               />
               {syncStatus === "queued" && t("offlineShort")}
@@ -389,7 +389,7 @@ export function SessionPlayer({
             type="button"
             onClick={() => setListOpen(true)}
             aria-label={t("openList")}
-            className="hidden min-w-0 flex-1 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-caramel md:order-2 md:block"
+            className="hidden min-w-0 flex-1 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink md:order-2 md:block"
           >
             <StepProgress steps={steps} currentIndex={index} isLogged={isLogged} />
           </button>

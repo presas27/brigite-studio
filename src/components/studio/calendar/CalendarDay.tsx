@@ -86,7 +86,7 @@ export function CalendarDay({
       style={{ animationDelay: `${((index % 7) + Math.floor(index / 7)) * STAGGER_MS}ms` }}
       className={cn(
         "plan-cell group flex flex-col rounded-[0.9rem] text-left outline-none ring-1 transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-caramel",
+        "focus-visible:ring-2 focus-visible:ring-accent-ink",
         isMonth
           ? "min-h-[4.5rem] gap-1 p-1.5 sm:min-h-[6.75rem] sm:gap-1.5 sm:p-2"
           : "min-h-[7rem] gap-2 p-3 sm:min-h-[16rem]",
@@ -103,7 +103,7 @@ export function CalendarDay({
             isMonth
               ? "h-[1.4rem] w-[1.4rem] text-[0.8rem] sm:h-6 sm:w-6 sm:text-[0.95rem]"
               : "h-7 w-7 text-[1.05rem]",
-            isToday ? "bg-caramel text-ink" : "text-cream/70 group-hover:text-cream",
+            isToday ? "bg-accent-fill text-ink" : "text-cream/70 group-hover:text-cream",
           )}
         >
           {dayNumber}

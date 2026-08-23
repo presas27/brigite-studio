@@ -141,7 +141,7 @@ export function ContactForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-7 w-full rounded-full bg-butter py-3.5 font-sans text-base font-semibold text-ink transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-7 w-full rounded-full bg-butter py-3.5 font-sans text-base font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? t("sending") : t("submit")}
       </button>

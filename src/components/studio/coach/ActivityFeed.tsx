@@ -51,7 +51,7 @@ export async function ActivityFeed({ items }: { items: ActivityItem[] }) {
                   className={cn(
                     "mt-px grid h-7 w-7 shrink-0 place-items-center rounded-full font-sans text-[0.7rem] font-semibold",
                     item.actor === "coach"
-                      ? "bg-caramel text-ink"
+                      ? "bg-accent-fill text-ink"
                       : "bg-cream/10 text-cream/70 ring-1 ring-cream/10",
                   )}
                 >

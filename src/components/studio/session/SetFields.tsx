@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * disabled.
  */
 const box =
-  "w-full rounded-[0.9rem] bg-cream/[0.07] px-4 pt-6 pb-3 text-center font-sans text-[2rem] font-semibold leading-none tabular-nums text-cream ring-1 ring-cream/25 outline-none transition placeholder:font-normal placeholder:text-cream/40 focus:bg-cream/10 focus:ring-2 focus:ring-caramel [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "w-full rounded-[0.9rem] bg-cream/[0.07] px-4 pt-6 pb-3 text-center font-sans text-[2rem] font-semibold leading-none tabular-nums text-cream ring-1 ring-cream/25 outline-none transition placeholder:font-normal placeholder:text-cream/40 focus:bg-cream/10 focus:ring-2 focus:ring-accent-ink [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 /** Its name, inside the tile, above the number. */
 const boxLabel =

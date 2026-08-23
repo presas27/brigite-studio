@@ -49,7 +49,7 @@ export function LeadRow({ lead, relative }: { lead: Lead; relative: string }) {
           aria-hidden
           className={cn(
             "h-2 w-2 shrink-0 rounded-full",
-            lead.status === "new" ? "bg-caramel" : "bg-cream/20",
+            lead.status === "new" ? "bg-accent-ink" : "bg-cream/20",
           )}
         />
         <span className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export function LeadRow({ lead, relative }: { lead: Lead; relative: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <a
               href={`mailto:${lead.email}`}
-              className="font-sans text-sm text-accent-ink transition-colors hover:text-butter"
+              className="font-sans text-sm text-accent-ink transition-colors hover:text-cream"
             >
               {lead.email}
             </a>
@@ -109,7 +109,7 @@ export function LeadRow({ lead, relative }: { lead: Lead; relative: string }) {
                   className={cn(
                     "rounded-full px-3.5 py-1.5 font-sans text-xs font-semibold transition-colors",
                     lead.status === status
-                      ? "bg-caramel text-ink"
+                      ? "bg-accent-fill text-ink"
                       : "text-cream/60 ring-1 ring-cream/15 hover:bg-cream/5 hover:text-cream",
                   )}
                 >
@@ -142,7 +142,7 @@ export function LeadRow({ lead, relative }: { lead: Lead; relative: string }) {
             {lead.clientId ? (
               <a
                 href={`/app/coach/alunos/${lead.clientId}`}
-                className="font-sans text-xs text-accent-ink transition-colors hover:text-butter"
+                className="font-sans text-xs text-accent-ink transition-colors hover:text-cream"
               >
                 {t("openClient")}
               </a>

@@ -63,7 +63,7 @@ export function MessageThread({
                 key={message.id}
                 className={cn(
                   "max-w-[85%] rounded-[1.1rem] px-4 py-2.5 sm:max-w-[70%]",
-                  mine ? "bg-butter text-ink" : "bg-ink-lift text-cream ring-1 ring-cream/10",
+                  mine ? "bg-butter text-on-primary" : "bg-ink-lift text-cream ring-1 ring-cream/10",
                 )}
               >
                 <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{message.body}</p>

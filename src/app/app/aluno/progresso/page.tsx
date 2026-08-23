@@ -160,7 +160,7 @@ export default async function AlunoProgressoPage() {
           </h2>
           <Link
             href="/app/aluno/evolucao"
-            className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-butter"
+            className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-cream"
           >
             {t("openTrends")}
           </Link>
@@ -195,7 +195,7 @@ export default async function AlunoProgressoPage() {
           </h2>
           <Link
             href="/app/aluno/treinos"
-            className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-butter"
+            className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-cream"
           >
             {t("openSessions")}
           </Link>

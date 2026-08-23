@@ -69,7 +69,7 @@ export async function AlunoActivityFeed({ items }: { items: ClientActivityItem[]
                   className={cn(
                     "mt-px grid h-7 w-7 shrink-0 place-items-center rounded-full",
                     item.actor === "coach"
-                      ? "bg-caramel text-ink"
+                      ? "bg-accent-fill text-ink"
                       : "bg-cream/10 text-cream/60 ring-1 ring-cream/10",
                   )}
                 >

@@ -101,7 +101,7 @@ export function ExercisePicker({
                       {exercise.name}
                     </span>
                     {count > 0 && (
-                      <span className="absolute top-3 right-3 inline-flex min-w-5 items-center justify-center rounded-full bg-caramel px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none text-ink">
+                      <span className="absolute top-3 right-3 inline-flex min-w-5 items-center justify-center rounded-full bg-accent-fill px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none text-ink">
                         {count}
                       </span>
                     )}
@@ -116,7 +116,7 @@ export function ExercisePicker({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-butter px-5 py-2.5 font-sans text-sm font-semibold text-ink transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-butter px-5 py-2.5 font-sans text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {common("close")}
           </button>

@@ -204,7 +204,7 @@ export function StudioChrome({
                 className={cn(
                   "flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 font-sans text-sm transition-colors",
                   active
-                    ? "bg-caramel font-semibold text-ink"
+                    ? "bg-accent-fill font-semibold text-ink"
                     : "text-cream/70 hover:bg-cream/5 hover:text-cream",
                 )}
               >
@@ -218,7 +218,7 @@ export function StudioChrome({
                       </span>
                     ) : (
                       collapsed && (
-                        <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-caramel ring-2 ring-rail" />
+                        <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent-ink ring-2 ring-rail" />
                       )
                     ))}
                 </span>
@@ -284,7 +284,7 @@ export function StudioChrome({
           // a faint caramel wash from the top-left corner — the same layering
           // trick the site's hero uses, at a tenth of the intensity.
           "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 overflow-x-hidden border-r border-cream/12 bg-rail px-4 py-5",
-          "bg-[radial-gradient(115%_55%_at_0%_0%,rgba(217,160,91,0.11),transparent_62%)]",
+          "bg-[radial-gradient(115%_55%_at_0%_0%,rgba(143,42,58,0.11),transparent_62%)]",
           // Genuinely fixed at every breakpoint — immune to scroll and to the
           // overscroll rubber-band bounce, which `sticky` still visibly moves
           // with. The content column carries a matching `--rail-w` offset below.

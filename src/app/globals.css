@@ -1,43 +1,81 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Condensed display type (Anton) over a warm dark canvas.
- * The page rests on near-black ink (only ever exposed on overscroll —
- * the hero gradient and ink band cover it edge to edge), and the
- * hero/testimonial surfaces glow caramel, all pulled from Sara's studio
- * wardrobe. Playfair survives as the italic accent only. `silk` red is
- * reserved for form error states.
+ * Design tokens. Condensed display type (Anton) over a dark wine canvas.
+ * The page rests on near-black ink (only ever exposed on overscroll — the
+ * hero gradient and ink band cover it edge to edge) and the hero/testimonial
+ * surfaces burn bordeaux, from the client's 2026 palette. Playfair survives
+ * as the italic accent only. `silk` red is reserved for form error states.
+ *
+ * Note the one structural difference from the caramel palette this replaces:
+ * its brand accent was light (gold took ink text and read against the dark
+ * canvas unaided), this one is dark. So the accent splits in two — `caramel`
+ * paints surfaces and washes, `accent-fill`/`accent-ink` carry the jobs that
+ * need to be seen on ink. Anything solid and small wants the latter.
  */
 :root {
-  --background: #14100c;
-  --foreground: #faf5ec;
-  --ink: #14100c;
-  --ink-lift: #1d1712;
-  --cream: #faf5ec;
-  --butter: #f5e9d6;
-  --caramel: #d9a05b;
-  --caramel-deep: #b87a3e;
-  --brown-deep: #6b3f24;
-  --bronze: #9a7a58;
-  --silk: #b31818;
+  --background: #121114;
+  --foreground: #efe3d8;
+  --ink: #121114;
+  --ink-lift: #1c1a1e;
+  --cream: #efe3d8;
+  --butter: #efe3d8;
+  --caramel: #8f2a3a;
+  --caramel-deep: #611220;
+  --brown-deep: #3b0b16;
+  --bronze: #9e8375;
+  --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
+
+  /*
+   * The one bright surface on the marketing page — the testimonial band and
+   * the featured plan card, both of which carry ink text and exist to
+   * interrupt the dark canvas. Under the caramel palette that job fell to
+   * gold; wine cannot do it, so it goes to the sand end of the palette.
+   */
+  --band: #c6b3a0;
+  --band-deep: #b39d87;
+
+  /*
+   * Hero surface. The two radials stacked over the linear base are lifts of
+   * the brand pair rather than brand colours in their own right, so they sit
+   * here as tokens: a palette swap has to be able to repaint the whole hero,
+   * and a hardcoded stop is exactly what survives one and looks wrong.
+   */
+  --hero-glow: #a93a4c; /* spotlight behind the figure; base +0.07 OKLab L */
+  --hero-shade: #4e0e19; /* falloff, midway between the two dark stops */
+  --hero-figure-shadow: rgba(18, 4, 10, 0.45);
 
   /*
    * Role tokens. The names above are literal brand colours; these carry a job,
    * which is what lets the app flip to a light canvas without touching a single
    * component. Anything the light theme repaints has to live here.
    */
-  --rail: #1b1611; /* the coach sidebar */
-  --surface-hover: #241b13; /* hover on a flat surface */
-  --primary-hover: #efe0c8; /* hover on the primary button */
-  --accent-ink: #d9a05b; /* caramel used as TEXT, not as a fill */
+  --rail: #17161a; /* the coach sidebar */
+  --surface-hover: #221f26; /* hover on a flat surface */
+  --primary-hover: #fbf3ea; /* hover on the primary button */
+  --accent-ink: #cc6373; /* the accent used as TEXT, not as a fill */
 
   /*
-   * Fixed in both themes. The gold surfaces, and the ink pills that sit on
+   * The label on the primary pill. Under the caramel palette this was always
+   * ink, because the pill was always a light colour; the wine palette's light
+   * theme paints that pill with the deep accent, so the label has to be able
+   * to invert with it. Every `bg-butter` fill pairs with this.
+   */
+  --on-primary: #121114;
+
+  /*
+   * Fixed in both themes. The brand surfaces, and the ink pills that sit on
    * them, look identical light or dark — that is what keeps the brand
    * recognisable — so anything inside them needs a colour that never inverts.
+   *
+   * `accent-fill` is the small solid accent: dots, today markers, the avatar
+   * chip. It is a lift of `caramel`, because `caramel` itself sits at 1.9:1
+   * against the canvas — invisible as a 6px dot — and it stays put across
+   * themes so the `text-ink` label on top of it never has to move.
    */
-  --on-dark: #faf5ec;
-  --ink-hover: #241b13;
+  --accent-fill: #cc6373;
+  --on-dark: #efe3d8;
+  --ink-hover: #221f26;
 }
 
 /*
@@ -47,16 +85,18 @@
  * one thing, synchronously, inside a view transition.
  */
 html[data-studio-theme="light"] .studio {
-  --background: #f7f2e7; /* warm paper, one step off `cream` */
-  --foreground: #1c1510;
-  --ink-lift: #fffdf8; /* surfaces lift towards white, not away from it */
-  --cream: #241c14; /* now "on surface": text, hairlines, subtle washes */
-  --butter: #d9a05b; /* the primary pill becomes the brand caramel */
-  --bronze: #7a5b3c;
-  --rail: #efe7d7;
-  --surface-hover: #f2ebdd;
-  --primary-hover: #c88f4c;
-  --accent-ink: #92622c; /* caramel is unreadable as text on paper */
+  --background: #f7f2ed; /* warm paper, one step off `cream` */
+  --foreground: #1b1418;
+  --ink-lift: #fffdfb; /* surfaces lift towards white, not away from it */
+  --cream: #241a1e; /* now "on surface": text, hairlines, subtle washes */
+  --butter: #8f2a3a; /* the primary pill becomes the deep brand accent */
+  --on-primary: #efe3d8; /* …so its label inverts with it */
+  --bronze: #7a5a52;
+  --silk: #c0392f; /* alarm red has to clear AA on paper, and not read wine */
+  --rail: #efe7de;
+  --surface-hover: #f2ece4;
+  --primary-hover: #a33546;
+  --accent-ink: #8f2a3a; /* on paper the deep wine is the readable accent */
 }
 
 /* The app canvas. Carries its own background so the light tokens above have
@@ -90,8 +130,10 @@ body:has(.studio) {
   --color-surface-hover: var(--surface-hover);
   --color-primary-hover: var(--primary-hover);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-fill: var(--accent-fill);
   --color-on-dark: var(--on-dark);
   --color-ink-hover: var(--ink-hover);
+  --color-on-primary: var(--on-primary);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   /* No webfont: the app speaks Anton and Geist only. Kept as a token so a
      stray `font-mono` degrades to the system mono instead of breaking. */
@@ -148,16 +190,24 @@ body {
 }
 
 /*
- * Layered caramel gradients. The hero stacks two radials over the linear
- * base so no single radial bands across the full card; smaller surfaces
- * (photo cards, featured plan) use the simple pair.
+ * Layered brand gradients. The hero stacks two radials over the linear base
+ * so no single radial bands across the full card; smaller wine surfaces
+ * (the About photo card) use the simple pair, and `band` is the light one.
  */
 .gradient-hero {
   /* The bright radial doubles as a spotlight behind the figure — it
      keeps the area around her hair luminous so cut-out edges dissolve. */
   background:
-    radial-gradient(70% 85% at 78% 42%, #efb975 0%, rgba(239, 185, 117, 0) 62%),
-    radial-gradient(90% 70% at 15% 95%, #8a5a33 0%, rgba(138, 90, 51, 0) 60%),
+    radial-gradient(
+      70% 85% at 78% 42%,
+      var(--hero-glow) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      90% 70% at 15% 95%,
+      var(--hero-shade) 0%,
+      transparent 60%
+    ),
     linear-gradient(
       165deg,
       var(--caramel) 0%,
@@ -167,6 +217,9 @@ body {
 }
 .gradient-caramel {
   background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
+}
+.gradient-band {
+  background: linear-gradient(170deg, var(--band), var(--band-deep));
 }
 
 /* Underline that grows from the left on hover. */

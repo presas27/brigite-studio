@@ -35,7 +35,7 @@ export function StatusChip({
         aria-hidden
         className={cn(
           "h-1.5 w-1.5 rounded-full",
-          status === "done" ? "bg-caramel" : status === "skipped" ? "bg-silk" : "bg-cream/40",
+          status === "done" ? "bg-accent-ink" : status === "skipped" ? "bg-silk" : "bg-cream/40",
         )}
       />
       {label}

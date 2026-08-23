@@ -147,7 +147,7 @@ export default async function OverviewPage() {
             </h2>
             <Link
               href="/app/coach/calendario"
-              className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-butter"
+              className="link-grow font-sans text-xs text-accent-ink transition-colors hover:text-cream"
             >
               {t("viewAll")}
             </Link>

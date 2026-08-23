@@ -17,9 +17,9 @@ import { capitalize, cn } from "@/lib/utils";
  * trigonometry versus one subtraction, and the stroke keeps its round caps.
  */
 
-/** A caramel ramp that survives the light theme, then a neutral for the tail. */
-const SLICE = ["text-caramel", "text-caramel-deep", "text-bronze", "text-cream/25"];
-const LEGEND = ["bg-caramel", "bg-caramel-deep", "bg-bronze", "bg-cream/25"];
+/** A legibility-ordered ramp that survives both themes, then neutral tails. */
+const SLICE = ["text-accent-ink", "text-bronze", "text-cream/45", "text-cream/20"];
+const LEGEND = ["bg-accent-ink", "bg-bronze", "bg-cream/45", "bg-cream/20"];
 
 const RADIUS = 42;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;

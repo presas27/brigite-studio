@@ -151,7 +151,7 @@ export function ArcRating({
               stroke="currentColor"
               strokeWidth={9}
               strokeLinecap="round"
-              className="text-caramel"
+              className="text-accent-ink"
             />
           )}
           <circle
@@ -160,7 +160,7 @@ export function ArcRating({
             r={7}
             className={cn(
               "fill-ink-lift transition-[stroke]",
-              value == null ? "stroke-cream/25" : "stroke-caramel",
+              value == null ? "stroke-cream/25" : "stroke-accent-ink",
             )}
             strokeWidth={4}
           />

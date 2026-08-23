@@ -237,7 +237,7 @@ export function PlanCalendar({
         <div className="space-y-2">
           <p className={eyebrow}>{summary}</p>
           <div aria-hidden className="flex h-[3px] overflow-hidden rounded-full bg-cream/[0.08]">
-            <span className="basis-0 bg-caramel" style={{ flexGrow: done }} />
+            <span className="basis-0 bg-accent-ink" style={{ flexGrow: done }} />
             <span className="basis-0 bg-cream/20" style={{ flexGrow: scheduled }} />
             <span className="basis-0 bg-silk" style={{ flexGrow: skipped }} />
           </div>
