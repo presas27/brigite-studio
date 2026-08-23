@@ -91,12 +91,12 @@ export function TestimonialBanner() {
   return (
     <section
       ref={scope}
-      className="gradient-band grain relative overflow-hidden py-24 text-ink md:py-36"
+      className="gradient-caramel grain relative overflow-hidden py-24 text-on-dark md:py-36"
     >
       <div
         ref={markRef}
         aria-hidden
-        className="absolute -left-[6%] top-1/2 -translate-y-1/2 text-ink/10 max-md:opacity-60"
+        className="absolute -left-[6%] top-1/2 -translate-y-1/2 text-on-dark/12 max-md:opacity-60"
       >
         <SolMark className="h-[260px] w-[260px] md:h-[420px] md:w-[420px]" />
       </div>
@@ -109,13 +109,13 @@ export function TestimonialBanner() {
             className="font-display text-[clamp(1.9rem,4.5vw,3.5rem)] uppercase leading-[1.05]"
           >
             {t.rich("quote", {
-              m: (chunks) => <span className="text-ink/55">{chunks}</span>,
+              m: (chunks) => <span className="text-on-dark/55">{chunks}</span>,
             })}
           </p>
         </blockquote>
         <figcaption ref={attrRef} className="mt-8">
           <span className="font-serif text-xl italic">{t("name")}</span>
-          <span className="mt-1 block text-sm text-ink/60">{t("role")}</span>
+          <span className="mt-1 block text-sm text-on-dark/65">{t("role")}</span>
         </figcaption>
       </figure>
     </section>

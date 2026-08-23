@@ -22,19 +22,19 @@ export const surfaceLink =
   "rounded-[1.25rem] bg-ink-lift ring-1 ring-cream/10 transition-colors hover:bg-surface-hover hover:ring-cream/20";
 
 /**
- * The one bright surface on a screen. Same treatment as the featured plan card
- * on the marketing site: the sand `band` gradient, film grain over it to kill
- * banding, and ink text. It is deliberately not the wine accent — wine is a
- * dark colour, and every label nested in here is ink. Everything inside must
- * be ink-based: `field`, `eyebrow` and `buttonGhost` are cream and will
- * disappear here. Use the `-onAccent` variants.
+ * The one brand surface on a screen. Same treatment as the featured plan card
+ * on the marketing site: the wine gradient, film grain over it to kill banding,
+ * and `on-dark` text. It stays wine in BOTH themes — that is what keeps the
+ * app recognisable when the canvas flips to paper — so everything nested in it
+ * must use `on-dark`/`ink` and never `cream`, which inverts. Use the
+ * `-onAccent` variants below.
  */
 export const surfaceAccent =
-  "gradient-band grain relative overflow-hidden rounded-[1.25rem] text-ink";
+  "gradient-caramel grain relative overflow-hidden rounded-[1.25rem] text-on-dark";
 
 /** Interactive version of `surfaceAccent`, for a hero card that is a link. */
 export const surfaceAccentLink =
-  "gradient-band grain relative overflow-hidden rounded-[1.25rem] text-ink transition-shadow duration-300 hover:shadow-[0_32px_64px_-24px_rgba(198,179,160,0.3)]";
+  "gradient-caramel grain relative overflow-hidden rounded-[1.25rem] text-on-dark transition-shadow duration-300 hover:shadow-[0_32px_64px_-24px_rgba(143,42,58,0.4)]";
 
 /** Section heading — condensed display face, always uppercase. */
 export const heading = "font-display uppercase leading-none tracking-[0.01em]";
@@ -86,23 +86,25 @@ export const chipAccent =
 export const muted = "text-sm leading-relaxed text-cream/60";
 
 /* --- Variants for use inside `surfaceAccent` ------------------------------- */
-/* The bright surface flips the contrast: text is ink, so anything cream-based
-   vanishes. These four are the ink-side twins of the ones above. */
+/* The brand surface does not follow the theme: it is wine on paper too. So the
+   twins below are `on-dark`-based rather than cream-based — `cream` would go
+   dark under the light theme and disappear into the wine. */
 
-export const eyebrowOnAccent = "font-sans text-xs font-medium text-brown-deep/75";
+export const eyebrowOnAccent = "font-sans text-xs font-medium text-on-dark/70";
 
-export const mutedOnAccent = "text-sm leading-relaxed text-ink/70";
+export const mutedOnAccent = "text-sm leading-relaxed text-on-dark/75";
 
-/** Primary action on the band — dark pill, exactly like the featured plan card. */
+/** Primary action on the brand surface — the sand pill, as in the hero. */
 export const buttonOnAccent =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 font-sans text-sm font-semibold text-on-dark transition-colors hover:bg-ink-hover disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full bg-on-dark px-6 py-3 font-sans text-sm font-semibold text-ink transition-colors hover:bg-on-dark/85 disabled:opacity-50";
 
-/** Secondary action on the band. */
+/** Secondary action on the brand surface. */
 export const buttonGhostOnAccent =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-ink ring-1 ring-brown-deep/30 transition-colors hover:bg-ink/5 hover:ring-brown-deep/50 disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-on-dark ring-1 ring-on-dark/35 transition-colors hover:bg-on-dark/10 hover:ring-on-dark/55 disabled:opacity-50";
 
 export const chipOnAccent =
-  "inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 font-sans text-xs text-ink/75 ring-1 ring-brown-deep/20";
+  "inline-flex items-center gap-1.5 rounded-full bg-on-dark/12 px-3 py-1 font-sans text-xs text-on-dark/85 ring-1 ring-on-dark/25";
 
-/** Inset panel on the band — for Sara's session note, which must read as a quote. */
-export const panelOnAccent = "rounded-[1rem] bg-ink/[0.07] ring-1 ring-brown-deep/15";
+/** Inset panel on the brand surface — Sara's session note, which reads as a
+    quote. Sunk into the wine rather than lifted off it. */
+export const panelOnAccent = "rounded-[1rem] bg-ink/25 ring-1 ring-on-dark/15";

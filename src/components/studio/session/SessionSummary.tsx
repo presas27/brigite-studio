@@ -164,7 +164,7 @@ export function SessionSummary({
         <div className="flex flex-col items-center gap-7 sm:flex-row sm:gap-10">
           <span className="relative block w-[9rem] shrink-0 sm:w-[10.5rem]">
             <svg viewBox="0 0 120 120" className="w-full -rotate-90">
-              <circle cx="60" cy="60" r="52" fill="none" strokeWidth="6" className="stroke-ink/15" />
+              <circle cx="60" cy="60" r="52" fill="none" strokeWidth="6" className="stroke-on-dark/20" />
               <circle
                 ref={ringRef}
                 cx="60"
@@ -176,17 +176,17 @@ export function SessionSummary({
                 pathLength={RING_LENGTH}
                 strokeDasharray={RING_LENGTH}
                 strokeDashoffset={RING_LENGTH}
-                className="stroke-ink"
+                className="stroke-on-dark"
               />
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
               <span
                 ref={countRef}
-                className={cn(heading, "text-[2.75rem] leading-none text-ink tabular-nums")}
+                className={cn(heading, "text-[2.75rem] leading-none text-on-dark tabular-nums")}
               >
                 0
               </span>
-              <span className="font-sans text-xs text-brown-deep/75">
+              <span className="font-sans text-xs text-on-dark/70">
                 {t("ofSets", { total: totalCount })}
               </span>
             </span>

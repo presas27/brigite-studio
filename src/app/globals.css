@@ -17,23 +17,23 @@
   --background: #121114;
   --foreground: #efe3d8;
   --ink: #121114;
-  --ink-lift: #1c1a1e;
+  --ink-lift: #1f1617; /* raised surfaces lift towards wine, not towards grey */
   --cream: #efe3d8;
   --butter: #efe3d8;
   --caramel: #8f2a3a;
   --caramel-deep: #611220;
   --brown-deep: #3b0b16;
-  --bronze: #9e8375;
+  --bronze: #a66f72; /* the quiet wine: second-tone headings, FAQ numerals */
   --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
 
   /*
-   * The one bright surface on the marketing page — the testimonial band and
-   * the featured plan card, both of which carry ink text and exist to
-   * interrupt the dark canvas. Under the caramel palette that job fell to
-   * gold; wine cannot do it, so it goes to the sand end of the palette.
+   * The brand surface — testimonial band, featured plan card, the app's one
+   * accent card. Under the caramel palette this was gold, a LIGHT surface with
+   * ink text; the wine equivalent is dark, so everything nested inside it uses
+   * `on-dark` (see below) instead of ink. It is the `gradient-caramel` pair,
+   * not a colour of its own: a neutral sand block here is what made the page
+   * below the hero read beige instead of bordeaux.
    */
-  --band: #c6b3a0;
-  --band-deep: #b39d87;
 
   /*
    * Hero surface. The two radials stacked over the linear base are lifts of
@@ -50,10 +50,10 @@
    * which is what lets the app flip to a light canvas without touching a single
    * component. Anything the light theme repaints has to live here.
    */
-  --rail: #17161a; /* the coach sidebar */
-  --surface-hover: #221f26; /* hover on a flat surface */
+  --rail: #1d1516; /* the coach sidebar */
+  --surface-hover: #261a1a; /* hover on a flat surface */
   --primary-hover: #fbf3ea; /* hover on the primary button */
-  --accent-ink: #cc6373; /* the accent used as TEXT, not as a fill */
+  --accent-ink: #bf6970; /* the accent used as TEXT or a stroke, not as a fill */
 
   /*
    * The label on the primary pill. Under the caramel palette this was always
@@ -72,10 +72,13 @@
    * chip. It is a lift of `caramel`, because `caramel` itself sits at 1.9:1
    * against the canvas — invisible as a 6px dot — and it stays put across
    * themes so the `text-ink` label on top of it never has to move.
+   *
+   * `on-dark` is the text colour inside the brand surface. It never inverts,
+   * which is the whole point: that surface is wine in both themes.
    */
-  --accent-fill: #cc6373;
+  --accent-fill: #bf6970;
   --on-dark: #efe3d8;
-  --ink-hover: #221f26;
+  --ink-hover: #261a1a;
 }
 
 /*
@@ -85,16 +88,16 @@
  * one thing, synchronously, inside a view transition.
  */
 html[data-studio-theme="light"] .studio {
-  --background: #f7f2ed; /* warm paper, one step off `cream` */
+  --background: #f9f1f2; /* warm paper, a breath of wine in it */
   --foreground: #1b1418;
-  --ink-lift: #fffdfb; /* surfaces lift towards white, not away from it */
+  --ink-lift: #fffdfd; /* surfaces lift towards white, not away from it */
   --cream: #241a1e; /* now "on surface": text, hairlines, subtle washes */
   --butter: #8f2a3a; /* the primary pill becomes the deep brand accent */
   --on-primary: #efe3d8; /* …so its label inverts with it */
-  --bronze: #7a5a52;
+  --bronze: #84464b; /* the quiet wine, darkened until it holds on paper */
   --silk: #c0392f; /* alarm red has to clear AA on paper, and not read wine */
-  --rail: #efe7de;
-  --surface-hover: #f2ece4;
+  --rail: #f1e6e7;
+  --surface-hover: #f3eaea;
   --primary-hover: #a33546;
   --accent-ink: #8f2a3a; /* on paper the deep wine is the readable accent */
 }
@@ -190,9 +193,10 @@ body {
 }
 
 /*
- * Layered brand gradients. The hero stacks two radials over the linear base
- * so no single radial bands across the full card; smaller wine surfaces
- * (the About photo card) use the simple pair, and `band` is the light one.
+ * Layered brand gradients. The hero stacks two radials over the linear base so
+ * no single radial bands across the full card; every other brand surface — the
+ * testimonial band, the featured plan card, the About photo card, the app's
+ * accent card — uses the simple pair.
  */
 .gradient-hero {
   /* The bright radial doubles as a spotlight behind the figure — it
@@ -217,9 +221,6 @@ body {
 }
 .gradient-caramel {
   background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
-}
-.gradient-band {
-  background: linear-gradient(170deg, var(--band), var(--band-deep));
 }
 
 /* Underline that grows from the left on hover. */

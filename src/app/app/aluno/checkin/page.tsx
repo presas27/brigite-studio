@@ -32,7 +32,7 @@ export default async function ClientCheckinPage() {
       {alreadyDone && (
         // Confirmation, not a warning: the week's check-in is done.
         <div className={cn(surfaceAccent, "px-5 py-4")}>
-          <p className="font-sans text-sm font-semibold text-ink">{t("alreadyDone")}</p>
+          <p className="font-sans text-sm font-semibold text-on-dark">{t("alreadyDone")}</p>
         </div>
       )}
 

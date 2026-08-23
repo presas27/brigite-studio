@@ -31,7 +31,7 @@ export function Empty({ title, hint, action, tone = "flat", className }: EmptyPr
       <p
         className={cn(
           "font-sans font-semibold",
-          accent ? "text-lg text-ink" : "text-sm text-cream/85",
+          accent ? "text-lg text-on-dark" : "text-sm text-cream/85",
         )}
       >
         {title}

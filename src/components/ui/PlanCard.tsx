@@ -11,8 +11,9 @@ type PlanCardProps = {
 };
 
 /**
- * Plan card — no prices, the CTA routes to the contact form. The
- * featured card glows caramel and says "flagship" without a ribbon.
+ * Plan card — no prices, the CTA routes to the contact form. The featured card
+ * burns wine and says "flagship" without a ribbon; everything inside it is
+ * `on-dark`, the one colour that does not invert with the theme.
  */
 export function PlanCard({
   name,
@@ -26,12 +27,12 @@ export function PlanCard({
       className={cn(
         "relative flex h-full min-h-[26rem] flex-col rounded-[1.25rem] p-8 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
         featured
-          ? "gradient-band grain overflow-hidden text-ink hover:shadow-[0_32px_64px_-24px_rgba(198,179,160,0.28)]"
+          ? "gradient-caramel grain overflow-hidden text-on-dark hover:shadow-[0_32px_64px_-24px_rgba(143,42,58,0.4)]"
           : "bg-ink-lift text-cream ring-1 ring-cream/10 hover:-translate-y-1 hover:ring-cream/20",
       )}
     >
       {featured && (
-        <SolMark className="absolute right-6 top-6 h-9 w-9 text-brown-deep/60" />
+        <SolMark className="absolute right-6 top-6 h-9 w-9 text-on-dark/45" />
       )}
       <h3 className="max-w-[12ch] font-display text-[1.75rem] uppercase leading-none">
         {name}
@@ -39,7 +40,7 @@ export function PlanCard({
       <p
         className={cn(
           "mt-3 text-sm leading-relaxed",
-          featured ? "text-ink/75" : "text-cream/70",
+          featured ? "text-on-dark/75" : "text-cream/70",
         )}
       >
         {tagline}
@@ -50,7 +51,7 @@ export function PlanCard({
             <SolMark
               className={cn(
                 "mt-1 h-2.5 w-2.5 shrink-0",
-                featured ? "text-brown-deep/70" : "text-accent-ink/70",
+                featured ? "text-on-dark/55" : "text-accent-ink/70",
               )}
             />
             {bullet}

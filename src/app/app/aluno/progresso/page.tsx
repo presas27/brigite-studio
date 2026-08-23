@@ -113,14 +113,14 @@ export default async function AlunoProgressoPage() {
         </h2>
         <p className={cn(heading, "mt-2 flex items-baseline gap-3 text-[2.5rem] sm:text-[3.25rem]")}>
           {t("sessionsDone", { done: stats.done, total: stats.total })}
-          {stats.total > 0 && <span className="font-sans tabular-nums text-lg text-ink/55">{pct}%</span>}
+          {stats.total > 0 && <span className="font-sans tabular-nums text-lg text-on-dark/60">{pct}%</span>}
         </p>
         {stats.total > 0 && (
           <div
             aria-hidden
-            className="mt-4 h-[3px] overflow-hidden rounded-full bg-ink/[0.15]"
+            className="mt-4 h-[3px] overflow-hidden rounded-full bg-ink/25"
           >
-            <span className="block h-full rounded-full bg-ink/70" style={{ width: `${pct}%` }} />
+            <span className="block h-full rounded-full bg-on-dark/80" style={{ width: `${pct}%` }} />
           </div>
         )}
         <p className={cn(mutedOnAccent, "mt-3")}>{t("adherenceHint")}</p>

@@ -92,7 +92,7 @@ export default async function OverviewPage() {
               {t("needsYou")}
             </h2>
             {alerts.length > 0 && (
-              <span className="font-sans tabular-nums text-sm text-ink/60">{alerts.length}</span>
+              <span className="font-sans tabular-nums text-sm text-on-dark/65">{alerts.length}</span>
             )}
           </div>
 
@@ -101,7 +101,7 @@ export default async function OverviewPage() {
               <p className={cn(heading, "text-[1.5rem] sm:text-[1.75rem]")}>
                 {t("needsYouEmpty")}
               </p>
-              <p className="mt-2 max-w-prose text-sm leading-relaxed text-ink/70">
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-on-dark/75">
                 {t("needsYouEmptyHint")}
               </p>
             </div>
@@ -112,23 +112,23 @@ export default async function OverviewPage() {
                   <li key={`${alert.kind}-${alert.clientId}-${alert.at}`}>
                     <Link
                       href={alertHref(alert)}
-                      className="flex items-center gap-3 rounded-[1rem] bg-ink/[0.07] px-4 py-3 ring-1 ring-brown-deep/15 transition-colors hover:bg-ink/[0.12]"
+                      className="flex items-center gap-3 rounded-[1rem] bg-ink/20 px-4 py-3 ring-1 ring-on-dark/15 transition-colors hover:bg-ink/30"
                     >
                       <Icon
                         name={ALERT_ICON[alert.kind]}
-                        className="h-4 w-4 shrink-0 text-brown-deep"
+                        className="h-4 w-4 shrink-0 text-on-dark/70"
                       />
-                      <span className="min-w-0 flex-1 truncate font-sans text-sm text-ink">
+                      <span className="min-w-0 flex-1 truncate font-sans text-sm text-on-dark">
                         <span className="font-semibold">{alert.clientName}</span>
-                        <span className="text-ink/65"> · {tToday(`kind.${alert.kind}`)}</span>
+                        <span className="text-on-dark/65"> · {tToday(`kind.${alert.kind}`)}</span>
                       </span>
-                      <Icon name="chevron" className="h-3.5 w-3.5 shrink-0 text-brown-deep/70" />
+                      <Icon name="chevron" className="h-3.5 w-3.5 shrink-0 text-on-dark/55" />
                     </Link>
                   </li>
                 ))}
               </ol>
               {alerts.length > 6 && (
-                <p className="mt-3 font-sans tabular-nums text-xs text-ink/60">+{alerts.length - 6}</p>
+                <p className="mt-3 font-sans tabular-nums text-xs text-on-dark/65">+{alerts.length - 6}</p>
               )}
             </>
           )}
