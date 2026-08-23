@@ -9,31 +9,22 @@
  *
  * Note the one structural difference from the caramel palette this replaces:
  * its brand accent was light (gold took ink text and read against the dark
- * canvas unaided), this one is dark. So `caramel` paints surfaces and washes,
- * `accent-ink` carries the jobs that have to be seen on ink, and `band` is
- * the one light surface.
+ * canvas unaided), this one is dark. So `caramel` paints the brand surfaces —
+ * hero, testimonial band, featured plan card — with `on-dark` text on them,
+ * and `accent-ink`/`bronze` carry the jobs that have to be seen on ink.
  */
 :root {
   --background: #121114;
   --foreground: #efe3d8;
   --ink: #121114;
-  --ink-lift: #1c1a1e;
+  --ink-lift: #1f1617; /* raised surfaces lift towards wine, not towards grey */
   --cream: #efe3d8;
   --butter: #efe3d8;
   --caramel: #8f2a3a;
   --caramel-deep: #611220;
   --brown-deep: #3b0b16;
-  --bronze: #9e8375;
+  --bronze: #a66f72; /* the quiet wine: second-tone headings, FAQ numerals */
   --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
-
-  /*
-   * The one bright surface — the testimonial band and the featured plan card,
-   * both of which carry ink text and exist to interrupt the dark canvas.
-   * Under the caramel palette that job fell to gold; wine cannot do it, so it
-   * goes to the sand end of the palette.
-   */
-  --band: #c6b3a0;
-  --band-deep: #b39d87;
 
   /*
    * Hero surface. The two radials stacked over the linear base are lifts of
@@ -50,14 +41,16 @@
   /*
    * Role tokens. The names above are literal brand colours; these carry a job.
    * `accent-ink` is the accent used as TEXT or as a stroke, lifted until it
-   * clears AA on ink (5.0:1) because the wine itself measures 1.9:1 there.
-   * `on-primary` is the label on the primary pill — ink here, but a token so
-   * a light canvas can invert it without touching a component.
+   * clears AA on ink (4.9:1) because the wine itself measures 1.9:1 there.
+   * `on-dark` is the text colour inside a brand surface, and `on-primary` the
+   * label on the primary pill — both tokens so a light canvas could invert
+   * them without touching a component.
    */
-  --accent-ink: #cc6373;
+  --accent-ink: #bf6970;
+  --on-dark: #efe3d8;
   --on-primary: #121114;
   --primary-hover: #fbf3ea; /* hover on the primary button */
-  --ink-hover: #221f26; /* hover on the dark button */
+  --ink-hover: #261a1a; /* hover on the dark button */
 }
 
 @theme inline {
@@ -73,6 +66,7 @@
   --color-bronze: var(--bronze);
   --color-silk: var(--silk);
   --color-accent-ink: var(--accent-ink);
+  --color-on-dark: var(--on-dark);
   --color-on-primary: var(--on-primary);
   --color-primary-hover: var(--primary-hover);
   --color-ink-hover: var(--ink-hover);
@@ -120,9 +114,10 @@ body {
 }
 
 /*
- * Layered brand gradients. The hero stacks two radials over the linear base
- * so no single radial bands across the full card; smaller wine surfaces (the
- * About photo card) use the simple pair, and `band` is the light one.
+ * Layered brand gradients. The hero stacks two radials over the linear base so
+ * no single radial bands across the full card; every other brand surface — the
+ * testimonial band, the featured plan card, the About photo card — uses the
+ * simple pair.
  */
 .gradient-hero {
   /* The bright radial doubles as a spotlight behind the figure — it
@@ -147,9 +142,6 @@ body {
 }
 .gradient-caramel {
   background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
-}
-.gradient-band {
-  background: linear-gradient(170deg, var(--band), var(--band-deep));
 }
 
 /* Underline that grows from the left on hover. */
