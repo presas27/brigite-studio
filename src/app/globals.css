@@ -23,7 +23,7 @@
   --caramel: #8f2a3a;
   --caramel-deep: #611220;
   --brown-deep: #3b0b16;
-  --bronze: #a66f72; /* the quiet wine: second-tone headings, FAQ numerals */
+  --accent-muted: #af404f; /* see the ramp note below */
   --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
 
   /*
@@ -49,11 +49,21 @@
    * Role tokens. The names above are literal brand colours; these carry a job,
    * which is what lets the app flip to a light canvas without touching a single
    * component. Anything the light theme repaints has to live here.
+   *
+   * The three accents are one ramp, not three colours: same hue, same chroma
+   * as the brand red, lightness climbing until each clears the contrast its
+   * job needs. Cutting the chroma instead — which is what a "muted bronze"
+   * does — is what makes a wine palette read as dead mauve.
+   *
+   *   caramel        L 0.44   the surface (hero, band, featured card)
+   *   accent-muted   L 0.53   3.3:1 — display type only: second-tone words
+   *                           in headings, FAQ numerals, chart slices
+   *   accent-ink     L 0.63   5.0:1 — small text, strokes, focus rings, dots
    */
   --rail: #1d1516; /* the coach sidebar */
   --surface-hover: #261a1a; /* hover on a flat surface */
   --primary-hover: #fbf3ea; /* hover on the primary button */
-  --accent-ink: #bf6970; /* the accent used as TEXT or a stroke, not as a fill */
+  --accent-ink: #d25f6c;
 
   /*
    * The label on the primary pill. Under the caramel palette this was always
@@ -76,7 +86,7 @@
    * `on-dark` is the text colour inside the brand surface. It never inverts,
    * which is the whole point: that surface is wine in both themes.
    */
-  --accent-fill: #bf6970;
+  --accent-fill: #d25f6c;
   --on-dark: #efe3d8;
   --ink-hover: #261a1a;
 }
@@ -94,7 +104,7 @@ html[data-studio-theme="light"] .studio {
   --cream: #241a1e; /* now "on surface": text, hairlines, subtle washes */
   --butter: #8f2a3a; /* the primary pill becomes the deep brand accent */
   --on-primary: #efe3d8; /* …so its label inverts with it */
-  --bronze: #84464b; /* the quiet wine, darkened until it holds on paper */
+  --accent-muted: #8f2a3a; /* on paper the brand red itself carries the ramp */
   --silk: #c0392f; /* alarm red has to clear AA on paper, and not read wine */
   --rail: #f1e6e7;
   --surface-hover: #f3eaea;
@@ -127,7 +137,7 @@ body:has(.studio) {
   --color-caramel: var(--caramel);
   --color-caramel-deep: var(--caramel-deep);
   --color-brown-deep: var(--brown-deep);
-  --color-bronze: var(--bronze);
+  --color-accent-muted: var(--accent-muted);
   --color-silk: var(--silk);
   --color-rail: var(--rail);
   --color-surface-hover: var(--surface-hover);

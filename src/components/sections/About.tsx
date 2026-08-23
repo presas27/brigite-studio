@@ -39,7 +39,7 @@ export function About() {
           <Reveal>
             <h2 className="max-w-[16ch] font-display text-[clamp(2.75rem,6.5vw,5.25rem)] uppercase leading-[0.95] text-cream">
               {t.rich("heading", {
-                m: (chunks) => <span className="text-bronze">{chunks}</span>,
+                m: (chunks) => <span className="text-accent-muted">{chunks}</span>,
               })}
             </h2>
           </Reveal>

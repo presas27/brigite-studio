@@ -50,7 +50,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
               >
                 <span
                   aria-hidden
-                  className="font-display text-3xl leading-none text-bronze md:text-4xl"
+                  className="font-display text-3xl leading-none text-accent-muted md:text-4xl"
                 >
                   {i + 1}
                 </span>
@@ -66,7 +66,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className={cn(
-                    "h-4 w-4 self-center justify-self-end text-bronze transition-transform duration-300 ease-out motion-reduce:transition-none",
+                    "h-4 w-4 self-center justify-self-end text-accent-muted transition-transform duration-300 ease-out motion-reduce:transition-none",
                     isOpen && "-rotate-180",
                   )}
                 >

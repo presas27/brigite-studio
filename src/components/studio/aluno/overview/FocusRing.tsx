@@ -18,8 +18,8 @@ import { capitalize, cn } from "@/lib/utils";
  */
 
 /** A legibility-ordered ramp that survives both themes, then neutral tails. */
-const SLICE = ["text-accent-ink", "text-bronze", "text-cream/45", "text-cream/20"];
-const LEGEND = ["bg-accent-ink", "bg-bronze", "bg-cream/45", "bg-cream/20"];
+const SLICE = ["text-accent-ink", "text-accent-muted", "text-cream/45", "text-cream/20"];
+const LEGEND = ["bg-accent-ink", "bg-accent-muted", "bg-cream/45", "bg-cream/20"];
 
 const RADIUS = 42;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
