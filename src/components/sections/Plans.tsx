@@ -16,7 +16,7 @@ export function Plans() {
         <Reveal>
           <h2 className="whitespace-nowrap text-center font-display text-[clamp(1.5rem,7vw,5.25rem)] uppercase leading-[0.95] text-cream">
             {t.rich("title", {
-              m: (chunks) => <span className="text-bronze">{chunks}</span>,
+              m: (chunks) => <span className="text-accent-muted">{chunks}</span>,
             })}
           </h2>
         </Reveal>

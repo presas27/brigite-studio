@@ -44,7 +44,7 @@ export function Footer() {
         </nav>
 
         <p className="flex items-center gap-3 text-xs text-cream/50">
-          <SolMark className="h-4 w-4 text-bronze" />© {year} {site.name}
+          <SolMark className="h-4 w-4 text-accent-muted" />© {year} {site.name}
         </p>
       </div>
 

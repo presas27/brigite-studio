@@ -11,7 +11,7 @@
  * its brand accent was light (gold took ink text and read against the dark
  * canvas unaided), this one is dark. So `caramel` paints the brand surfaces —
  * hero, testimonial band, featured plan card — with `on-dark` text on them,
- * and `accent-ink`/`bronze` carry the jobs that have to be seen on ink.
+ * and the `accent-*` ramp carries the jobs that have to be seen on ink.
  */
 :root {
   --background: #121114;
@@ -23,7 +23,7 @@
   --caramel: #8f2a3a;
   --caramel-deep: #611220;
   --brown-deep: #3b0b16;
-  --bronze: #a66f72; /* the quiet wine: second-tone headings, FAQ numerals */
+  --accent-muted: #af404f; /* see the ramp note below */
   --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
 
   /*
@@ -40,13 +40,22 @@
 
   /*
    * Role tokens. The names above are literal brand colours; these carry a job.
-   * `accent-ink` is the accent used as TEXT or as a stroke, lifted until it
-   * clears AA on ink (4.9:1) because the wine itself measures 1.9:1 there.
+   *
+   * The three accents are one ramp, not three colours: same hue, same chroma
+   * as the brand red, lightness climbing until each clears the contrast its
+   * job needs. Cutting the chroma instead — which is what a "muted bronze"
+   * does — is what makes a wine palette read as dead mauve.
+   *
+   *   caramel        L 0.44   the surface (hero, band, featured card)
+   *   accent-muted   L 0.53   3.3:1 — display type only: second-tone words
+   *                           in headings, FAQ numerals
+   *   accent-ink     L 0.63   5.0:1 — small text, strokes, focus rings, dots
+   *
    * `on-dark` is the text colour inside a brand surface, and `on-primary` the
    * label on the primary pill — both tokens so a light canvas could invert
    * them without touching a component.
    */
-  --accent-ink: #bf6970;
+  --accent-ink: #d25f6c;
   --on-dark: #efe3d8;
   --on-primary: #121114;
   --primary-hover: #fbf3ea; /* hover on the primary button */
@@ -63,7 +72,7 @@
   --color-caramel: var(--caramel);
   --color-caramel-deep: var(--caramel-deep);
   --color-brown-deep: var(--brown-deep);
-  --color-bronze: var(--bronze);
+  --color-accent-muted: var(--accent-muted);
   --color-silk: var(--silk);
   --color-accent-ink: var(--accent-ink);
   --color-on-dark: var(--on-dark);

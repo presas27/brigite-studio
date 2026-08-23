@@ -27,7 +27,7 @@ export function Work() {
           <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <h2 className="max-w-[16ch] font-display text-[clamp(2.75rem,6.5vw,5.25rem)] uppercase leading-[0.95] text-cream">
               {t.rich("title", {
-                m: (chunks) => <span className="text-bronze">{chunks}</span>,
+                m: (chunks) => <span className="text-accent-muted">{chunks}</span>,
               })}
             </h2>
             <p className="max-w-[36ch] text-lg leading-relaxed text-cream/70 md:text-right">
