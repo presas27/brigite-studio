@@ -1,25 +1,63 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Condensed display type (Anton) over a warm dark canvas.
- * The page rests on near-black ink (only ever exposed on overscroll —
- * the hero gradient and ink band cover it edge to edge), and the
- * hero/testimonial surfaces glow caramel, all pulled from Sara's studio
- * wardrobe. Playfair survives as the italic accent only. `silk` red is
- * reserved for form error states.
+ * Design tokens. Condensed display type (Anton) over a dark wine canvas.
+ * The page rests on near-black ink (only ever exposed on overscroll — the
+ * hero gradient and ink band cover it edge to edge) and the hero burns
+ * bordeaux, from the client's 2026 palette. Playfair survives as the italic
+ * accent only. `silk` red is reserved for form error states.
+ *
+ * Note the one structural difference from the caramel palette this replaces:
+ * its brand accent was light (gold took ink text and read against the dark
+ * canvas unaided), this one is dark. So `caramel` paints surfaces and washes,
+ * `accent-ink` carries the jobs that have to be seen on ink, and `band` is
+ * the one light surface.
  */
 :root {
-  --background: #14100c;
-  --foreground: #faf5ec;
-  --ink: #14100c;
-  --ink-lift: #1d1712;
-  --cream: #faf5ec;
-  --butter: #f5e9d6;
-  --caramel: #d9a05b;
-  --caramel-deep: #b87a3e;
-  --brown-deep: #6b3f24;
-  --bronze: #9a7a58;
-  --silk: #b31818;
+  --background: #121114;
+  --foreground: #efe3d8;
+  --ink: #121114;
+  --ink-lift: #1c1a1e;
+  --cream: #efe3d8;
+  --butter: #efe3d8;
+  --caramel: #8f2a3a;
+  --caramel-deep: #611220;
+  --brown-deep: #3b0b16;
+  --bronze: #9e8375;
+  --silk: #e5484d; /* wine owns the brand, so the error red moves to alarm */
+
+  /*
+   * The one bright surface — the testimonial band and the featured plan card,
+   * both of which carry ink text and exist to interrupt the dark canvas.
+   * Under the caramel palette that job fell to gold; wine cannot do it, so it
+   * goes to the sand end of the palette.
+   */
+  --band: #c6b3a0;
+  --band-deep: #b39d87;
+
+  /*
+   * Hero surface. The two radials stacked over the linear base are lifts of
+   * the brand pair rather than brand colours in their own right, so they sit
+   * here as tokens: a palette swap has to be able to repaint the whole hero,
+   * and a hardcoded stop is exactly what survives one and looks wrong. Both
+   * are derived, not picked — the glow sits +0.07 OKLab L over its base at
+   * equal chroma, the falloff midway between the two dark stops.
+   */
+  --hero-glow: #a93a4c;
+  --hero-shade: #4e0e19;
+  --hero-figure-shadow: rgba(18, 4, 10, 0.45);
+
+  /*
+   * Role tokens. The names above are literal brand colours; these carry a job.
+   * `accent-ink` is the accent used as TEXT or as a stroke, lifted until it
+   * clears AA on ink (5.0:1) because the wine itself measures 1.9:1 there.
+   * `on-primary` is the label on the primary pill — ink here, but a token so
+   * a light canvas can invert it without touching a component.
+   */
+  --accent-ink: #cc6373;
+  --on-primary: #121114;
+  --primary-hover: #fbf3ea; /* hover on the primary button */
+  --ink-hover: #221f26; /* hover on the dark button */
 }
 
 @theme inline {
@@ -34,6 +72,10 @@
   --color-brown-deep: var(--brown-deep);
   --color-bronze: var(--bronze);
   --color-silk: var(--silk);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-primary: var(--on-primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-ink-hover: var(--ink-hover);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
@@ -78,16 +120,24 @@ body {
 }
 
 /*
- * Layered caramel gradients. The hero stacks two radials over the linear
- * base so no single radial bands across the full card; smaller surfaces
- * (photo cards, featured plan) use the simple pair.
+ * Layered brand gradients. The hero stacks two radials over the linear base
+ * so no single radial bands across the full card; smaller wine surfaces (the
+ * About photo card) use the simple pair, and `band` is the light one.
  */
 .gradient-hero {
   /* The bright radial doubles as a spotlight behind the figure — it
      keeps the area around her hair luminous so cut-out edges dissolve. */
   background:
-    radial-gradient(70% 85% at 78% 42%, #efb975 0%, rgba(239, 185, 117, 0) 62%),
-    radial-gradient(90% 70% at 15% 95%, #8a5a33 0%, rgba(138, 90, 51, 0) 60%),
+    radial-gradient(
+      70% 85% at 78% 42%,
+      var(--hero-glow) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      90% 70% at 15% 95%,
+      var(--hero-shade) 0%,
+      transparent 60%
+    ),
     linear-gradient(
       165deg,
       var(--caramel) 0%,
@@ -97,6 +147,9 @@ body {
 }
 .gradient-caramel {
   background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
+}
+.gradient-band {
+  background: linear-gradient(170deg, var(--band), var(--band-deep));
 }
 
 /* Underline that grows from the left on hover. */

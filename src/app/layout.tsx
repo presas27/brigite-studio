@@ -34,7 +34,7 @@ const playfair = Playfair_Display({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#d9a05b",
+  themeColor: "#8f2a3a",
 };
 
 export async function generateMetadata(): Promise<Metadata> {

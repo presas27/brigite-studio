@@ -156,7 +156,7 @@ export function Hero() {
               her cleanly. */}
           <div
             ref={figureRef}
-            className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_rgba(60,30,10,0.35)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:right-16"
+            className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_var(--hero-figure-shadow)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:right-16"
           >
             <Image
               src="/images/sara/hero-cutout-v7.webp"

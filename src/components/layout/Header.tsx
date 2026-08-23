@@ -63,7 +63,7 @@ export function Header() {
           <li>
             <Link
               href="#contacto"
-              className="inline-flex h-10 items-center rounded-full px-5 text-cream ring-1 ring-cream/40 transition-colors duration-200 hover:bg-butter hover:text-ink hover:ring-butter"
+              className="inline-flex h-10 items-center rounded-full px-5 text-cream ring-1 ring-cream/40 transition-colors duration-200 hover:bg-butter hover:text-on-primary hover:ring-butter"
             >
               {t("contact")}
             </Link>
