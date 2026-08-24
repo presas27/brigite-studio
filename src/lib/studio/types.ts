@@ -42,8 +42,19 @@ export type Tracking = "reps" | "time" | "hold" | "distance";
 export type Exercise = {
   id: string;
   name: string;
-  /** Technique cues, one per line. */
+  /**
+   * Technique cues in Portuguese, one per line. Sara's own language, and the
+   * one her clients read.
+   */
   cues: string;
+  /**
+   * The same cues in English. Two columns rather than one translated field:
+   * the library carried over from Trainerize arrives in English, Sara writes in
+   * Portuguese, and a client reads whichever their locale asks for. Either side
+   * may be empty — `cuesFor` falls back to the other rather than showing a
+   * movement with no instructions at all.
+   */
+  cuesEn: string;
   videoUrl: string | null;
   mediaId: string | null;
   tags: string[];
@@ -52,6 +63,21 @@ export type Exercise = {
   regressionOf: string | null;
   archived: boolean;
   createdAt: number;
+};
+
+/**
+ * One row of the seeded library: what a library entry looks like before it has
+ * an id, a demo or a history. Hand-written entries live in `seed.ts`; the ones
+ * carried over from Trainerize are generated into `library-trainerize.ts`.
+ */
+export type ExerciseSeed = {
+  name: string;
+  cues: string;
+  cuesEn?: string;
+  tags: string[];
+  tracking: Tracking;
+  /** A demo hosted elsewhere (YouTube, Vimeo, Trainerize) — a link, not an upload. */
+  videoUrl?: string;
 };
 
 export type BlockKind = "normal" | "superset" | "circuit" | "interval";
@@ -65,6 +91,7 @@ export type WorkoutItem = {
   videoUrl: string | null;
   mediaId: string | null;
   cues: string;
+  cuesEn: string;
   sets: number;
   /** Free text so ranges ("8-10") and ladders ("5/3/1") both work. */
   reps: string;

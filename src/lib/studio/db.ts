@@ -30,6 +30,14 @@ type Params = ReadonlyArray<string | number | bigint | null | Uint8Array>;
 const cache = globalThis as unknown as { __studioDb?: DatabaseSync };
 
 const SCHEMA = `
+-- Bookkeeping the app writes about itself. One row so far: the fingerprint of
+-- the seeded library, which is what lets a request-path seed check cost one
+-- indexed read instead of a scan of every exercise.
+CREATE TABLE IF NOT EXISTS meta (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id          TEXT PRIMARY KEY,
   email       TEXT NOT NULL UNIQUE,
@@ -314,6 +322,18 @@ function migrateWorkoutsUpdatedAt(handle: DatabaseSync): void {
   handle.exec("UPDATE workouts SET updated_at = created_at WHERE updated_at = 0");
 }
 
+/**
+ * Cues in two languages. The library carried over from Trainerize arrives in
+ * English while Sara writes Portuguese, so `cues` stopped being the whole
+ * story — see `Exercise.cuesEn`. Existing rows keep their Portuguese and start
+ * with no English, which is exactly true of everything she wrote herself.
+ */
+function migrateExercisesCuesEn(handle: DatabaseSync): void {
+  const columns = handle.prepare("PRAGMA table_info(exercises)").all() as { name: string }[];
+  if (columns.some((column) => column.name === "cues_en")) return;
+  handle.exec("ALTER TABLE exercises ADD COLUMN cues_en TEXT NOT NULL DEFAULT ''");
+}
+
 function open(): DatabaseSync {
   mkdirSync(DATA_DIR, { recursive: true });
   const db = new DatabaseSync(DB_PATH);
@@ -323,6 +343,7 @@ function open(): DatabaseSync {
   migrateAssignmentsNullableDate(db);
   migrateAssignmentsColumns(db);
   migrateWorkoutsUpdatedAt(db);
+  migrateExercisesCuesEn(db);
   return db;
 }
 

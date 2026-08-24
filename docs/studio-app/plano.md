@@ -485,9 +485,10 @@ sessões já feitas **não** mudam retroativamente. É o erro clássico neste ti
 
 ## 10. Migração do Trainerize
 
-`[INFERÊNCIA — a confirmar na conta da Sara]` A exportação do Trainerize é limitada:
-há export de transações para efeitos fiscais e transferência de programas *entre contas
-Trainerize*, mas não um export completo do histórico de treinos do aluno.
+**Confirmado** (help centre, 2026-08): não é possível exportar nem transferir treinos ou
+programas, a biblioteca de exercícios não sai, e o único CSV oficial é a lista de
+clientes (nomes e contactos). Treinos só em PDF, via `Print`.
+Fonte: [What Information Can Be Exported from ABC Trainerize?](https://help.trainerize.com/hc/en-us/articles/31089834946324-What-Information-Can-Be-Exported-from-ABC-Trainerize)
 
 Plano prudente:
 
@@ -497,6 +498,42 @@ Plano prudente:
    1–2 meses (downgrade para o tier mais barato, não cancelar já).
 3. Recomeçar o histórico na app nova. Para treino, 2 meses de histórico perdido não é
    drama; para a relação com o aluno, uma migração falhada é.
+
+### 10.1 Biblioteca de exercícios — já resolvido
+
+Não havendo export, a biblioteca sai pela própria app, e entra por um caminho único:
+
+```
+bun run trainerize:export                    ← abre o Chrome num perfil próprio, login à mão
+scripts/trainerize/export/library.json       ← o que foi capturado (fora do git)
+bun run trainerize:import                    ← lê por nome de campo, não por posição
+src/lib/studio/library-trainerize.ts         ← artefacto gerado, versionado
+```
+
+O extractor não adivinha a API do Trainerize: **observa-a**. Fica à escuta de todas as
+respostas JSON da página da biblioteca, guarda as que trazem registos com cara de
+exercício, e depois **repete o pedido mais rico com o número de paginação a andar para a
+frente** — é isso que torna a extracção independente de fazer scroll numa lista virtual.
+Se não houver JSON nenhum, lê a grelha do DOM. O relatório em
+`.data/trainerize-export-report.json` diz o que viu, com que paginação e um registo de
+amostra: é o que se lê quando uma corrida vem magra.
+
+O perfil do browser vive em `.data/trainerize-profile`, portanto o login é pedido uma vez
+e não em cada corrida. Nenhuma credencial passa pelo código.
+
+O importador lê `nome`, `instruções → cues`, `tipo → registo` (reps/tempo/isometria/
+distância), `grupo muscular + equipamento + categoria → tags` e um link de vídeo quando
+existe. Aceita `.csv`, `.tsv` e `.json`, e reporta o que ignorou: linhas sem nome,
+repetidos, colunas desconhecidas.
+
+Tem de ser **seed** e não um `INSERT` local: no preview a base vive em `/tmp` e é
+reconstruída a cada cold start (§13), portanto o que não estiver no bundle desaparece
+com a lambda. O seed insere o que falta comparando nomes sem acentos nem maiúsculas —
+correr o import outra vez acrescenta os novos e não mexe no que a Sara editou à mão,
+nem ressuscita o que ela arquivou.
+
+Os vídeos **não** vêm: ficam no Trainerize até serem re-filmados. Um exercício chega com
+link, na melhor das hipóteses, e sem nada na pior.
 
 ---
 

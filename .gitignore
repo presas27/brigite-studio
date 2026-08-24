@@ -23,6 +23,10 @@
 # studio app local data (sqlite + uploads)
 /.data
 
+# raw Trainerize exports — the committed artefact is the generated seed
+# (src/lib/studio/library-trainerize.ts), not the spreadsheet it came from
+/scripts/trainerize/export
+
 # misc
 .DS_Store
 *.pem

@@ -1,3 +1,5 @@
+import { searchKey } from "@/lib/utils";
+import type { Locale } from "@/i18n/config";
 import { all, get, run, tx, type Row } from "./db";
 import { newId } from "./id";
 import type {
@@ -30,6 +32,7 @@ function mapExercise(row: Row): Exercise {
     id: String(row.id),
     name: String(row.name),
     cues: String(row.cues ?? ""),
+    cuesEn: String(row.cues_en ?? ""),
     videoUrl: row.video_url == null ? null : String(row.video_url),
     mediaId: row.media_id == null ? null : String(row.media_id),
     tags: parseTags(row.tags),
@@ -41,15 +44,15 @@ function mapExercise(row: Row): Exercise {
 }
 
 const EXERCISE_COLUMNS =
-  "id, name, cues, video_url, media_id, tags, tracking, regression_of, archived, created_at";
+  "id, name, cues, cues_en, video_url, media_id, tags, tracking, regression_of, archived, created_at";
 
 export function listExercises(options: { search?: string; tag?: string } = {}): Exercise[] {
   const clauses = ["archived = 0"];
   const params: string[] = [];
   if (options.search?.trim()) {
-    clauses.push("(name LIKE ? OR cues LIKE ?)");
+    clauses.push("(name LIKE ? OR cues LIKE ? OR cues_en LIKE ?)");
     const like = `%${options.search.trim()}%`;
-    params.push(like, like);
+    params.push(like, like, like);
   }
   if (options.tag?.trim()) {
     clauses.push("tags LIKE ?");
@@ -80,9 +83,33 @@ export function exerciseTags(): { tag: string; count: number }[] {
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "pt"));
 }
 
+/**
+ * Every exercise name already in the library, accent- and case-folded.
+ *
+ * The seed uses this to decide what is missing. Archived rows count: a name
+ * Sara archived on purpose must not come back on the next boot.
+ */
+export function exerciseNameKeys(): Set<string> {
+  const rows = all<Row>("SELECT name FROM exercises");
+  return new Set(rows.map((row) => searchKey(String(row.name)).trim()));
+}
+
+/**
+ * The cues to show a reader, in their language. Falls back to the other
+ * language rather than to silence: a movement carried over from Trainerize has
+ * only English until Sara translates it, and an empty panel would read as
+ * "no instructions" when instructions exist.
+ */
+export function cuesFor(exercise: { cues: string; cuesEn: string }, locale: Locale): string {
+  const own = locale === "en" ? exercise.cuesEn : exercise.cues;
+  const other = locale === "en" ? exercise.cues : exercise.cuesEn;
+  return own.trim() ? own : other;
+}
+
 export function createExercise(input: {
   name: string;
   cues?: string;
+  cuesEn?: string;
   videoUrl?: string | null;
   mediaId?: string | null;
   tags?: string[];
@@ -92,11 +119,12 @@ export function createExercise(input: {
   const exerciseId = newId();
   run(
     `INSERT INTO exercises
-       (id, name, cues, video_url, media_id, tags, tracking, regression_of, archived, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+       (id, name, cues, cues_en, video_url, media_id, tags, tracking, regression_of, archived, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
     exerciseId,
     input.name.trim(),
     input.cues ?? "",
+    input.cuesEn ?? "",
     input.videoUrl?.trim() || null,
     input.mediaId ?? null,
     JSON.stringify(input.tags ?? []),
@@ -112,6 +140,7 @@ export function updateExercise(
   patch: {
     name?: string;
     cues?: string;
+    cuesEn?: string;
     videoUrl?: string | null;
     mediaId?: string | null;
     tags?: string[];
@@ -128,6 +157,10 @@ export function updateExercise(
   if (patch.cues !== undefined) {
     fields.push("cues = ?");
     values.push(patch.cues);
+  }
+  if (patch.cuesEn !== undefined) {
+    fields.push("cues_en = ?");
+    values.push(patch.cuesEn);
   }
   if (patch.videoUrl !== undefined) {
     fields.push("video_url = ?");
@@ -177,6 +210,7 @@ function mapItem(row: Row): WorkoutItem {
     videoUrl: row.video_url == null ? null : String(row.video_url),
     mediaId: row.media_id == null ? null : String(row.media_id),
     cues: String(row.cues ?? ""),
+    cuesEn: String(row.cues_en ?? ""),
     sets: Number(row.sets),
     reps: String(row.reps ?? ""),
     seconds: row.seconds == null ? null : Number(row.seconds),
@@ -199,7 +233,7 @@ export function workoutBlocks(workoutId: string): WorkoutBlock[] {
   const itemRows = all<Row>(
     `SELECT i.id, i.block_id, i.position, i.exercise_id, i.sets, i.reps, i.seconds,
             i.tempo, i.rest_seconds, i.rpe, i.notes,
-            e.name AS exercise_name, e.tracking, e.video_url, e.media_id, e.cues
+            e.name AS exercise_name, e.tracking, e.video_url, e.media_id, e.cues, e.cues_en
        FROM workout_items i
        JOIN exercises e ON e.id = i.exercise_id
       WHERE i.block_id IN (SELECT id FROM workout_blocks WHERE workout_id = ?)

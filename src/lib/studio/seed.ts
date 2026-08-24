@@ -1,20 +1,30 @@
-import { dayKey, shiftDay } from "./db";
+import { createHash } from "node:crypto";
+import { searchKey } from "@/lib/utils";
+import { dayKey, get, run, shiftDay, tx, type Row } from "./db";
 import { withStableIds } from "./id";
-import { addBlock, addItem, createExercise, createWorkout, listExercises } from "./library";
+import {
+  addBlock,
+  addItem,
+  createExercise,
+  createWorkout,
+  exerciseNameKeys,
+  listExercises,
+} from "./library";
+import { TRAINERIZE_LIBRARY } from "./library-trainerize";
 import { recordMeasurement } from "./coaching";
 import { assignWorkout, setAssignmentStatus } from "./plan";
 import { coach, createClient, createUser, setClientStatus } from "./users";
+import type { ExerciseSeed } from "./types";
 
 /**
- * First-boot seed. Creates Sara's coach account and a starter library that
- * reflects what she actually teaches — força, mobilidade, equilibrismo and
- * aerial work — because a generic gym database is exactly what the app is
- * replacing.
+ * First-boot seed. Creates Sara's coach account, the hand-written starter
+ * library that reflects what she actually teaches — força, mobilidade,
+ * equilibrismo and aerial work — and on top of it whatever came out of her
+ * Trainerize account (`library-trainerize.ts`, generated).
  *
- * Idempotent: it does nothing once a coach exists. `STUDIO_DEMO=1` additionally
- * creates one demo client with a week of plan, so the app is explorable
- * immediately — that is what makes the preview deployment a usable demo even
- * though its database dies with the lambda instance.
+ * `STUDIO_DEMO=1` additionally creates one demo client with a week of plan, so
+ * the app is explorable immediately — that is what makes the preview deployment
+ * a usable demo even though its database dies with the lambda instance.
  */
 
 const COACH_EMAIL = process.env.STUDIO_COACH_EMAIL ?? "hello@brigitestudio.com";
@@ -24,14 +34,13 @@ function noonOf(key: string): number {
   return Date.parse(`${key}T12:00:00Z`);
 }
 
-type Recipe = {
-  name: string;
-  cues: string;
-  tags: string[];
-  tracking: "reps" | "time" | "hold" | "distance";
-};
-
-const STARTER_LIBRARY: Recipe[] = [
+/**
+ * The library Sara filmed herself. The demo workouts below are built out of
+ * these names, so this list stays hand-written even after the Trainerize
+ * import: aerial, hand balancing and mobility progressions are exactly what a
+ * commercial database does not have.
+ */
+const STARTER_LIBRARY: ExerciseSeed[] = [
   {
     name: "Agachamento com barra",
     cues: "Pés à largura dos ombros\nJoelhos alinhados com os pés\nTronco firme na descida",
@@ -106,9 +115,58 @@ const STARTER_LIBRARY: Recipe[] = [
   },
 ];
 
-/** Ensure the coach account and starter library exist. Safe to call often. */
+/**
+ * What the seeded library currently says, in sixteen hex characters. Computed
+ * once per process: `seedStudio` runs on every request, and comparing one
+ * indexed row against this is what keeps that check from turning into a scan of
+ * two thousand exercises.
+ */
+const LIBRARY_FINGERPRINT = createHash("sha1")
+  .update([...STARTER_LIBRARY, ...TRAINERIZE_LIBRARY].map((entry) => entry.name).join("\n"))
+  .digest("hex")
+  .slice(0, 16);
+
+/**
+ * Insert every seeded exercise the library does not already hold, matched on
+ * name (accents and case folded). Archived rows count as present: a movement
+ * Sara archived on purpose must not reappear on the next boot, and neither is
+ * anything she edited overwritten — this only ever adds what is missing.
+ *
+ * Separate from `seed` because a local checkout keeps its database across
+ * restarts, so re-running the Trainerize import has to reach a library that was
+ * already seeded. One transaction: two thousand inserts on a cold start are one
+ * commit, not two thousand.
+ */
+function syncLibrary(): void {
+  tx(() => {
+    const present = exerciseNameKeys();
+    for (const entry of [...STARTER_LIBRARY, ...TRAINERIZE_LIBRARY]) {
+      const key = searchKey(entry.name).trim();
+      if (!key || present.has(key)) continue;
+      present.add(key);
+      createExercise({
+        name: entry.name,
+        cues: entry.cues,
+        cuesEn: entry.cuesEn ?? "",
+        tags: entry.tags,
+        tracking: entry.tracking,
+        videoUrl: entry.videoUrl ?? null,
+      });
+    }
+    run(
+      "INSERT INTO meta (key, value) VALUES ('library', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      LIBRARY_FINGERPRINT,
+    );
+  });
+}
+
+/** Ensure the coach account and the seeded library exist. Safe to call often. */
 export function seedStudio(): void {
-  if (coach()) return;
+  if (coach()) {
+    const seeded = get<Row>("SELECT value FROM meta WHERE key = 'library'");
+    if (String(seeded?.value ?? "") !== LIBRARY_FINGERPRINT) syncLibrary();
+    return;
+  }
   withStableIds(seed);
 }
 
@@ -126,14 +184,7 @@ function seed(): void {
     status: "active",
   });
 
-  for (const recipe of STARTER_LIBRARY) {
-    createExercise({
-      name: recipe.name,
-      cues: recipe.cues,
-      tags: recipe.tags,
-      tracking: recipe.tracking,
-    });
-  }
+  syncLibrary();
 
   const byName = new Map(listExercises().map((exercise) => [exercise.name, exercise.id]));
 
