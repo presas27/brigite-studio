@@ -3,8 +3,10 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
+import type { Locale } from "@/i18n/config";
+import { cuesFor } from "@/lib/studio/cues";
 import type { SetLog } from "@/lib/studio/types";
 import { SetFields } from "./SetFields";
 import type { SetValue } from "./useSessionLog";
@@ -84,7 +86,12 @@ export function ExerciseStage({
     { scope, dependencies: [step.key, enterAs] },
   );
 
-  const cueLines = step.item.cues.split("\n").filter((line) => line.trim().length > 0);
+  // The session player is what a client reads mid-set, so it follows her
+  // locale; cuesFor falls back to the other language rather than showing a
+  // movement with no instructions.
+  const cueLines = cuesFor(step.item, useLocale() as Locale)
+    .split("\n")
+    .filter((line) => line.trim().length > 0);
   const itemNotes = step.item.notes.trim();
   const target =
     step.tracking === "time" || step.tracking === "hold"

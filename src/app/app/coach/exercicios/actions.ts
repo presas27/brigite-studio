@@ -109,3 +109,89 @@ export async function archiveExerciseAction(exerciseId: string): Promise<void> {
   revalidatePath(LIBRARY_PATH);
   redirect(LIBRARY_PATH);
 }
+
+/**
+ * State for the exercise page's inline editors (cues, tags, video link). Each
+ * saves one field, so none of `ExerciseFormState`'s upload failures apply, and
+ * the only thing that can be refused is a video link that is not usable as one
+ * — cues and tags are legitimately empty.
+ */
+export type FieldState = { status: "idle" } | { status: "ok" } | { status: "error"; reason: "url" };
+
+export async function saveCuesAction(
+  exerciseId: string,
+  _prev: FieldState,
+  formData: FormData,
+): Promise<FieldState> {
+  await requireCoach();
+
+  // Cues are one per line; a stray blank line from trimming or pasting is
+  // noise, not content, so it's dropped rather than preserved as an empty cue.
+  updateExercise(exerciseId, {
+    cues: String(formData.get("cues") ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join("\n"),
+    cuesEn: String(formData.get("cuesEn") ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join("\n"),
+  });
+
+  revalidatePath(LIBRARY_PATH);
+  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  return { status: "ok" };
+}
+
+export async function saveTagsAction(
+  exerciseId: string,
+  _prev: FieldState,
+  formData: FormData,
+): Promise<FieldState> {
+  await requireCoach();
+
+  // The client posts the full tag list on every save, so a duplicate here
+  // means the same tag was added twice client-side, not two distinct tags.
+  const tags = [...new Set(parseTags(formData.get("tags")))];
+
+  updateExercise(exerciseId, { tags });
+
+  revalidatePath(LIBRARY_PATH);
+  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  return { status: "ok" };
+}
+
+export async function saveVideoUrlAction(
+  exerciseId: string,
+  _prev: FieldState,
+  formData: FormData,
+): Promise<FieldState> {
+  await requireCoach();
+  const videoUrl = String(formData.get("videoUrl") ?? "").trim();
+
+  if (!videoUrl) {
+    updateExercise(exerciseId, { videoUrl: null });
+    revalidatePath(LIBRARY_PATH);
+    revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+    return { status: "ok" };
+  }
+
+  // Protocol check, not a YouTube-shaped regex: the panel embeds YouTube
+  // links but a link to anything else is still a valid demo to share, while
+  // a `javascript:` string rendered into an anchor's href is not.
+  try {
+    const parsed = new URL(videoUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return { status: "error", reason: "url" };
+    }
+  } catch {
+    return { status: "error", reason: "url" };
+  }
+
+  updateExercise(exerciseId, { videoUrl });
+  revalidatePath(LIBRARY_PATH);
+  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  return { status: "ok" };
+}

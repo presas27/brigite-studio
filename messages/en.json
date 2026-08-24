@@ -451,7 +451,22 @@
       "demo": "Watch demo",
       "noCues": "No cues yet.",
       "noMedia": "No demo video yet.",
-      "regressionOf": "Regression of"
+      "regressionOf": "Regression of",
+      "cuesPtLabel": "Portuguese cues",
+      "cuesEnLabel": "English cues",
+      "cuesEditHint": "Click to edit",
+      "cuesEmpty": "No cues in this language yet.",
+      "addTag": "Add tag",
+      "tagPlaceholder": "strength, mobility…",
+      "removeTag": "Remove the tag {tag}",
+      "videoAdd": "Add a YouTube link",
+      "videoHintYoutube": "Paste the YouTube link. The video stays there — the app stores no files.",
+      "videoPlaceholder": "https://www.youtube.com/watch?v=…",
+      "videoChange": "Change link",
+      "videoRemove": "Remove video",
+      "videoOpen": "Open on YouTube",
+      "videoExternal": "This link is not from YouTube, so it opens outside the app.",
+      "showingSome": "Showing {shown} of {total}. Type to filter."
     },
     "workouts": {
       "title": "Workouts",
@@ -831,7 +846,8 @@
       "tooLong": "Too long.",
       "fileType": "Unsupported format.",
       "fileSize": "File is too large.",
-      "noFile": "Choose a file or paste a link."
+      "noFile": "Choose a file or paste a link.",
+      "url": "Invalid link."
     },
     "overview": {
       "title": "Overview",

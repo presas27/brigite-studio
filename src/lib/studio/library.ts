@@ -1,5 +1,4 @@
 import { searchKey } from "@/lib/utils";
-import type { Locale } from "@/i18n/config";
 import { all, get, run, tx, type Row } from "./db";
 import { newId } from "./id";
 import type {
@@ -92,18 +91,6 @@ export function exerciseTags(): { tag: string; count: number }[] {
 export function exerciseNameKeys(): Set<string> {
   const rows = all<Row>("SELECT name FROM exercises");
   return new Set(rows.map((row) => searchKey(String(row.name)).trim()));
-}
-
-/**
- * The cues to show a reader, in their language. Falls back to the other
- * language rather than to silence: a movement carried over from Trainerize has
- * only English until Sara translates it, and an empty panel would read as
- * "no instructions" when instructions exist.
- */
-export function cuesFor(exercise: { cues: string; cuesEn: string }, locale: Locale): string {
-  const own = locale === "en" ? exercise.cuesEn : exercise.cues;
-  const other = locale === "en" ? exercise.cues : exercise.cuesEn;
-  return own.trim() ? own : other;
 }
 
 export function createExercise(input: {

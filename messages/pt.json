@@ -451,7 +451,22 @@
       "demo": "Ver demo",
       "noCues": "Ainda sem cues.",
       "noMedia": "Ainda sem vídeo demo.",
-      "regressionOf": "Regressão de"
+      "regressionOf": "Regressão de",
+      "cuesPtLabel": "Cues em português",
+      "cuesEnLabel": "Cues em inglês",
+      "cuesEditHint": "Clica para editar",
+      "cuesEmpty": "Ainda sem cues nesta língua.",
+      "addTag": "Adicionar tag",
+      "tagPlaceholder": "força, mobilidade…",
+      "removeTag": "Remover a tag {tag}",
+      "videoAdd": "Adicionar link do YouTube",
+      "videoHintYoutube": "Cola o link do YouTube. O vídeo fica alojado lá — a app não guarda ficheiros.",
+      "videoPlaceholder": "https://www.youtube.com/watch?v=…",
+      "videoChange": "Mudar link",
+      "videoRemove": "Remover vídeo",
+      "videoOpen": "Abrir no YouTube",
+      "videoExternal": "Este link não é do YouTube, por isso abre fora da app.",
+      "showingSome": "A mostrar {shown} de {total}. Escreve para filtrar."
     },
     "workouts": {
       "title": "Treinos",
@@ -831,7 +846,8 @@
       "tooLong": "Demasiado longo.",
       "fileType": "Formato não suportado.",
       "fileSize": "Ficheiro demasiado grande.",
-      "noFile": "Escolhe um ficheiro ou cola um link."
+      "noFile": "Escolhe um ficheiro ou cola um link.",
+      "url": "Link inválido."
     },
     "overview": {
       "title": "Resumo",

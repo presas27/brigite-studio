@@ -11,6 +11,10 @@ import { capitalize, searchKey } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseListRow } from "./ExerciseListRow";
 
+// More than a screenful in either view, so scrolling still feels
+// unbounded, while the DOM stays small enough that filtering is instant.
+const LIMIT = 60;
+
 /**
  * The library's filter bar and results, all client-side: with everything
  * already on the page, filtering by typing or picking a category is instant —
@@ -40,11 +44,14 @@ export function ExerciseLibrary({
         !needle ||
         searchKey(exercise.name).includes(needle) ||
         searchKey(exercise.cues).includes(needle) ||
+        searchKey(exercise.cuesEn).includes(needle) ||
         exercise.tags.some((exerciseTag) => searchKey(exerciseTag).includes(needle));
       const matchesTag = !tag || exercise.tags.includes(tag);
       return matchesQuery && matchesTag;
     });
   }, [exercises, query, tag]);
+
+  const shown = results.slice(0, LIMIT);
 
   return (
     <div className="space-y-6">
@@ -62,16 +69,20 @@ export function ExerciseLibrary({
         <Empty title={t("noResults")} />
       ) : (
         <>
-          <p className={muted}>{t("count", { count: results.length })}</p>
+          <p className={muted}>
+            {results.length > LIMIT
+              ? t("showingSome", { shown: LIMIT, total: results.length })
+              : t("count", { count: results.length })}
+          </p>
           {view === "grid" ? (
             <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-4">
-              {results.map((exercise) => (
+              {shown.map((exercise) => (
                 <ExerciseCard key={exercise.id} exercise={exercise} />
               ))}
             </ul>
           ) : (
             <ul className="space-y-2">
-              {results.map((exercise) => (
+              {shown.map((exercise) => (
                 <ExerciseListRow key={exercise.id} exercise={exercise} />
               ))}
             </ul>
