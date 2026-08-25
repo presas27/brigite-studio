@@ -6,6 +6,7 @@ import { signInAsDemo } from "@/app/app/actions";
 import { SignInForm } from "@/components/studio/SignInForm";
 import { buttonGhost, buttonPrimary, eyebrow, heading, muted } from "@/components/studio/theme";
 import { SolMark } from "@/components/ui/SolMark";
+import { PILOT_CLIENTS } from "@/lib/studio/seed";
 import { currentUser } from "@/lib/studio/auth";
 
 export const metadata: Metadata = {
@@ -60,17 +61,21 @@ export default async function SignInPage({
             <p className={`mt-2 ${muted}`}>{t("demoLead")}</p>
             <div className="mt-4 space-y-2">
               <form action={signInAsDemo}>
-                <input type="hidden" name="role" value="coach" />
+                <input type="hidden" name="as" value="coach" />
                 <button type="submit" className={`${buttonPrimary} w-full`}>
                   {t("demoAsCoach")}
                 </button>
               </form>
-              <form action={signInAsDemo}>
-                <input type="hidden" name="role" value="client" />
-                <button type="submit" className={`${buttonGhost} w-full`}>
-                  {t("demoAsClient")}
-                </button>
-              </form>
+              {/* One button per pilot account. Sara needs to land in either
+                  chair without a mailbox, and so does whoever is watching. */}
+              {PILOT_CLIENTS.map((client) => (
+                <form key={client.email} action={signInAsDemo}>
+                  <input type="hidden" name="as" value={client.email} />
+                  <button type="submit" className={`${buttonGhost} w-full`}>
+                    {t("demoAsClient", { name: client.name.split(" ")[0] })}
+                  </button>
+                </form>
+              ))}
             </div>
           </div>
         )}

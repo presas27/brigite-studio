@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { searchKey } from "@/lib/utils";
-import { dayKey, get, run, shiftDay, tx, type Row } from "./db";
+import { get, run, tx, type Row } from "./db";
 import { withStableIds } from "./id";
 import {
   addBlock,
@@ -11,28 +11,37 @@ import {
   listExercises,
 } from "./library";
 import { TRAINERIZE_LIBRARY } from "./library-trainerize";
-import { recordMeasurement } from "./coaching";
-import { assignWorkout, setAssignmentStatus } from "./plan";
 import { coach, createClient, createUser, setClientStatus } from "./users";
 import type { ExerciseSeed } from "./types";
 
 /**
  * First-boot seed. Creates Sara's coach account, the hand-written starter
  * library that reflects what she actually teaches — força, mobilidade,
- * equilibrismo and aerial work — and on top of it whatever came out of her
- * Trainerize account (`library-trainerize.ts`, generated).
+ * equilibrismo and aerial work — on top of it whatever came out of her
+ * Trainerize account (`library-trainerize.ts`, generated), a few master
+ * workouts, and the two clients the pilot runs with.
  *
- * `STUDIO_DEMO=1` additionally creates one demo client with a week of plan, so
- * the app is explorable immediately — that is what makes the preview deployment
- * a usable demo even though its database dies with the lambda instance.
+ * The clients arrive empty: active accounts, no plan, no history, no
+ * measurements. This used to fabricate a month of completed sessions so the
+ * preview had charts to draw, and that is exactly wrong for a pilot — Sara
+ * would be reading adherence numbers that nobody earned. She writes the plans;
+ * Iris does the sessions; every number on screen is then true.
  */
 
 const COACH_EMAIL = process.env.STUDIO_COACH_EMAIL ?? "hello@brigitestudio.com";
 
-/** Midday on a `YYYY-MM-DD`, so a seeded session never lands on the wrong day. */
-function noonOf(key: string): number {
-  return Date.parse(`${key}T12:00:00Z`);
-}
+/**
+ * Who the pilot runs with, and the only accounts the quick sign-in on
+ * `/app/entrar` will hand a session to.
+ *
+ * Addresses are on the studio's own domain because the pilot signs in by
+ * button, not by email. Swap them for the real ones when the magic link has to
+ * reach an inbox.
+ */
+export const PILOT_CLIENTS = [
+  { email: "iris@brigitestudio.com", name: "Iris Fernandes" },
+  { email: "guilherme@brigitestudio.com", name: "Guilherme Presas" },
+] as const;
 
 /**
  * The library Sara filmed herself. The demo workouts below are built out of
@@ -238,77 +247,16 @@ function seed(): void {
     if (exerciseId) addItem(aerialBlock, { exerciseId, sets: 3, reps: "3", seconds: 20, restSeconds: 120 });
   }
 
-  if (process.env.STUDIO_DEMO !== "1") return;
-
-  const demo = createClient({
-    email: "aluna.demo@brigitestudio.com",
-    name: "Joana Santos",
-    plan: "online",
-    goals: "Primeira parada de mãos livre e mobilidade de ombro para tecido.",
-    injuries: "Ombro direito sensível em fim de amplitude.",
-  });
-  setClientStatus(demo.id, "active");
-
-  const monday = shiftDay(dayKey(), -((new Date().getUTCDay() + 6) % 7));
-  const plan: [string, number][] = [
-    [strength, 0],
-    [mobility, 1],
-    [aerial, 3],
-    [strength, 4],
-    [mobility, 5],
-  ];
-  // Days of the current week already behind us are done — an aluna opening the
-  // demo on a Thursday should find Monday and Tuesday closed, not three red
-  // rings telling her she has already failed the week she just started.
-  const todayKey = dayKey();
-  for (const [workoutId, offset] of plan) {
-    const date = shiftDay(monday, offset);
-    const assignmentId = assignWorkout({ clientId: demo.id, workoutId, date });
-    if (assignmentId && date < todayKey) {
-      setAssignmentStatus(assignmentId, "done", noonOf(date));
-    }
-  }
-
-  // Four weeks behind the current one, so the demo lands on an aluna mid-block
-  // rather than on her first day. An overview built out of adherence, streaks
-  // and a weight line has nothing to draw without a past, and a grid of empty
-  // states is a fair picture of an empty database but a useless preview.
-  //
-  // The misses are placed, not random: the seed has to produce the same
-  // screenshot on every boot, and one skipped session in the oldest week is
-  // what makes the dot grid read as a real month instead of a full house.
-  const past: { weeksBack: number; skipped: number[] }[] = [
-    { weeksBack: 4, skipped: [3] },
-    { weeksBack: 3, skipped: [] },
-    { weeksBack: 2, skipped: [1] },
-    { weeksBack: 1, skipped: [] },
-  ];
-  for (const week of past) {
-    const from = shiftDay(monday, -7 * week.weeksBack);
-    for (const [workoutId, offset] of plan) {
-      const assignmentId = assignWorkout({
-        clientId: demo.id,
-        workoutId,
-        date: shiftDay(from, offset),
-      });
-      if (!assignmentId) continue;
-      setAssignmentStatus(
-        assignmentId,
-        week.skipped.includes(offset) ? "skipped" : "done",
-        noonOf(shiftDay(from, offset)),
-      );
-    }
-  }
-
-  // A weight reading a week, drifting down and back up the way a real one does
-  // — a monotonic line would draw a chart nobody's body has ever produced.
-  const weights = [64.8, 64.5, 64.6, 64.1, 63.9];
-  weights.forEach((value, index) => {
-    recordMeasurement({
-      clientId: demo.id,
-      kind: "weight",
-      value,
-      date: shiftDay(monday, -7 * (weights.length - 1 - index)),
+  for (const person of PILOT_CLIENTS) {
+    const client = createClient({
+      email: person.email,
+      name: person.name,
+      plan: "online",
+      // Left blank on purpose. Goals and injuries are facts about a real
+      // person, and Sara is the one who takes them down.
+      goals: "",
+      injuries: "",
     });
-  });
+    setClientStatus(client.id, "active");
+  }
 }

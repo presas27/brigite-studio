@@ -6,8 +6,8 @@ import { getUserLocale } from "@/i18n/locale";
 import { rateLimit } from "@/lib/rate-limit";
 import { createSignInToken, endSession, startSession } from "@/lib/studio/auth";
 import { sendSignInLink } from "@/lib/studio/email";
-import { seedStudio } from "@/lib/studio/seed";
-import { coach, findUserByEmail, listClients } from "@/lib/studio/users";
+import { PILOT_CLIENTS, seedStudio } from "@/lib/studio/seed";
+import { coach, findUserByEmail } from "@/lib/studio/users";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -67,25 +67,33 @@ export async function requestSignInLink(
 }
 
 /**
- * Demo sign-in, only on a deployment that sets `STUDIO_DEMO=1`.
+ * Quick sign-in for the pilot, only on a deployment that sets `STUDIO_DEMO=1`.
  *
  * The magic-link flow cannot work there: the token lives in a database that
  * dies with the lambda instance that minted it, and there is no mail provider
- * configured anyway. So the demo hands a session straight to one of the two
- * seeded accounts — never to a real one, because on a demo deployment those are
- * the only accounts that exist.
+ * configured anyway. So the button hands a session straight to one of the
+ * seeded accounts.
+ *
+ * The posted address is checked against the roster rather than simply looked
+ * up. This is an unauthenticated form, and without that check it would be a way
+ * into any account on the deployment by typing its email.
  */
 // oxlint-disable-next-line react-doctor/server-auth-actions -- deliberately unauthenticated, and inert unless STUDIO_DEMO=1 is set on the deployment.
 export async function signInAsDemo(formData: FormData): Promise<void> {
   if (process.env.STUDIO_DEMO !== "1") redirect("/app/entrar");
   seedStudio();
 
-  const asClient = formData.get("role") === "client";
-  const user = asClient ? listClients()[0] : coach();
+  const as = String(formData.get("as") ?? "");
+  const user =
+    as === "coach"
+      ? coach()
+      : PILOT_CLIENTS.some((client) => client.email === as)
+        ? findUserByEmail(as)
+        : undefined;
   if (!user) redirect("/app/entrar?erro=link");
 
   await startSession(user.id);
-  redirect(asClient ? "/app/aluno" : "/app/coach");
+  redirect(user.role === "coach" ? "/app/coach" : "/app/aluno");
 }
 
 /** Drop the session cookie and return to the sign-in screen. */

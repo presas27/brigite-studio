@@ -179,10 +179,10 @@
       "failedTitle": "Link inválido",
       "failedLead": "O link expirou ou já foi usado. Pede um novo.",
       "retry": "Pedir novo link",
-      "demoTitle": "Modo demonstração",
-      "demoLead": "Este ambiente é uma pré-visualização com dados fictícios. Entra sem email e explora os dois lados da app.",
+      "demoTitle": "Entrada rápida",
+      "demoLead": "Ambiente de testes. Entra sem email, do lado que quiseres.",
       "demoAsCoach": "Entrar como Sara (treinadora)",
-      "demoAsClient": "Entrar como aluna demo"
+      "demoAsClient": "Entrar como {name}"
     },
     "common": {
       "save": "Guardar",
