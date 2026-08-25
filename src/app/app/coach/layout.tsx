@@ -1,4 +1,5 @@
 import { CoachChrome } from "@/components/studio/coach/CoachChrome";
+import { EphemeralNotice } from "@/components/studio/EphemeralNotice";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { requireCoach } from "@/lib/studio/auth";
 import { coachAlerts, listSubmissions, unreadCount } from "@/lib/studio/coaching";
@@ -38,6 +39,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
       alerts={coachAlerts(coach.id)}
       quickAdd={<AddWorkoutModal compact />}
     >
+      <EphemeralNotice />
       {children}
     </CoachChrome>
   );

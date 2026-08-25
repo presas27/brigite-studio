@@ -219,7 +219,8 @@
       "allCategories": "All",
       "viewGrid": "Grid view",
       "viewList": "List view",
-      "noMatches": "No matches."
+      "noMatches": "No matches.",
+      "ephemeralData": "Test environment: the database lives on whichever machine serves each request, so anything you save here may be gone on the next one. Do not build anything for real until saving is permanent."
     },
     "today": {
       "title": "Today",

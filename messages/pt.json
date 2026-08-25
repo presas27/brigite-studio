@@ -219,7 +219,8 @@
       "allCategories": "Todas",
       "viewGrid": "Ver em grelha",
       "viewList": "Ver em lista",
-      "noMatches": "Sem resultados."
+      "noMatches": "Sem resultados.",
+      "ephemeralData": "Ambiente de testes: a base de dados vive na máquina que serve cada pedido, por isso o que gravares aqui pode desaparecer no pedido seguinte. Não construas nada a sério até a gravação ser permanente."
     },
     "today": {
       "title": "Hoje",

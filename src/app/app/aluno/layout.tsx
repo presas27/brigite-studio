@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AlunoChrome } from "@/components/studio/aluno/AlunoChrome";
+import { EphemeralNotice } from "@/components/studio/EphemeralNotice";
 import { buttonPrimary } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
 import { clientAlerts } from "@/lib/studio/clientConsole";
@@ -62,6 +63,7 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
         )
       }
     >
+      <EphemeralNotice />
       {children}
     </AlunoChrome>
   );
