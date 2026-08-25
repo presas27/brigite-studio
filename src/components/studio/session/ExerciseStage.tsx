@@ -203,32 +203,14 @@ export function ExerciseStage({
 }
 
 /**
- * The demo, at the size a demo is worth. Keyed on the exercise so it survives a
- * change of set untouched — restarting the clip every time she finishes a set
- * would be the loudest thing on the screen. With no clip to show it stays a
- * quiet plate rather than collapsing: it is the slot the clip will fill, and
- * the two columns keep their shape whether or not the exercise has one yet.
+ * The demo slot, at the size a demo is worth: a quiet plate with the
+ * movement's icon, and an outbound link to the video when the exercise has
+ * one. The two columns keep their shape whether or not it does.
  */
 function StageMedia({ step }: { step: SessionStep }) {
   const t = useTranslations("Studio.session");
   const frame =
     "relative order-3 min-h-[10rem] w-full flex-1 overflow-hidden rounded-[1.5rem] bg-cream/[0.06] ring-1 ring-cream/10 md:order-none md:aspect-square md:min-h-0 md:flex-none md:self-start";
-
-  if (step.item.mediaId) {
-    return (
-      <video
-        key={step.item.mediaId}
-        data-stage="identity"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        className={cn(frame, "object-cover")}
-        src={`/app/media/${step.item.mediaId}`}
-      />
-    );
-  }
 
   return (
     <div data-stage="identity" className={cn(frame, "grid place-items-center")}>

@@ -24,7 +24,7 @@ export function ExerciseCard({ exercise }: { exercise: Exercise }) {
         href={`/app/coach/exercicios/${exercise.id}`}
         className="block h-full rounded-[1rem] bg-cream/[0.04] p-2.5 ring-1 ring-cream/10 transition hover:bg-cream/[0.07] hover:ring-cream/25"
       >
-        <ExerciseThumb mediaId={exercise.mediaId} className="aspect-[3/2] w-full" />
+        <ExerciseThumb videoUrl={exercise.videoUrl} className="aspect-[3/2] w-full" />
         <span className="mt-3 block px-1 pb-0.5">
           {/* Two lines rather than an ellipsis: in the builder the picture
               identifies the card, here the name is what Sara scans by. */}

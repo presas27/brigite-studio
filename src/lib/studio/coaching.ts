@@ -1,164 +1,11 @@
 import { all, dayKey, get, run, shiftDay, weekKey, type Row } from "./db";
 import { newId } from "./id";
-import type {
-  ActivityItem,
-  Checkin,
-  CoachAlert,
-  Measurement,
-  Message,
-  ReviewComment,
-  Submission,
-  Verdict,
-} from "./types";
+import type { ActivityItem, Checkin, CoachAlert, Measurement, Message } from "./types";
 
 /**
- * The coaching loop: video submissions and Sara's annotated feedback, the 1:1
- * thread, weekly check-ins, and the aggregation behind the coach's "Hoje"
- * console.
- *
- * Video review is the point of difference. A submission carries comments
- * pinned to a millisecond offset in the clip, so "o ombro sobe aqui" lands on
- * the exact frame instead of somewhere in a paragraph.
+ * The coaching loop: the 1:1 thread, weekly check-ins, and the aggregation
+ * behind the coach's "Hoje" console.
  */
-
-/* -------------------------------------------------------------- submissions */
-
-function mapComment(row: Row): ReviewComment {
-  return {
-    id: String(row.id),
-    tMs: Number(row.t_ms),
-    body: String(row.body),
-    createdAt: Number(row.created_at),
-  };
-}
-
-function mapSubmission(row: Row, comments: ReviewComment[]): Submission {
-  return {
-    id: String(row.id),
-    clientId: String(row.client_id),
-    clientName: String(row.client_name ?? ""),
-    assignmentId: row.assignment_id == null ? null : String(row.assignment_id),
-    exerciseId: row.exercise_id == null ? null : String(row.exercise_id),
-    exerciseName: row.exercise_name == null ? null : String(row.exercise_name),
-    mediaId: row.media_id == null ? null : String(row.media_id),
-    videoUrl: row.video_url == null ? null : String(row.video_url),
-    note: String(row.note ?? ""),
-    status: row.status === "reviewed" ? "reviewed" : "pending",
-    verdict: row.verdict == null ? null : (String(row.verdict) as Verdict),
-    reply: String(row.reply ?? ""),
-    reviewedAt: row.reviewed_at == null ? null : Number(row.reviewed_at),
-    createdAt: Number(row.created_at),
-    comments,
-  };
-}
-
-const SUBMISSION_SELECT = `
-  SELECT s.id, s.client_id, s.assignment_id, s.exercise_id, s.media_id, s.video_url,
-         s.note, s.status, s.verdict, s.reply, s.reviewed_at, s.created_at,
-         u.name AS client_name, e.name AS exercise_name
-    FROM submissions s
-    JOIN users u ON u.id = s.client_id
-    LEFT JOIN exercises e ON e.id = s.exercise_id`;
-
-function commentsFor(submissionIds: string[]): Map<string, ReviewComment[]> {
-  const grouped = new Map<string, ReviewComment[]>();
-  if (submissionIds.length === 0) return grouped;
-  const placeholders = submissionIds.map(() => "?").join(", ");
-  const rows = all<Row>(
-    `SELECT id, submission_id, t_ms, body, created_at FROM review_comments
-      WHERE submission_id IN (${placeholders}) ORDER BY t_ms`,
-    ...submissionIds,
-  );
-  for (const row of rows) {
-    const key = String(row.submission_id);
-    const list = grouped.get(key);
-    if (list) list.push(mapComment(row));
-    else grouped.set(key, [mapComment(row)]);
-  }
-  return grouped;
-}
-
-export function createSubmission(input: {
-  clientId: string;
-  assignmentId?: string | null;
-  exerciseId?: string | null;
-  mediaId?: string | null;
-  videoUrl?: string | null;
-  note?: string;
-}): string {
-  const submissionId = newId();
-  run(
-    `INSERT INTO submissions
-       (id, client_id, assignment_id, exercise_id, media_id, video_url, note, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-    submissionId,
-    input.clientId,
-    input.assignmentId ?? null,
-    input.exerciseId ?? null,
-    input.mediaId ?? null,
-    input.videoUrl?.trim() || null,
-    input.note ?? "",
-    Date.now(),
-  );
-  return submissionId;
-}
-
-export function findSubmission(submissionId: string): Submission | undefined {
-  const row = get<Row>(`${SUBMISSION_SELECT} WHERE s.id = ?`, submissionId);
-  if (!row) return undefined;
-  return mapSubmission(row, commentsFor([submissionId]).get(submissionId) ?? []);
-}
-
-export function listSubmissions(
-  options: { clientId?: string; status?: "pending" | "reviewed"; limit?: number } = {},
-): Submission[] {
-  const clauses: string[] = [];
-  const params: (string | number)[] = [];
-  if (options.clientId) {
-    clauses.push("s.client_id = ?");
-    params.push(options.clientId);
-  }
-  if (options.status) {
-    clauses.push("s.status = ?");
-    params.push(options.status);
-  }
-  const rows = all<Row>(
-    `${SUBMISSION_SELECT}
-      ${clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""}
-      ORDER BY s.created_at DESC LIMIT ?`,
-    ...params,
-    options.limit ?? 50,
-  );
-  const grouped = commentsFor(rows.map((row) => String(row.id)));
-  return rows.map((row) => mapSubmission(row, grouped.get(String(row.id)) ?? []));
-}
-
-export function addReviewComment(submissionId: string, tMs: number, body: string): void {
-  run(
-    "INSERT INTO review_comments (id, submission_id, t_ms, body, created_at) VALUES (?, ?, ?, ?, ?)",
-    newId(),
-    submissionId,
-    Math.max(0, Math.trunc(tMs)),
-    body.trim(),
-    Date.now(),
-  );
-}
-
-export function removeReviewComment(commentId: string): void {
-  run("DELETE FROM review_comments WHERE id = ?", commentId);
-}
-
-/** Close a review: overall verdict plus a written reply. */
-export function finishReview(submissionId: string, verdict: Verdict, reply: string): void {
-  run(
-    `UPDATE submissions SET status = 'reviewed', verdict = ?, reply = ?, reviewed_at = ?
-      WHERE id = ?`,
-    verdict,
-    reply,
-    Date.now(),
-    submissionId,
-  );
-}
 
 /* ------------------------------------------------------------------ messages */
 
@@ -169,7 +16,6 @@ function mapMessage(row: Row): Message {
     authorId: String(row.author_id),
     authorRole: row.author_role === "coach" ? "coach" : "client",
     body: String(row.body),
-    mediaId: row.media_id == null ? null : String(row.media_id),
     readAt: row.read_at == null ? null : Number(row.read_at),
     createdAt: Number(row.created_at),
   };
@@ -178,7 +24,7 @@ function mapMessage(row: Row): Message {
 /** The whole thread for one client, oldest first. */
 export function messagesFor(clientId: string, limit = 200): Message[] {
   const rows = all<Row>(
-    `SELECT m.id, m.client_id, m.author_id, m.body, m.media_id, m.read_at, m.created_at,
+    `SELECT m.id, m.client_id, m.author_id, m.body, m.read_at, m.created_at,
             u.role AS author_role
        FROM messages m JOIN users u ON u.id = m.author_id
       WHERE m.client_id = ?
@@ -193,16 +39,14 @@ export function sendMessage(input: {
   clientId: string;
   authorId: string;
   body: string;
-  mediaId?: string | null;
 }): void {
   run(
-    `INSERT INTO messages (id, client_id, author_id, body, media_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO messages (id, client_id, author_id, body, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
     newId(),
     input.clientId,
     input.authorId,
     input.body.trim(),
-    input.mediaId ?? null,
     Date.now(),
   );
 }
@@ -361,27 +205,12 @@ export function measurements(clientId: string, kind?: string, limit = 60): Measu
 /* ------------------------------------------------------------ coach console */
 
 /**
- * Everything that needs Sara's attention, newest first. Five sources, one list
+ * Everything that needs Sara's attention, newest first. Four sources, one list
  * — the whole point is that she never has to go looking. Ordering is by
  * timestamp so the console reads like an inbox, not a dashboard.
  */
 export function coachAlerts(coachId: string): CoachAlert[] {
   const alerts: CoachAlert[] = [];
-
-  for (const row of all<Row>(
-    `SELECT s.id, s.client_id, s.created_at, u.name
-       FROM submissions s JOIN users u ON u.id = s.client_id
-      WHERE s.status = 'pending' AND u.status != 'archived'
-      ORDER BY s.created_at DESC LIMIT 30`,
-  )) {
-    alerts.push({
-      kind: "submission",
-      clientId: String(row.client_id),
-      clientName: String(row.name),
-      submissionId: String(row.id),
-      at: Number(row.created_at),
-    });
-  }
 
   for (const row of all<Row>(
     `SELECT c.client_id, c.week_of, c.submitted_at, u.name
@@ -462,7 +291,7 @@ export function coachAlerts(coachId: string): CoachAlert[] {
 
 /**
  * What has *happened*, newest first — the counterpart to `coachAlerts`, which
- * is only what still needs doing. Seven sources merged in memory rather than
+ * is only what still needs doing. Six sources merged in memory rather than
  * UNIONed in SQL: each one needs a different join and a different subject, and
  * at one trainer's scale the readability is worth more than the round trips.
  */
@@ -492,40 +321,6 @@ export function recentActivity(limit = 40): ActivityItem[] {
   };
   pushSessions("done");
   pushSessions("skipped");
-
-  for (const row of all<Row>(
-    `SELECT s.id, s.client_id, s.created_at, s.status, s.verdict, s.reviewed_at,
-            u.name, e.name AS exercise_name
-       FROM submissions s
-       JOIN users u ON u.id = s.client_id
-       LEFT JOIN exercises e ON e.id = s.exercise_id
-      WHERE u.status != 'archived'
-      ORDER BY s.created_at DESC LIMIT ?`,
-    limit,
-  )) {
-    const base = {
-      clientId: String(row.client_id),
-      clientName: String(row.name),
-      subject: row.exercise_name == null ? null : String(row.exercise_name),
-      href: `/app/coach/videos/${String(row.id)}`,
-    };
-    items.push({
-      ...base,
-      id: `sub-${String(row.id)}`,
-      kind: "submission",
-      actor: "client",
-      at: Number(row.created_at),
-    });
-    if (row.reviewed_at != null) {
-      items.push({
-        ...base,
-        id: `rev-${String(row.id)}`,
-        kind: "review",
-        actor: "coach",
-        at: Number(row.reviewed_at),
-      });
-    }
-  }
 
   for (const row of all<Row>(
     `SELECT c.id, c.client_id, c.week_of, c.submitted_at, c.replied_at, u.name

@@ -9,8 +9,6 @@ import { cn } from "@/lib/utils";
 const ICON: Record<ClientActivityItem["kind"], IconName> = {
   session: "dumbbell",
   skipped: "calendar",
-  submission: "video",
-  review: "video",
   checkin: "checkin",
   checkinReply: "checkin",
   message: "message",
@@ -39,12 +37,7 @@ export async function AlunoActivityFeed({ items }: { items: ClientActivityItem[]
     return dayFormat.format(new Date(`${item.subject}T12:00:00`));
   };
 
-  // A clip can be sent without naming an exercise, and "Enviaste um vídeo de ."
-  // is worse than saying less — those two kinds get a subject-free sentence.
-  const sentenceKey = (item: ClientActivityItem) =>
-    item.subject == null && (item.kind === "submission" || item.kind === "review")
-      ? `kind.${item.kind}Plain`
-      : `kind.${item.kind}`;
+  const sentenceKey = (item: ClientActivityItem) => `kind.${item.kind}`;
 
   return (
     <section aria-labelledby="aluno-activity" className="space-y-3">

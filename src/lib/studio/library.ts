@@ -33,7 +33,6 @@ function mapExercise(row: Row): Exercise {
     cues: String(row.cues ?? ""),
     cuesEn: String(row.cues_en ?? ""),
     videoUrl: row.video_url == null ? null : String(row.video_url),
-    mediaId: row.media_id == null ? null : String(row.media_id),
     tags: parseTags(row.tags),
     tracking: String(row.tracking) as Tracking,
     regressionOf: row.regression_of == null ? null : String(row.regression_of),
@@ -43,7 +42,7 @@ function mapExercise(row: Row): Exercise {
 }
 
 const EXERCISE_COLUMNS =
-  "id, name, cues, cues_en, video_url, media_id, tags, tracking, regression_of, archived, created_at";
+  "id, name, cues, cues_en, video_url, tags, tracking, regression_of, archived, created_at";
 
 export function listExercises(options: { search?: string; tag?: string } = {}): Exercise[] {
   const clauses = ["archived = 0"];
@@ -98,7 +97,6 @@ export function createExercise(input: {
   cues?: string;
   cuesEn?: string;
   videoUrl?: string | null;
-  mediaId?: string | null;
   tags?: string[];
   tracking?: Tracking;
   regressionOf?: string | null;
@@ -106,14 +104,13 @@ export function createExercise(input: {
   const exerciseId = newId();
   run(
     `INSERT INTO exercises
-       (id, name, cues, cues_en, video_url, media_id, tags, tracking, regression_of, archived, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+       (id, name, cues, cues_en, video_url, tags, tracking, regression_of, archived, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
     exerciseId,
     input.name.trim(),
     input.cues ?? "",
     input.cuesEn ?? "",
     input.videoUrl?.trim() || null,
-    input.mediaId ?? null,
     JSON.stringify(input.tags ?? []),
     input.tracking ?? "reps",
     input.regressionOf ?? null,
@@ -129,7 +126,6 @@ export function updateExercise(
     cues?: string;
     cuesEn?: string;
     videoUrl?: string | null;
-    mediaId?: string | null;
     tags?: string[];
     tracking?: Tracking;
     regressionOf?: string | null;
@@ -153,10 +149,6 @@ export function updateExercise(
     fields.push("video_url = ?");
     values.push(patch.videoUrl?.trim() || null);
   }
-  if (patch.mediaId !== undefined) {
-    fields.push("media_id = ?");
-    values.push(patch.mediaId);
-  }
   if (patch.tags !== undefined) {
     fields.push("tags = ?");
     values.push(JSON.stringify(patch.tags));
@@ -178,15 +170,6 @@ export function archiveExercise(exerciseId: string): void {
   run("UPDATE exercises SET archived = 1 WHERE id = ?", exerciseId);
 }
 
-/**
- * True when a media id is an exercise demo. Demos are coach-owned but meant to
- * be watched by clients, so the media route needs this to widen access without
- * opening up client uploads.
- */
-export function isExerciseDemo(mediaId: string): boolean {
-  return get<Row>("SELECT 1 AS hit FROM exercises WHERE media_id = ? LIMIT 1", mediaId) != null;
-}
-
 function mapItem(row: Row): WorkoutItem {
   return {
     id: String(row.id),
@@ -195,7 +178,6 @@ function mapItem(row: Row): WorkoutItem {
     exerciseName: String(row.exercise_name ?? ""),
     tracking: String(row.tracking ?? "reps") as Tracking,
     videoUrl: row.video_url == null ? null : String(row.video_url),
-    mediaId: row.media_id == null ? null : String(row.media_id),
     cues: String(row.cues ?? ""),
     cuesEn: String(row.cues_en ?? ""),
     sets: Number(row.sets),
@@ -220,7 +202,7 @@ export function workoutBlocks(workoutId: string): WorkoutBlock[] {
   const itemRows = all<Row>(
     `SELECT i.id, i.block_id, i.position, i.exercise_id, i.sets, i.reps, i.seconds,
             i.tempo, i.rest_seconds, i.rpe, i.notes,
-            e.name AS exercise_name, e.tracking, e.video_url, e.media_id, e.cues, e.cues_en
+            e.name AS exercise_name, e.tracking, e.video_url, e.cues, e.cues_en
        FROM workout_items i
        JOIN exercises e ON e.id = i.exercise_id
       WHERE i.block_id IN (SELECT id FROM workout_blocks WHERE workout_id = ?)

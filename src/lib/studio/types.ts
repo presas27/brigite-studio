@@ -56,7 +56,6 @@ export type Exercise = {
    */
   cuesEn: string;
   videoUrl: string | null;
-  mediaId: string | null;
   tags: string[];
   tracking: Tracking;
   /** The harder exercise this one regresses from, if any. */
@@ -89,7 +88,6 @@ export type WorkoutItem = {
   exerciseName: string;
   tracking: Tracking;
   videoUrl: string | null;
-  mediaId: string | null;
   cues: string;
   cuesEn: string;
   sets: number;
@@ -177,40 +175,12 @@ export type SetLog = {
   loggedAt: number;
 };
 
-export type Verdict = "ok" | "adjust" | "regress";
-
-export type ReviewComment = {
-  id: string;
-  tMs: number;
-  body: string;
-  createdAt: number;
-};
-
-export type Submission = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  assignmentId: string | null;
-  exerciseId: string | null;
-  exerciseName: string | null;
-  mediaId: string | null;
-  videoUrl: string | null;
-  note: string;
-  status: "pending" | "reviewed";
-  verdict: Verdict | null;
-  reply: string;
-  reviewedAt: number | null;
-  createdAt: number;
-  comments: ReviewComment[];
-};
-
 export type Message = {
   id: string;
   clientId: string;
   authorId: string;
   authorRole: Role;
   body: string;
-  mediaId: string | null;
   readAt: number | null;
   createdAt: number;
 };
@@ -225,8 +195,6 @@ export type ActivityItem = {
   kind:
     | "session"
     | "skipped"
-    | "submission"
-    | "review"
     | "checkin"
     | "checkinReply"
     | "message"
@@ -264,18 +232,8 @@ export type Measurement = {
   createdAt: number;
 };
 
-export type Media = {
-  id: string;
-  ownerId: string;
-  filename: string;
-  mime: string;
-  bytes: number;
-  createdAt: number;
-};
-
 /** One row of the coach's "Hoje" console — everything needing attention. */
 export type CoachAlert =
-  | { kind: "submission"; clientId: string; clientName: string; submissionId: string; at: number }
   | { kind: "checkin"; clientId: string; clientName: string; weekOf: string; at: number }
   | { kind: "message"; clientId: string; clientName: string; preview: string; at: number }
   | { kind: "inactive"; clientId: string; clientName: string; days: number; at: number }

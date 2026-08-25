@@ -42,7 +42,6 @@ export function ExerciseForm({
   }, initial);
 
   const nameError = state.status === "error" && state.reason === "required" ? errors("required") : undefined;
-  const fileError = state.status === "error" && state.reason !== "required" ? errors(state.reason) : undefined;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -93,10 +92,6 @@ export function ExerciseForm({
           defaultValue={exercise?.videoUrl ?? ""}
           className={field}
         />
-      </Field>
-
-      <Field label={t("uploadLabel")} htmlFor={`${idPrefix}-file`} hint={t("uploadHint")} error={fileError}>
-        <input id={`${idPrefix}-file`} name="file" type="file" accept="video/*" className={field} />
       </Field>
 
       <SubmitButton pendingLabel={exercise ? common("saving") : common("adding")} className="w-full">

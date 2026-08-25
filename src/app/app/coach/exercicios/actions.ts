@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCoach } from "@/lib/studio/auth";
 import { archiveExercise, createExercise, updateExercise } from "@/lib/studio/library";
-import { store } from "@/lib/studio/media";
 import type { Tracking } from "@/lib/studio/types";
 
 /**
@@ -17,14 +16,7 @@ const LIBRARY_PATH = "/app/coach/exercicios";
 export type ExerciseFormState =
   | { status: "idle" }
   | { status: "ok" }
-  | { status: "error"; reason: "required" | "fileType" | "fileSize" | "noFile" };
-
-/** `store()`'s reasons, in the same order, mapped onto `Studio.errors` keys. */
-const STORE_REASON: Record<"type" | "size" | "empty", ExerciseFormState & { status: "error" }> = {
-  type: { status: "error", reason: "fileType" },
-  size: { status: "error", reason: "fileSize" },
-  empty: { status: "error", reason: "noFile" },
-};
+  | { status: "error"; reason: "required" };
 
 function parseTags(raw: FormDataEntryValue | null): string[] {
   return String(raw ?? "")
@@ -33,29 +25,13 @@ function parseTags(raw: FormDataEntryValue | null): string[] {
     .filter(Boolean);
 }
 
-/** Uploads the file field when one was actually chosen. `undefined` mediaId means "unchanged". */
-async function resolveMedia(
-  coachId: string,
-  formData: FormData,
-): Promise<{ ok: true; mediaId?: string } | { ok: false; state: ExerciseFormState }> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.name === "") return { ok: true };
-
-  const result = await store({ ownerId: coachId, file });
-  if (!result.ok) return { ok: false, state: STORE_REASON[result.reason] };
-  return { ok: true, mediaId: result.mediaId };
-}
-
 export async function createExerciseAction(
   _prev: ExerciseFormState,
   formData: FormData,
 ): Promise<ExerciseFormState> {
-  const coach = await requireCoach();
+  await requireCoach();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { status: "error", reason: "required" };
-
-  const media = await resolveMedia(coach.id, formData);
-  if (!media.ok) return media.state;
 
   createExercise({
     name,
@@ -63,7 +39,6 @@ export async function createExerciseAction(
     tags: parseTags(formData.get("tags")),
     tracking: String(formData.get("tracking") ?? "reps") as Tracking,
     videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
-    mediaId: media.mediaId ?? null,
   });
 
   revalidatePath(LIBRARY_PATH);
@@ -75,12 +50,9 @@ export async function updateExerciseAction(
   _prev: ExerciseFormState,
   formData: FormData,
 ): Promise<ExerciseFormState> {
-  const coach = await requireCoach();
+  await requireCoach();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { status: "error", reason: "required" };
-
-  const media = await resolveMedia(coach.id, formData);
-  if (!media.ok) return media.state;
 
   updateExercise(exerciseId, {
     name,
@@ -88,9 +60,6 @@ export async function updateExerciseAction(
     tags: parseTags(formData.get("tags")),
     tracking: String(formData.get("tracking") ?? "reps") as Tracking,
     videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
-    // Only touch mediaId when a new upload actually landed — otherwise a save
-    // with no file re-selected would wipe the exercise's existing demo.
-    ...(media.mediaId ? { mediaId: media.mediaId } : {}),
   });
 
   revalidatePath(LIBRARY_PATH);
@@ -112,9 +81,8 @@ export async function archiveExerciseAction(exerciseId: string): Promise<void> {
 
 /**
  * State for the exercise page's inline editors (cues, tags, video link). Each
- * saves one field, so none of `ExerciseFormState`'s upload failures apply, and
- * the only thing that can be refused is a video link that is not usable as one
- * — cues and tags are legitimately empty.
+ * saves one field, so the only thing that can be refused is a video link that
+ * is not usable as one — cues and tags are legitimately empty.
  */
 export type FieldState = { status: "idle" } | { status: "ok" } | { status: "error"; reason: "url" };
 

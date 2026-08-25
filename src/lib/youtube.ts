@@ -46,6 +46,15 @@ export function youtubeId(url: string): string | null {
 }
 
 /**
+ * Poster frame for an id. The library grid is scanned by picture, not by
+ * title, and a still YouTube already generated costs us no storage and no
+ * bandwidth — the same reasoning that keeps the player itself a link.
+ */
+export function youtubeThumb(id: string): string {
+  return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
+}
+
+/**
  * Player URL for an id. `youtube-nocookie.com` so a coach opening her own
  * library does not hand YouTube a tracking cookie for every exercise she reads,
  * and `rel=0` so the end card offers her own videos rather than a competitor's.

@@ -96,7 +96,7 @@ export function ExercisePicker({
                     onClick={() => add(exercise.id)}
                     className="group relative w-full rounded-[1rem] bg-cream/[0.04] p-2 text-left ring-1 ring-cream/10 transition hover:ring-caramel/50"
                   >
-                    <ExerciseThumb mediaId={exercise.mediaId} className="aspect-[3/2] w-full" />
+                    <ExerciseThumb videoUrl={exercise.videoUrl} className="aspect-[3/2] w-full" />
                     <span className="mt-2 block truncate px-1 font-sans text-sm font-semibold text-cream">
                       {exercise.name}
                     </span>

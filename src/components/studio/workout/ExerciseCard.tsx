@@ -86,7 +86,7 @@ export function ExerciseCard({
           onClick={() => setOpen(true)}
           className="block w-full cursor-grab text-left active:cursor-grabbing"
         >
-          <ExerciseThumb mediaId={item.mediaId} className="aspect-[3/2] w-full" />
+          <ExerciseThumb videoUrl={item.videoUrl} className="aspect-[3/2] w-full" />
           <span className="mt-2.5 flex items-start gap-2 px-1">
             <span className="mt-px font-sans tabular-nums text-[0.7rem] text-cream/35">{position}</span>
             <span className="min-w-0 flex-1">

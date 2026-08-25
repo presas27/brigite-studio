@@ -5,7 +5,7 @@ import { EphemeralNotice } from "@/components/studio/EphemeralNotice";
 import { buttonPrimary } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
 import { clientAlerts } from "@/lib/studio/clientConsole";
-import { findCheckin, listSubmissions, unreadCount } from "@/lib/studio/coaching";
+import { findCheckin, unreadCount } from "@/lib/studio/coaching";
 import { dayKey, weekKey } from "@/lib/studio/db";
 import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
 import { getThemeMode } from "@/lib/studio/theme-mode";
@@ -30,9 +30,6 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
 
   const unread = unreadCount(client.id, client.id);
   if (unread > 0) badges["/app/aluno/mensagens"] = unread;
-
-  const pending = listSubmissions({ clientId: client.id, status: "pending", limit: 20 }).length;
-  if (pending > 0) badges["/app/aluno/videos"] = pending;
 
   // One pip, not a count: a week has exactly one check-in, so a number here
   // would only ever say "1" and would read as a quantity of work.

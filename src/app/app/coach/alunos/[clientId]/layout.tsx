@@ -4,11 +4,11 @@ import { ClientTabs, type ClientTab } from "@/components/studio/coach/ClientTabs
 import { EditClientModal } from "@/components/studio/coach/EditClientModal";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { listCheckins, listSubmissions, unreadCount } from "@/lib/studio/coaching";
+import { listCheckins, unreadCount } from "@/lib/studio/coaching";
 
 /**
  * The client page. One masthead, one tab strip, and a panel that swaps —
- * plan, check-ins, messages and videos are segments of this route rather than
+ * plan, check-ins and messages are segments of this route rather than
  * destinations of their own, so Sara never loses the person she is working on.
  *
  * The masthead is deliberately thin: a back arrow cut to the weight of the
@@ -43,11 +43,6 @@ export default async function ClientLayout({
       href: `${base}/mensagens`,
       label: t("tab.messages"),
       badge: unreadCount(client.id, viewer.id),
-    },
-    {
-      href: `${base}/videos`,
-      label: t("tab.videos"),
-      badge: listSubmissions({ clientId: client.id, status: "pending" }).length,
     },
   ];
 

@@ -52,7 +52,6 @@ const snapshotItem = v.object({
   exerciseName: v.string(),
   tracking,
   videoUrl: v.union(v.null(), v.string()),
-  mediaId: v.union(v.null(), v.string()),
   cues: v.string(),
   cuesEn: v.string(),
   sets: v.number(),
@@ -144,21 +143,9 @@ export default defineSchema({
   // codes now, in `authVerificationCodes` from `authTables`.
 
   /**
-   * An uploaded file. `storageId` is Convex's handle — the bytes live in file
-   * storage, not in this row and not on a disk that dies with the instance.
-   */
-  media: defineTable({
-    ownerId: v.id("users"),
-    storageId: v.id("_storage"),
-    filename: v.string(),
-    mime: v.string(),
-    bytes: v.number(),
-  }).index("by_owner", ["ownerId"]),
-
-  /**
    * Sara's library. `videoUrl` is a link and nothing else — a YouTube address
-   * costs 43 characters here and the video streams from YouTube, where
-   * `mediaId` would mean storing and serving the file ourselves.
+   * costs 43 characters here and the video streams from YouTube, never
+   * uploaded and served by the app itself.
    *
    * `archived` is a soft delete: workout history keeps pointing at the row.
    */
@@ -169,7 +156,6 @@ export default defineSchema({
     /** The same cues in English. Either side may be empty. */
     cuesEn: v.string(),
     videoUrl: v.union(v.null(), v.string()),
-    mediaId: v.union(v.null(), v.id("media")),
     tags: v.array(v.string()),
     tracking,
     /** The harder exercise this one regresses from, if any. */
@@ -177,7 +163,6 @@ export default defineSchema({
     archived: v.boolean(),
   })
     .index("by_archived_and_name", ["archived", "name"])
-    .index("by_media", ["mediaId"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["archived"] }),
 
   workouts: defineTable({
@@ -262,30 +247,6 @@ export default defineSchema({
     .index("by_assignment", ["assignmentId"])
     .index("by_exercise", ["exerciseId"]),
 
-  /** A video the client filmed, and Sara's verdict on it. */
-  submissions: defineTable({
-    clientId: v.id("users"),
-    assignmentId: v.union(v.null(), v.id("assignments")),
-    exerciseId: v.union(v.null(), v.id("exercises")),
-    mediaId: v.union(v.null(), v.id("media")),
-    videoUrl: v.union(v.null(), v.string()),
-    note: v.string(),
-    status: v.union(v.literal("pending"), v.literal("reviewed")),
-    verdict: v.union(v.null(), v.literal("ok"), v.literal("adjust"), v.literal("regress")),
-    reply: v.string(),
-    reviewedAt: v.union(v.null(), v.number()),
-  })
-    .index("by_client", ["clientId"])
-    .index("by_status", ["status"]),
-
-  /** A timestamped note on a submission's video — the annotated feedback. */
-  reviewComments: defineTable({
-    submissionId: v.id("submissions"),
-    /** Offset into the video, in milliseconds. */
-    tMs: v.number(),
-    body: v.string(),
-  }).index("by_submission_and_time", ["submissionId", "tMs"]),
-
   /**
    * One thread per client. `authorId` says who wrote it; `readAt` is null until
    * the other side opens the thread.
@@ -294,7 +255,6 @@ export default defineSchema({
     clientId: v.id("users"),
     authorId: v.id("users"),
     body: v.string(),
-    mediaId: v.union(v.null(), v.id("media")),
     readAt: v.union(v.null(), v.number()),
   }).index("by_client", ["clientId"]),
 

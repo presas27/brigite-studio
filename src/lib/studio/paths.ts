@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 
 /**
- * Where the studio keeps its data root (`studio.db` plus `uploads/`).
+ * Where the studio keeps its data root (`studio.db`).
  *
  * A local checkout writes into `.data/` next to the source, which is what makes
  * a fresh clone runnable with zero provisioning. A serverless host cannot: the
@@ -24,7 +24,6 @@ export const DATA_DIR = process.env.STUDIO_DATA_DIR
     : join(process.cwd(), ".data");
 
 export const DB_PATH = join(DATA_DIR, "studio.db");
-export const UPLOAD_DIR = join(DATA_DIR, "uploads");
 
 /**
  * True when writes cannot be trusted to outlive the request that made them.

@@ -4,7 +4,7 @@ import { CoachChrome } from "@/components/studio/coach/CoachChrome";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { currentUser } from "@/lib/studio/auth";
 import { clientAlerts } from "@/lib/studio/clientConsole";
-import { coachAlerts, findCheckin, listSubmissions, unreadCount } from "@/lib/studio/coaching";
+import { coachAlerts, findCheckin, unreadCount } from "@/lib/studio/coaching";
 import { weekKey } from "@/lib/studio/db";
 import { getThemeMode } from "@/lib/studio/theme-mode";
 import { listClients } from "@/lib/studio/users";
@@ -26,9 +26,6 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   if (user.role === "coach") {
     const badges: Record<string, number> = {};
-
-    const pendingVideos = listSubmissions({ status: "pending" }).length;
-    if (pendingVideos > 0) badges["/app/coach/videos"] = pendingVideos;
 
     const unread = listClients().reduce(
       (total, client) => total + unreadCount(client.id, user.id),
@@ -54,9 +51,6 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   const unread = unreadCount(user.id, user.id);
   if (unread > 0) badges["/app/aluno/mensagens"] = unread;
-
-  const pending = listSubmissions({ clientId: user.id, status: "pending", limit: 20 }).length;
-  if (pending > 0) badges["/app/aluno/videos"] = pending;
 
   if (findCheckin(user.id, weekKey())?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
 

@@ -143,7 +143,6 @@
       "workouts": "Treinos",
       "plan": "Plano",
       "calendar": "Calendário",
-      "videos": "Vídeos",
       "messages": "Mensagens",
       "progress": "Progresso",
       "checkin": "Check-in",
@@ -409,16 +408,13 @@
       "goalsEmpty": "Por definir.",
       "injuriesEmpty": "Nada registado.",
       "memberSince": "Aluno desde",
-      "videosEmpty": "Ainda sem vídeos deste aluno.",
-      "videosEmptyHint": "Assim que enviar um, aparece aqui.",
       "tab": {
         "overview": "Visão geral",
         "plan": "Plano",
         "sessions": "Treinos",
         "checkins": "Check-ins",
         "progresso": "Progresso",
-        "messages": "Mensagens",
-        "videos": "Vídeos"
+        "messages": "Mensagens"
       }
     },
     "library": {
@@ -432,9 +428,7 @@
       "cuesLabel": "Cues técnicos",
       "cuesHint": "Um por linha. É isto que o aluno lê antes de executar.",
       "videoLabel": "Link de vídeo",
-      "videoHint": "YouTube, Vimeo ou qualquer URL. Ou faz upload em baixo.",
       "uploadLabel": "Vídeo demo",
-      "uploadHint": "MP4, MOV ou WebM até 80 MB.",
       "tagsLabel": "Tags",
       "tagsHint": "Separadas por vírgula: força, mobilidade, aéreo…",
       "trackingLabel": "Como se mede",
@@ -699,49 +693,6 @@
         "interval": "Intervalado"
       }
     },
-    "videos": {
-      "title": "Vídeos",
-      "coachLead": "Execuções enviadas pelos alunos, à espera do teu olho.",
-      "clientLead": "Grava, envia, e recebes feedback com marcas no vídeo.",
-      "submitTitle": "Enviar vídeo",
-      "submitLead": "Até 60 segundos é o ideal. Filma de lado e de corpo inteiro.",
-      "chooseExercise": "Exercício",
-      "fileLabel": "Ficheiro",
-      "fileHint": "MP4, MOV ou WebM até 80 MB.",
-      "urlLabel": "Ou um link",
-      "urlHint": "Se preferes usar YouTube ou Drive.",
-      "noteLabel": "O que queres que eu veja?",
-      "notePlaceholder": "Sinto o ombro a subir na terceira repetição.",
-      "submit": "Enviar",
-      "submitted": "Vídeo enviado. Recebes feedback em breve.",
-      "empty": "Ainda não há vídeos.",
-      "coachEmptyHint": "Quando um aluno enviar uma execução, aparece aqui.",
-      "clientEmptyHint": "Grava uma série e envia — é assim que eu corrijo a técnica.",
-      "pending": "Por ver",
-      "reviewed": "Com feedback",
-      "awaitingReview": "À espera do feedback da Sara.",
-      "reviewTitle": "Feedback",
-      "reviewLead": "Põe o vídeo no momento certo e escreve. O comentário fica preso a esse instante.",
-      "addComment": "Marcar aqui",
-      "commentPlaceholder": "O ombro sobe. Mantém a omoplata em baixo.",
-      "atTime": "em {time}",
-      "jumpTo": "Ir para {time}",
-      "deleteComment": "Apagar comentário",
-      "noComments": "Sem marcas ainda.",
-      "verdictLabel": "Veredito",
-      "verdict": {
-        "ok": "Está bom",
-        "adjust": "Ajustar",
-        "regress": "Regredir"
-      },
-      "replyLabel": "Mensagem para o aluno",
-      "replyPlaceholder": "Boa evolução. Baixa a carga 5 kg e mantém este controlo.",
-      "finishReview": "Enviar feedback",
-      "reviewDone": "Feedback enviado.",
-      "unsupported": "O teu navegador não consegue reproduzir este vídeo.",
-      "externalHint": "Vídeo externo — não é possível marcar comentários no tempo aqui.",
-      "sentTitle": "Vídeos enviados"
-    },
     "messages": {
       "title": "Mensagens",
       "coachLead": "Conversa direta com {name}.",
@@ -845,9 +796,6 @@
       "required": "Preenche este campo.",
       "badEmail": "Email inválido.",
       "tooLong": "Demasiado longo.",
-      "fileType": "Formato não suportado.",
-      "fileSize": "Ficheiro demasiado grande.",
-      "noFile": "Escolhe um ficheiro ou cola um link.",
       "url": "Link inválido."
     },
     "overview": {

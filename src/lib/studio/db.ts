@@ -68,21 +68,11 @@ CREATE TABLE IF NOT EXISTS magic_tokens (
   used_at     INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS media (
-  id          TEXT PRIMARY KEY,
-  owner_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  filename    TEXT NOT NULL,
-  mime        TEXT NOT NULL,
-  bytes       INTEGER NOT NULL,
-  created_at  INTEGER NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS exercises (
   id            TEXT PRIMARY KEY,
   name          TEXT NOT NULL,
   cues          TEXT NOT NULL DEFAULT '',
   video_url     TEXT,
-  media_id      TEXT REFERENCES media(id) ON DELETE SET NULL,
   tags          TEXT NOT NULL DEFAULT '[]',
   tracking      TEXT NOT NULL DEFAULT 'reps'
                 CHECK (tracking IN ('reps', 'time', 'hold', 'distance')),
@@ -156,36 +146,11 @@ CREATE TABLE IF NOT EXISTS set_logs (
   logged_at     INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS submissions (
-  id            TEXT PRIMARY KEY,
-  client_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  assignment_id TEXT REFERENCES assignments(id) ON DELETE SET NULL,
-  exercise_id   TEXT REFERENCES exercises(id) ON DELETE SET NULL,
-  media_id      TEXT REFERENCES media(id) ON DELETE SET NULL,
-  video_url     TEXT,
-  note          TEXT NOT NULL DEFAULT '',
-  status        TEXT NOT NULL DEFAULT 'pending'
-                CHECK (status IN ('pending', 'reviewed')),
-  verdict       TEXT CHECK (verdict IN ('ok', 'adjust', 'regress')),
-  reply         TEXT NOT NULL DEFAULT '',
-  reviewed_at   INTEGER,
-  created_at    INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS review_comments (
-  id            TEXT PRIMARY KEY,
-  submission_id TEXT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-  t_ms          INTEGER NOT NULL,
-  body          TEXT NOT NULL,
-  created_at    INTEGER NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS messages (
   id          TEXT PRIMARY KEY,
   client_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   author_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   body        TEXT NOT NULL,
-  media_id    TEXT REFERENCES media(id) ON DELETE SET NULL,
   read_at     INTEGER,
   created_at  INTEGER NOT NULL
 );
@@ -237,7 +202,6 @@ CREATE INDEX IF NOT EXISTS idx_assignments_client_date
 CREATE INDEX IF NOT EXISTS idx_set_logs_assignment ON set_logs (assignment_id);
 CREATE INDEX IF NOT EXISTS idx_set_logs_exercise ON set_logs (exercise_id, logged_at);
 CREATE INDEX IF NOT EXISTS idx_messages_client ON messages (client_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_submissions_client ON submissions (client_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_blocks_workout ON workout_blocks (workout_id, position);
 CREATE INDEX IF NOT EXISTS idx_items_block ON workout_items (block_id, position);
 CREATE INDEX IF NOT EXISTS idx_measurements_client ON measurements (client_id, date);

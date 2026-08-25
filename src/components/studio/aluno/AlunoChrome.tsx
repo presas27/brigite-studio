@@ -21,7 +21,6 @@ const SECTIONS: ChromeSection[] = [
     items: [
       { href: "/app/aluno/plano", labelKey: "plan", icon: "calendar" },
       { href: "/app/aluno/treinos", labelKey: "workouts", icon: "dumbbell" },
-      { href: "/app/aluno/videos", labelKey: "videos", icon: "video" },
     ],
   },
   {

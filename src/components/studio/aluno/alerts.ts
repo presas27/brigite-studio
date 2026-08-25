@@ -9,8 +9,6 @@ export function clientAlertHref(alert: ClientAlert): string {
       return `/app/aluno/treino/${alert.assignmentId}`;
     case "checkin":
       return "/app/aluno/checkin";
-    case "feedback":
-      return "/app/aluno/videos";
     default:
       return "/app/aluno/mensagens";
   }
@@ -19,7 +17,6 @@ export function clientAlertHref(alert: ClientAlert): string {
 export const CLIENT_ALERT_ICON: Record<ClientAlert["kind"], IconName> = {
   session: "dumbbell",
   checkin: "checkin",
-  feedback: "video",
   message: "message",
   missed: "calendar",
 };
@@ -41,10 +38,6 @@ export function clientAlertLabel(
       return t("alert.session", { name: alert.name });
     case "checkin":
       return t("alert.checkin", { date: formatDate(alert.weekOf) });
-    case "feedback":
-      return alert.subject
-        ? t("alert.feedback", { subject: alert.subject })
-        : t("alert.feedbackPlain");
     case "message":
       return t("alert.message", { count: alert.count });
     default:
@@ -55,10 +48,6 @@ export function clientAlertLabel(
 /** Stable key for a list row — an aluna can have two alerts of the same kind on the same day. */
 export function clientAlertKey(alert: ClientAlert): string {
   return `${alert.kind}-${alert.at}-${
-    alert.kind === "session" || alert.kind === "missed"
-      ? alert.assignmentId
-      : alert.kind === "feedback"
-        ? alert.submissionId
-        : ""
+    alert.kind === "session" || alert.kind === "missed" ? alert.assignmentId : ""
   }`;
 }

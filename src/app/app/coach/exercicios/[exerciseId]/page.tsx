@@ -22,8 +22,8 @@ export const metadata: Metadata = {
  * Everything on it edits in place: the tags take a new one without leaving the
  * page, the cues open into Portuguese and English side by side, and the demo
  * takes a YouTube link and plays it. The modal in the masthead stays for the
- * whole-row edit — renaming, changing how the movement is measured, replacing
- * an uploaded file — but the three things Sara actually touches are here.
+ * whole-row edit — renaming, changing how the movement is measured, editing
+ * the link — but the three things Sara actually touches are here.
  *
  * Demo left, cues right: on this page the video is the reference and the cues
  * are read against it, so they belong on one line at reading width rather than
@@ -58,11 +58,7 @@ export default async function ExercisePage({
       />
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <ExerciseDemo
-          exerciseId={exercise.id}
-          videoUrl={exercise.videoUrl}
-          mediaId={exercise.mediaId}
-        />
+        <ExerciseDemo exerciseId={exercise.id} videoUrl={exercise.videoUrl} />
         <ExerciseCues exerciseId={exercise.id} cues={exercise.cues} cuesEn={exercise.cuesEn} />
       </div>
 

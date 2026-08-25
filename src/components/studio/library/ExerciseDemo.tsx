@@ -15,19 +15,13 @@ import { cn } from "@/lib/utils";
  * they already exist on Sara's channel — the account carried over from
  * Trainerize stores her own demos as YouTube ids. So the panel holds an address,
  * not a file, and the player is an iframe.
- *
- * An uploaded clip still wins when there is one: `mediaId` is a file she put
- * here deliberately, and the link is the fallback rather than the other way
- * round.
  */
 export function ExerciseDemo({
   exerciseId,
   videoUrl,
-  mediaId,
 }: {
   exerciseId: string;
   videoUrl: string | null;
-  mediaId: string | null;
 }) {
   const t = useTranslations("Studio.library");
   const errors = useTranslations("Studio.errors");
@@ -39,18 +33,10 @@ export function ExerciseDemo({
       action={saveVideoUrlAction.bind(null, exerciseId)}
       hint={t("videoHintYoutube")}
       errorText={{ url: errors("url") }}
-      interactiveRead={!mediaId && !id}
+      interactiveRead={!!id}
       read={
         <Plate>
-          {mediaId ? (
-            <video
-              controls
-              preload="metadata"
-              playsInline
-              src={`/app/media/${mediaId}`}
-              className="h-full w-full rounded-[0.85rem] object-cover"
-            />
-          ) : id ? (
+          {id ? (
             <iframe
               // `title` is what a screen reader reads instead of "iframe", and
               // the allow list is the minimum an embedded player needs.

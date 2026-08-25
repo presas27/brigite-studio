@@ -143,7 +143,6 @@
       "workouts": "Workouts",
       "plan": "Plan",
       "calendar": "Calendar",
-      "videos": "Videos",
       "messages": "Messages",
       "progress": "Progress",
       "checkin": "Check-in",
@@ -409,16 +408,13 @@
       "goalsEmpty": "Not set yet.",
       "injuriesEmpty": "Nothing recorded.",
       "memberSince": "Client since",
-      "videosEmpty": "No videos from this client yet.",
-      "videosEmptyHint": "They show up here as soon as one is sent.",
       "tab": {
         "overview": "Overview",
         "plan": "Plan",
         "sessions": "Sessions",
         "checkins": "Check-ins",
         "progresso": "Progress",
-        "messages": "Messages",
-        "videos": "Videos"
+        "messages": "Messages"
       }
     },
     "library": {
@@ -432,9 +428,7 @@
       "cuesLabel": "Technique cues",
       "cuesHint": "One per line. This is what the client reads before executing.",
       "videoLabel": "Video link",
-      "videoHint": "YouTube, Vimeo or any URL. Or upload below.",
       "uploadLabel": "Demo video",
-      "uploadHint": "MP4, MOV or WebM up to 80 MB.",
       "tagsLabel": "Tags",
       "tagsHint": "Comma separated: strength, mobility, aerial…",
       "trackingLabel": "How it is measured",
@@ -699,49 +693,6 @@
         "interval": "Intervals"
       }
     },
-    "videos": {
-      "title": "Videos",
-      "coachLead": "Sets your clients sent in, waiting for your eye.",
-      "clientLead": "Record, send, and get feedback pinned to the video.",
-      "submitTitle": "Send a video",
-      "submitLead": "Up to 60 seconds is ideal. Film from the side, full body in frame.",
-      "chooseExercise": "Exercise",
-      "fileLabel": "File",
-      "fileHint": "MP4, MOV or WebM up to 80 MB.",
-      "urlLabel": "Or a link",
-      "urlHint": "If you would rather use YouTube or Drive.",
-      "noteLabel": "What should I look at?",
-      "notePlaceholder": "My shoulder rises on the third rep.",
-      "submit": "Send",
-      "submitted": "Video sent. Feedback is coming.",
-      "empty": "No videos yet.",
-      "coachEmptyHint": "When a client sends a set, it lands here.",
-      "clientEmptyHint": "Record a set and send it — this is how I fix technique.",
-      "pending": "To review",
-      "reviewed": "Reviewed",
-      "awaitingReview": "Waiting for Sara's feedback.",
-      "reviewTitle": "Feedback",
-      "reviewLead": "Scrub to the moment and write. The comment sticks to that instant.",
-      "addComment": "Pin here",
-      "commentPlaceholder": "Shoulder rises. Keep the scapula down.",
-      "atTime": "at {time}",
-      "jumpTo": "Jump to {time}",
-      "deleteComment": "Delete comment",
-      "noComments": "No pins yet.",
-      "verdictLabel": "Verdict",
-      "verdict": {
-        "ok": "Looks good",
-        "adjust": "Adjust",
-        "regress": "Regress"
-      },
-      "replyLabel": "Message to the client",
-      "replyPlaceholder": "Good progress. Drop 5 kg and keep this control.",
-      "finishReview": "Send feedback",
-      "reviewDone": "Feedback sent.",
-      "unsupported": "Your browser cannot play this video.",
-      "externalHint": "External video — timestamped comments are not available here.",
-      "sentTitle": "Clips you sent"
-    },
     "messages": {
       "title": "Messages",
       "coachLead": "Direct thread with {name}.",
@@ -845,9 +796,6 @@
       "required": "Fill in this field.",
       "badEmail": "Invalid email.",
       "tooLong": "Too long.",
-      "fileType": "Unsupported format.",
-      "fileSize": "File is too large.",
-      "noFile": "Choose a file or paste a link.",
       "url": "Invalid link."
     },
     "overview": {

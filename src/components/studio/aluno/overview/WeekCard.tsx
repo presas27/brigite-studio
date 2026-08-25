@@ -114,7 +114,7 @@ export async function WeekCard({
                   href={`/app/aluno/treino/${session.id}`}
                   className="flex items-center gap-3 rounded-[0.9rem] p-2 transition-colors hover:bg-surface-hover"
                 >
-                  <ExerciseThumb mediaId={session.mediaId} className="h-11 w-14 shrink-0" />
+                  <ExerciseThumb videoUrl={session.videoUrl} className="h-11 w-14 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-sans text-sm font-semibold text-cream/90">
                       {session.name}

@@ -18,8 +18,12 @@ marketplace, multi-treinador, integrações com ginásios). A Sara usa — e pre
 talvez 15% disso.
 
 **Construir o "Studio App": uma app pequena, em português, desenhada à volta do método
-concreto da Sara** (força, mobilidade, acrobacia aérea, equilibrismo), com uma feature
-central que o Trainerize *não* tem bem: **vídeo-feedback anotado**.
+concreto da Sara** (força, mobilidade, acrobacia aérea, equilibrismo).
+
+> O vídeo-feedback anotado era, nesta análise, a feature central. Foi **retirado** em
+> 2026-08 (§6.1.7). O que sobra como diferenciação é o §1 desta lista: encaixe no
+> nicho e a biblioteca dela. Vale a pena reler o aviso económico abaixo com isso em
+> mente — sem a feature que o Trainerize não tinha, o argumento fica mais fino.
 
 ### Aviso honesto sobre a economia
 
@@ -308,10 +312,13 @@ precisas de feedback** e fazemos check-ins regulares para ajustar."*
 6. **Execução do treino (aluno)** — ecrã "Hoje", vídeo demo inline, registo de séries com
    **auto-fill da última sessão**, cronómetro de descanso, wake-lock do ecrã,
    **funciona offline** e sincroniza depois.
-7. **Vídeo-feedback anotado** ← *a feature diferenciadora*. O aluno grava, faz upload;
-   a Sara vê e deixa **comentários com timestamp** sobre a timeline, mais um veredito
-   (ok / ajustar / regredir). O Trainerize só tem vídeo-mensagem de 3 minutos sem
-   anotação.
+7. ~~**Vídeo-feedback anotado**~~ — **retirado do âmbito** (2026-08). Era a feature
+   apontada como diferenciadora: o aluno gravava, fazia upload, e a Sara deixava
+   comentários com timestamp sobre a timeline mais um veredito. Saiu inteira, com o
+   aparato de upload por baixo dela, porque guardar e servir centenas de clips é o
+   custo que o resto do desenho existe para evitar — os demos são links do YouTube
+   precisamente por isso, e a app não tem disco que sobreviva a um pedido. Se voltar,
+   volta com file storage a sério e uma decisão explícita sobre esse custo.
 8. **Mensagens 1:1** — texto, foto, áudio, vídeo curto.
 9. **Check-in semanal** — formulário configurável + peso/medidas opcionais + resposta da
    Sara.
@@ -555,32 +562,40 @@ Ordem obrigatória — cada passo depende da forma do anterior:
 
 | # | Passo | Estado |
 |---|---|---|
-| 1 | `convex/schema.ts` — as 17 tabelas, validadores e índices | **feito** |
-| 2 | Autenticação: decide como a identidade chega às funções | **decisão aberta** |
-| 3 | Funções por domínio (library, users, plan, coaching, leads, media) | |
+| 1 | `convex/schema.ts` — as tabelas, validadores e índices | **feito** |
+| 2 | Convex Auth com magic link, e o estúdio fechado a auto-registo | **feito** (backend) |
+| 3 | Funções por domínio (library, users, plan, coaching, leads) | |
 | 4 | Call sites: sync → `await`, em todas as páginas e server actions | |
 | 5 | Seed + import da biblioteca em lotes (2233 documentos não cabem numa mutation) | |
-| 6 | `media` para Convex file storage; a rota `/app/media/[id]` deixa de ler do disco | |
-| 7 | Apagar `db.ts`, `paths.ts`, `id.ts` e o SQL todo | |
+| 6 | Apagar `db.ts`, `paths.ts`, `id.ts` e o SQL todo | |
 
-#### O passo 2 é o que trava o resto
+A autenticação **não** entra em produção antes dos dados: com a identidade no Convex e a
+tabela `users` no SQLite ficariam duas fontes de verdade para as mesmas pessoas. Os
+passos 3 e 4 e a activação da auth são um único corte.
+
+#### Passo 2, decidido: Convex Auth com magic link
 
 `NEXT_PUBLIC_CONVEX_URL` é público por definição. Qualquer `query` ou `mutation`
-exportada é chamável por quem souber o URL — expor `updateExercise` é deixar qualquer
-pessoa editar a biblioteca da Sara. Hoje a autorização vive no Next (`requireCoach()`,
-cookie HMAC), e as funções Convex não sabem quem está a chamar.
+exportada é chamável por quem souber o URL — expor `updateExercise` seria deixar
+qualquer pessoa editar a biblioteca da Sara. Daí Convex Auth: as funções defendem-se a
+si próprias com `ctx.auth.getUserIdentity()`, em vez de confiarem num id de actor
+passado de fora. A alternativa (uma chave de serviço, com a autorização a ficar no
+Next) era mais barata e fechava a porta ao real-time no browser, que é metade da razão
+para vir para o Convex.
 
-Duas saídas, e mudam a forma de todas as ~120 funções:
+O fluxo de entrada não muda: escrever o email, receber um link. O provider é o `Email`
+do Convex Auth a enviar pela API HTTP do Resend, com validade de vinte minutos.
 
-- **Convex Auth** (§9.1 já o nomeia). As funções defendem-se a si próprias com
-  `ctx.auth.getUserIdentity()`. É o destino certo e abre as queries reactivas no
-  browser, que é metade da razão para vir para o Convex. Custo: substitui o fluxo
-  actual de magic link + cookie HMAC, e os utilizadores do piloto já estão a entrar
-  por lá.
-- **Chave de serviço.** Todo o tráfego continua a passar pelo Next, que fala com o
-  Convex com um segredo de servidor; a autorização fica onde já está. Mais barato e
-  não mexe no login, mas fecha a porta ao real-time no browser e é um padrão que a
-  documentação do Convex desaconselha para tráfego de aplicação.
+**A armadilha que só se vê no código da biblioteca:** o `Email()` não espalha a
+configuração que recebe — hardcoda `id`, `maxAge` e `authorize`, e mete o resto em
+`options`. O `authorize: undefined` que a própria documentação manda usar para ter
+comportamento de magic link só funciona porque `providerDefaults` faz
+`merge(provider, provider.options)` e esse merge copia chaves com valor `undefined`.
+
+**E a propriedade que quase se perdeu:** os providers de email do Convex Auth são
+*trusted* — criam conta para qualquer endereço que peça um link, o que transformaria
+uma app de coaching privada num registo aberto. `createOrUpdateUser` assume a criação e
+recusa endereços que não sejam já contas; `beforeSessionCreation` recusa arquivados.
 
 #### O que o SQLite garantia e agora é trabalho das mutations
 
@@ -640,17 +655,15 @@ A app vive em `/app`, dentro deste repositório, **sem qualquer link a partir do
 | `/app` | — | router: manda para a área certa conforme o papel |
 | `/app/entrar` | público | pedido de link de acesso (magic link, sem password) |
 | `/app/entrar/verificar` | público | consome o token e abre sessão |
-| `/app/media/[id]` | autenticado | entrega os vídeos/imagens com `Range`, nunca a partir de `public/` |
 | `/app/coach` | Sara | **Resumo** — métricas, "precisa de ti", treinos de hoje, atividade recente |
 | `/app/coach/alunos` · `/[clientId]` | Sara | roster, perfil, notas privadas, arquivo, reenvio de convite |
 | `/app/coach/plano` | Sara | matriz aluno × dia de toda a semana do estúdio |
 | `/app/coach/alunos/[clientId]/plano` | Sara | semana de um aluno: atribuir/mover/remover, repetir semana |
-| `/app/coach/videos` · `/[submissionId]` | Sara | fila de revisão + **feedback anotado no vídeo** |
 | `/app/coach/checkins` | Sara | check-ins da semana de todos, por responder primeiro |
 | `/app/coach/alunos/[clientId]/checkins` | Sara | histórico de check-ins de um aluno |
 | `/app/coach/mensagens` · `/[clientId]` | Sara | conversas |
 | `/app/coach/treinos` · `/[workoutId]` | Sara | templates e construtor de blocos |
-| `/app/coach/biblioteca` | Sara | exercícios próprios, cues, tags, upload de demo |
+| `/app/coach/exercicios` · `/[exerciseId]` | Sara | exercícios próprios, cues PT/EN, tags, link do demo |
 | `/app/aluno` | aluno | "Hoje" — o treino de agora |
 | `/app/aluno/treino/[assignmentId]` | aluno | execução e registo de séries |
 | `/app/aluno/plano` | aluno | a semana, só leitura |
@@ -736,8 +749,10 @@ baseada em `cream` desaparece.
   (o bundle da lambda é read-only), `STUDIO_DATA_DIR` para apontar a um volume. No
   Vercel a base é portanto **recriada pelo seed em cada cold start** — é o que torna o
   preview navegável, e é exatamente o que produção não pode ter.
-- **Uploads em disco** (`<raiz>/uploads`) servidos pela rota autenticada, não blob
-  storage. Mesma razão, mesmo caminho de migração.
+- **Sem uploads.** O aparato de ficheiros saiu com o vídeo-feedback (§6.1.7): não há
+  tabela `media`, não há rota a servir bytes, não há `uploads/` na raiz de dados. Um
+  demo é um link do YouTube e a miniatura da grelha é a poster frame que o YouTube já
+  serve — zero armazenamento nosso.
 - **Fotos de progresso continuam fora**, como decidido em §8.
 - Nutrição, comunidade, desafios, wearables e pagamentos: não construídos, por desenho.
 
@@ -745,11 +760,13 @@ baseada em `cream` desaparece.
 
 Magic link → sessão → consola · criar/editar exercícios e treinos · atribuir e mover
 treinos na semana · executar o treino com registo de séries que sobrevive a reload ·
-terminar sessão → aparece no progresso com recordes calculados · enviar vídeo (`.txt`
-rejeitado com `errors.fileType`, `.mp4` aceite) · marcar dois comentários em instantes
-diferentes do vídeo, escolher veredito e enviar · o aluno vê as marcas e salta para o
-instante · check-in semanal → resposta da Sara · mensagens nos dois sentidos · os alertas
-da consola desaparecem à medida que são resolvidos.
+terminar sessão → aparece no progresso com recordes calculados · check-in semanal →
+resposta da Sara · mensagens nos dois sentidos · os alertas da consola desaparecem à
+medida que são resolvidos.
+
+O que esta lista dizia sobre enviar vídeo, marcar comentários em instantes da timeline e
+o aluno saltar para esses instantes descreve a feature retirada em §6.1.7. Ficou aqui
+registado porque foi verificado à época, não porque ainda exista.
 
 ### Dois defeitos encontrados por esta verificação (e corrigidos)
 

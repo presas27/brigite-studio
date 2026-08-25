@@ -1,4 +1,4 @@
-import { findCheckin, listCheckins, listSubmissions, measurements, messagesFor } from "./coaching";
+import { findCheckin, listCheckins, measurements, messagesFor } from "./coaching";
 import { dayKey, shiftDay, weekKey } from "./db";
 import { assignmentsBetween, assignmentsOn } from "./plan";
 import type { AssignmentStatus, ScheduledAssignment } from "./types";
@@ -17,8 +17,6 @@ import type { AssignmentStatus, ScheduledAssignment } from "./types";
 const HISTORY_DAYS = 365;
 /** How far ahead. Sara plans in weeks, never in seasons. */
 const HORIZON_DAYS = 120;
-/** A reviewed clip stops being news after this long. */
-const FEEDBACK_FRESH_DAYS = 21;
 /** A missed session older than this is history, not a nudge. */
 const MISSED_WINDOW_DAYS = 14;
 
@@ -26,7 +24,6 @@ const MISSED_WINDOW_DAYS = 14;
 export type ClientAlert =
   | { kind: "session"; at: number; assignmentId: string; name: string }
   | { kind: "checkin"; at: number; weekOf: string }
-  | { kind: "feedback"; at: number; submissionId: string; subject: string }
   | { kind: "message"; at: number; count: number }
   | { kind: "missed"; at: number; assignmentId: string; date: string; name: string };
 
@@ -38,10 +35,10 @@ function atNoon(key: string): number {
 /**
  * What is waiting on the aluna, newest first.
  *
- * Deliberately not "everything about you": a finished session and a video that
- * already has feedback she has seen are both *news*, and news belongs in the
- * feed. This list is only what she still has to do something about, which is
- * what makes the bell worth opening.
+ * Deliberately not "everything about you": a finished session and a check-in
+ * Sara has already replied to are both *news*, and news belongs in the feed.
+ * This list is only what she still has to do something about, which is what
+ * makes the bell worth opening.
  */
 export function clientAlerts(clientId: string): ClientAlert[] {
   const alerts: ClientAlert[] = [];
@@ -60,17 +57,6 @@ export function clientAlerts(clientId: string): ClientAlert[] {
   const week = weekKey();
   if (findCheckin(clientId, week)?.submittedAt == null) {
     alerts.push({ kind: "checkin", at: atNoon(week), weekOf: week });
-  }
-
-  const freshFrom = Date.now() - FEEDBACK_FRESH_DAYS * 86_400_000;
-  for (const submission of listSubmissions({ clientId, status: "reviewed", limit: 20 })) {
-    if (submission.reviewedAt == null || submission.reviewedAt < freshFrom) continue;
-    alerts.push({
-      kind: "feedback",
-      at: submission.reviewedAt,
-      submissionId: submission.id,
-      subject: submission.exerciseName ?? "",
-    });
   }
 
   const unread = messagesFor(clientId).filter(
@@ -108,8 +94,6 @@ export type ClientActivityItem = {
   kind:
     | "session"
     | "skipped"
-    | "submission"
-    | "review"
     | "checkin"
     | "checkinReply"
     | "message"
@@ -137,27 +121,6 @@ export function clientActivity(clientId: string, limit = 12): ClientActivityItem
       actor: "client",
       at: assignment.doneAt ?? atNoon(assignment.date),
     });
-  }
-
-  for (const submission of listSubmissions({ clientId, limit: 30 })) {
-    items.push({
-      id: `submission-${submission.id}`,
-      kind: "submission",
-      subject: submission.exerciseName,
-      href: "/app/aluno/videos",
-      actor: "client",
-      at: submission.createdAt,
-    });
-    if (submission.reviewedAt != null) {
-      items.push({
-        id: `review-${submission.id}`,
-        kind: "review",
-        subject: submission.exerciseName,
-        href: "/app/aluno/videos",
-        actor: "coach",
-        at: submission.reviewedAt,
-      });
-    }
   }
 
   for (const checkin of listCheckins(clientId, 12)) {
@@ -273,7 +236,7 @@ export type OverviewDay = {
 export type OverviewFocus = { tag: string; count: number };
 
 /**
- * An upcoming session, flattened for the "a seguir" list. `mediaId` is the
+ * An upcoming session, flattened for the "a seguir" list. `videoUrl` is the
  * first clip anywhere in the session — enough to give the row a plate without
  * shipping the whole snapshot to the client.
  */
@@ -283,7 +246,7 @@ export type OverviewSession = {
   name: string;
   focus: string;
   itemCount: number;
-  mediaId: string | null;
+  videoUrl: string | null;
   startedAt: number | null;
 };
 
@@ -343,10 +306,10 @@ function dayStatus(
 }
 
 /** First clip anywhere in a session — the plate for its row. */
-function firstMediaId(assignment: ScheduledAssignment): string | null {
+function firstVideoUrl(assignment: ScheduledAssignment): string | null {
   for (const block of assignment.snapshot.blocks) {
     for (const item of block.items) {
-      if (item.mediaId) return item.mediaId;
+      if (item.videoUrl) return item.videoUrl;
     }
   }
   return null;
@@ -359,7 +322,7 @@ function toOverviewSession(assignment: ScheduledAssignment): OverviewSession {
     name: assignment.snapshot.name,
     focus: assignment.snapshot.focus.trim(),
     itemCount: assignment.snapshot.blocks.reduce((total, block) => total + block.items.length, 0),
-    mediaId: firstMediaId(assignment),
+    videoUrl: firstVideoUrl(assignment),
     startedAt: assignment.startedAt,
   };
 }
