@@ -1,3 +1,4 @@
+import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -79,6 +80,8 @@ const snapshotBlock = v.object({
 });
 
 export default defineSchema({
+  ...authTables,
+
   /**
    * Bookkeeping the app writes about itself. One row so far: the fingerprint of
    * the seeded library, so a re-import inserts only what is new.
@@ -89,18 +92,34 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   /**
-   * Every account, coach and client alike. `email` has to stay unique, and
-   * Convex has no unique constraint — `by_email` exists so the mutation can
-   * check before inserting.
+   * Every account, coach and client alike.
+   *
+   * This overrides the `users` table that `authTables` brings, because Convex
+   * Auth owns the table and the studio needs three fields of its own on it. The
+   * `email` and `phone` index names are the library's — it queries them by
+   * those exact names, so they are not ours to rename.
+   *
+   * `role`, `locale` and `status` stay required even though the library creates
+   * users, because `createOrUpdateUser` in `convex/auth.ts` is what does the
+   * creating and it always supplies them. That callback is also what keeps the
+   * studio closed: an address Sara has not added gets no account.
    */
   users: defineTable({
-    email: v.string(),
+    /** Read and written by Convex Auth. */
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    image: v.optional(v.string()),
+    isAnonymous: v.optional(v.boolean()),
+    /** The studio's own. */
     name: v.string(),
     role: v.union(v.literal("coach"), v.literal("client")),
     locale: v.union(v.literal("pt"), v.literal("en")),
     status: v.union(v.literal("invited"), v.literal("active"), v.literal("archived")),
   })
-    .index("by_email", ["email"])
+    .index("email", ["email"])
+    .index("phone", ["phone"])
     .index("by_role", ["role"]),
 
   /**
@@ -121,18 +140,8 @@ export default defineSchema({
     startedAt: v.union(v.null(), v.number()),
   }).index("by_user", ["userId"]),
 
-  /**
-   * One-time sign-in links. Only the SHA-256 of the token is stored, so a read
-   * of this table cannot mint a login.
-   */
-  magicTokens: defineTable({
-    tokenHash: v.string(),
-    userId: v.id("users"),
-    expiresAt: v.number(),
-    usedAt: v.union(v.null(), v.number()),
-  })
-    .index("by_hash", ["tokenHash"])
-    .index("by_expiry", ["expiresAt"]),
+  // The hand-rolled `magic_tokens` table is gone: Convex Auth owns verification
+  // codes now, in `authVerificationCodes` from `authTables`.
 
   /**
    * An uploaded file. `storageId` is Convex's handle — the bytes live in file
