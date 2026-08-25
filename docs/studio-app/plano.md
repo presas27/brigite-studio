@@ -535,6 +535,69 @@ nem ressuscita o que ela arquivou.
 Os vídeos **não** vêm: ficam no Trainerize até serem re-filmados. Um exercício chega com
 link, na melhor das hipóteses, e sem nada na pior.
 
+### 10.2 Migração para Convex — em curso
+
+Motivo, medido e não suposto: no Vercel a base vive em `/tmp`, que é **por
+instância**. Uma gravação fica no disco da lambda que a serviu e o pedido seguinte pode
+cair noutra, cuja base acabou de ser reconstruída do seed. Gravei um link de vídeo no
+preview e recarreguei a mesma página dez vezes — `video, VAZIO, video, video, VAZIO,
+VAZIO, VAZIO, VAZIO, VAZIO, VAZIO`. Não há correcção em código enquanto a base viver
+dentro da instância.
+
+**Não há dados para migrar.** A base actual é efémera e reconstruída do seed, portanto
+isto é uma reescrita da camada de dados, não uma migração de dados: sem backfill, sem
+escrita dupla, sem janela de corte.
+
+Superfície, contada: **17 tabelas**, ~120 funções exportadas em `src/lib/studio/`,
+~150 call sites em `src/app/` e `src/components/`.
+
+Ordem obrigatória — cada passo depende da forma do anterior:
+
+| # | Passo | Estado |
+|---|---|---|
+| 1 | `convex/schema.ts` — as 17 tabelas, validadores e índices | **feito** |
+| 2 | Autenticação: decide como a identidade chega às funções | **decisão aberta** |
+| 3 | Funções por domínio (library, users, plan, coaching, leads, media) | |
+| 4 | Call sites: sync → `await`, em todas as páginas e server actions | |
+| 5 | Seed + import da biblioteca em lotes (2233 documentos não cabem numa mutation) | |
+| 6 | `media` para Convex file storage; a rota `/app/media/[id]` deixa de ler do disco | |
+| 7 | Apagar `db.ts`, `paths.ts`, `id.ts` e o SQL todo | |
+
+#### O passo 2 é o que trava o resto
+
+`NEXT_PUBLIC_CONVEX_URL` é público por definição. Qualquer `query` ou `mutation`
+exportada é chamável por quem souber o URL — expor `updateExercise` é deixar qualquer
+pessoa editar a biblioteca da Sara. Hoje a autorização vive no Next (`requireCoach()`,
+cookie HMAC), e as funções Convex não sabem quem está a chamar.
+
+Duas saídas, e mudam a forma de todas as ~120 funções:
+
+- **Convex Auth** (§9.1 já o nomeia). As funções defendem-se a si próprias com
+  `ctx.auth.getUserIdentity()`. É o destino certo e abre as queries reactivas no
+  browser, que é metade da razão para vir para o Convex. Custo: substitui o fluxo
+  actual de magic link + cookie HMAC, e os utilizadores do piloto já estão a entrar
+  por lá.
+- **Chave de serviço.** Todo o tráfego continua a passar pelo Next, que fala com o
+  Convex com um segredo de servidor; a autorização fica onde já está. Mais barato e
+  não mexe no login, mas fecha a porta ao real-time no browser e é um padrão que a
+  documentação do Convex desaconselha para tráfego de aplicação.
+
+#### O que o SQLite garantia e agora é trabalho das mutations
+
+- **Unicidade:** `users.email` e `checkins (clientId, weekOf)`. O índice existe para a
+  mutation verificar antes de inserir.
+- **Limpeza referencial:** os `ON DELETE CASCADE` (perfil, tokens, blocos, itens, logs,
+  comentários) e `ON DELETE SET NULL` (media de um exercício, workout de uma marcação)
+  passam a ser apagamentos explícitos.
+- **`effort BETWEEN 1 AND 10`** passa a ser uma verificação na mutation.
+
+#### O que a mudança apaga de graça
+
+`withStableIds()` desaparece. Existia porque um host efémero reconstruía as linhas em
+cada cold start e um link impresso por uma instância tinha de resolver noutra — com ids
+duráveis o problema deixa de existir. O mesmo para a impressão digital em `meta`, que
+passa a servir só o re-import da biblioteca.
+
 ---
 
 ## 11. Fases e esforço

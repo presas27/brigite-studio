@@ -1,0 +1,342 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+/**
+ * The studio's data model, moved off SQLite.
+ *
+ * Three rules were applied translating the DDL, and they explain most of the
+ * differences from the tables it replaces:
+ *
+ * 1. **`_creationTime` replaces every `created_at`.** Convex stamps it, and
+ *    every index is implicitly suffixed with it — so `by_client` on messages
+ *    gives exactly the ordering `idx_messages_client (client_id, created_at)`
+ *    gave. Timestamps that mean something other than "when this row appeared"
+ *    (`startedAt`, `doneAt`, `reviewedAt`, `updatedAt`…) stay as fields.
+ *
+ * 2. **`CHECK (x IN (…))` becomes `v.union(v.literal(…))`.** The constraint
+ *    moves from the engine into the validator, where it is also the TypeScript
+ *    type.
+ *
+ * 3. **Nullable columns stay `v.union(v.null(), …)` rather than becoming
+ *    optional.** The domain types in `src/lib/studio/types.ts` already say
+ *    `string | null`; keeping null explicit means the mapping is one-to-one and
+ *    there is never a question of whether a field is absent or empty.
+ *
+ * Two things SQLite enforced that Convex cannot, and which the mutations must
+ * therefore enforce themselves — they are called out again at each table:
+ * uniqueness (`users.email`, `checkins (clientId, weekOf)`) and referential
+ * cleanup (`ON DELETE CASCADE` / `SET NULL`).
+ */
+
+/** How a set is measured. Decides which input the logger shows. */
+const tracking = v.union(
+  v.literal("reps"),
+  v.literal("time"),
+  v.literal("hold"),
+  v.literal("distance"),
+);
+
+/**
+ * One exercise as it was when a workout was assigned.
+ *
+ * The ids inside are `v.string()` and not `v.id(...)` on purpose: this is a
+ * frozen copy, not a reference. Editing or deleting the exercise afterwards
+ * must not change a session the client already saw, and `setLogs` are keyed by
+ * the `itemId` in here so reordering the template cannot scramble past numbers.
+ */
+const snapshotItem = v.object({
+  id: v.string(),
+  position: v.number(),
+  exerciseId: v.string(),
+  exerciseName: v.string(),
+  tracking,
+  videoUrl: v.union(v.null(), v.string()),
+  mediaId: v.union(v.null(), v.string()),
+  cues: v.string(),
+  cuesEn: v.string(),
+  sets: v.number(),
+  reps: v.string(),
+  seconds: v.union(v.null(), v.number()),
+  tempo: v.string(),
+  restSeconds: v.number(),
+  rpe: v.string(),
+  notes: v.string(),
+});
+
+const snapshotBlock = v.object({
+  id: v.string(),
+  position: v.number(),
+  kind: v.union(
+    v.literal("normal"),
+    v.literal("superset"),
+    v.literal("circuit"),
+    v.literal("interval"),
+  ),
+  label: v.string(),
+  rounds: v.number(),
+  restSeconds: v.number(),
+  items: v.array(snapshotItem),
+});
+
+export default defineSchema({
+  /**
+   * Bookkeeping the app writes about itself. One row so far: the fingerprint of
+   * the seeded library, so a re-import inserts only what is new.
+   */
+  meta: defineTable({
+    key: v.string(),
+    value: v.string(),
+  }).index("by_key", ["key"]),
+
+  /**
+   * Every account, coach and client alike. `email` has to stay unique, and
+   * Convex has no unique constraint — `by_email` exists so the mutation can
+   * check before inserting.
+   */
+  users: defineTable({
+    email: v.string(),
+    name: v.string(),
+    role: v.union(v.literal("coach"), v.literal("client")),
+    locale: v.union(v.literal("pt"), v.literal("en")),
+    status: v.union(v.literal("invited"), v.literal("active"), v.literal("archived")),
+  })
+    .index("by_email", ["email"])
+    .index("by_role", ["role"]),
+
+  /**
+   * The coaching side of a client account. One per user, which is why the
+   * `by_user` index is a lookup and not a list. Deleting a user must delete
+   * this row: SQLite did it with `ON DELETE CASCADE`.
+   */
+  clientProfiles: defineTable({
+    userId: v.id("users"),
+    plan: v.union(v.literal("personal"), v.literal("online"), v.literal("specialty")),
+    goals: v.string(),
+    injuries: v.string(),
+    /** Coach-only. Never rendered in the client area. */
+    notes: v.string(),
+    tags: v.array(v.string()),
+    /** Remaining credits for in-person session packs. */
+    sessionsLeft: v.number(),
+    startedAt: v.union(v.null(), v.number()),
+  }).index("by_user", ["userId"]),
+
+  /**
+   * One-time sign-in links. Only the SHA-256 of the token is stored, so a read
+   * of this table cannot mint a login.
+   */
+  magicTokens: defineTable({
+    tokenHash: v.string(),
+    userId: v.id("users"),
+    expiresAt: v.number(),
+    usedAt: v.union(v.null(), v.number()),
+  })
+    .index("by_hash", ["tokenHash"])
+    .index("by_expiry", ["expiresAt"]),
+
+  /**
+   * An uploaded file. `storageId` is Convex's handle — the bytes live in file
+   * storage, not in this row and not on a disk that dies with the instance.
+   */
+  media: defineTable({
+    ownerId: v.id("users"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    mime: v.string(),
+    bytes: v.number(),
+  }).index("by_owner", ["ownerId"]),
+
+  /**
+   * Sara's library. `videoUrl` is a link and nothing else — a YouTube address
+   * costs 43 characters here and the video streams from YouTube, where
+   * `mediaId` would mean storing and serving the file ourselves.
+   *
+   * `archived` is a soft delete: workout history keeps pointing at the row.
+   */
+  exercises: defineTable({
+    name: v.string(),
+    /** Technique cues in Portuguese, one per line. */
+    cues: v.string(),
+    /** The same cues in English. Either side may be empty. */
+    cuesEn: v.string(),
+    videoUrl: v.union(v.null(), v.string()),
+    mediaId: v.union(v.null(), v.id("media")),
+    tags: v.array(v.string()),
+    tracking,
+    /** The harder exercise this one regresses from, if any. */
+    regressionOf: v.union(v.null(), v.id("exercises")),
+    archived: v.boolean(),
+  })
+    .index("by_archived_and_name", ["archived", "name"])
+    .index("by_media", ["mediaId"])
+    .searchIndex("search_name", { searchField: "name", filterFields: ["archived"] }),
+
+  workouts: defineTable({
+    name: v.string(),
+    focus: v.string(),
+    notes: v.string(),
+    archived: v.boolean(),
+    /** Last edit, not creation — the card shows when a workout was touched. */
+    updatedAt: v.number(),
+  }).index("by_archived_and_updated", ["archived", "updatedAt"]),
+
+  workoutBlocks: defineTable({
+    workoutId: v.id("workouts"),
+    position: v.number(),
+    kind: v.union(
+      v.literal("normal"),
+      v.literal("superset"),
+      v.literal("circuit"),
+      v.literal("interval"),
+    ),
+    label: v.string(),
+    rounds: v.number(),
+    restSeconds: v.number(),
+  }).index("by_workout_and_position", ["workoutId", "position"]),
+
+  workoutItems: defineTable({
+    blockId: v.id("workoutBlocks"),
+    position: v.number(),
+    exerciseId: v.id("exercises"),
+    sets: v.number(),
+    /** Free text so ranges ("8-10") and ladders ("5/3/1") both work. */
+    reps: v.string(),
+    seconds: v.union(v.null(), v.number()),
+    tempo: v.string(),
+    restSeconds: v.number(),
+    rpe: v.string(),
+    notes: v.string(),
+  }).index("by_block_and_position", ["blockId", "position"]),
+
+  /**
+   * A workout placed on a client's calendar, with the template frozen into
+   * `snapshot`. `date` is nullable: a workout can be assigned with no day.
+   */
+  assignments: defineTable({
+    clientId: v.id("users"),
+    workoutId: v.union(v.null(), v.id("workouts")),
+    /** `YYYY-MM-DD` in Lisbon time, or null for "no day yet". */
+    date: v.union(v.null(), v.string()),
+    status: v.union(v.literal("scheduled"), v.literal("done"), v.literal("skipped")),
+    snapshot: v.object({
+      name: v.string(),
+      focus: v.string(),
+      notes: v.string(),
+      blocks: v.array(snapshotBlock),
+    }),
+    note: v.string(),
+    startedAt: v.union(v.null(), v.number()),
+    doneAt: v.union(v.null(), v.number()),
+    /** 1–10, checked in the mutation: Convex has no BETWEEN constraint. */
+    effort: v.union(v.null(), v.number()),
+    extraRestSeconds: v.number(),
+  })
+    .index("by_client_and_date", ["clientId", "date"])
+    .index("by_client_and_status", ["clientId", "status"]),
+
+  /**
+   * One logged set. `itemId` and `exerciseId` are plain strings, copied from the
+   * assignment's snapshot rather than pointing at live rows — the same reason
+   * the snapshot exists.
+   */
+  setLogs: defineTable({
+    assignmentId: v.id("assignments"),
+    itemId: v.string(),
+    exerciseId: v.string(),
+    setIndex: v.number(),
+    reps: v.union(v.null(), v.number()),
+    loadKg: v.union(v.null(), v.number()),
+    seconds: v.union(v.null(), v.number()),
+    rpe: v.union(v.null(), v.number()),
+    notes: v.string(),
+  })
+    .index("by_assignment", ["assignmentId"])
+    .index("by_exercise", ["exerciseId"]),
+
+  /** A video the client filmed, and Sara's verdict on it. */
+  submissions: defineTable({
+    clientId: v.id("users"),
+    assignmentId: v.union(v.null(), v.id("assignments")),
+    exerciseId: v.union(v.null(), v.id("exercises")),
+    mediaId: v.union(v.null(), v.id("media")),
+    videoUrl: v.union(v.null(), v.string()),
+    note: v.string(),
+    status: v.union(v.literal("pending"), v.literal("reviewed")),
+    verdict: v.union(v.null(), v.literal("ok"), v.literal("adjust"), v.literal("regress")),
+    reply: v.string(),
+    reviewedAt: v.union(v.null(), v.number()),
+  })
+    .index("by_client", ["clientId"])
+    .index("by_status", ["status"]),
+
+  /** A timestamped note on a submission's video — the annotated feedback. */
+  reviewComments: defineTable({
+    submissionId: v.id("submissions"),
+    /** Offset into the video, in milliseconds. */
+    tMs: v.number(),
+    body: v.string(),
+  }).index("by_submission_and_time", ["submissionId", "tMs"]),
+
+  /**
+   * One thread per client. `authorId` says who wrote it; `readAt` is null until
+   * the other side opens the thread.
+   */
+  messages: defineTable({
+    clientId: v.id("users"),
+    authorId: v.id("users"),
+    body: v.string(),
+    mediaId: v.union(v.null(), v.id("media")),
+    readAt: v.union(v.null(), v.number()),
+  }).index("by_client", ["clientId"]),
+
+  /**
+   * The weekly check-in. One per client per week, which SQLite enforced with
+   * `UNIQUE (client_id, week_of)` — here the mutation checks `by_client_and_week`
+   * before inserting.
+   */
+  checkins: defineTable({
+    clientId: v.id("users"),
+    /** Monday of the week, `YYYY-MM-DD`. */
+    weekOf: v.string(),
+    energy: v.union(v.null(), v.number()),
+    sleep: v.union(v.null(), v.number()),
+    soreness: v.union(v.null(), v.number()),
+    weightKg: v.union(v.null(), v.number()),
+    wins: v.string(),
+    blockers: v.string(),
+    submittedAt: v.union(v.null(), v.number()),
+    reply: v.string(),
+    repliedAt: v.union(v.null(), v.number()),
+  }).index("by_client_and_week", ["clientId", "weekOf"]),
+
+  /** A body measurement on a day. `kind` is open text: weight, waist, whatever. */
+  measurements: defineTable({
+    clientId: v.id("users"),
+    /** `YYYY-MM-DD`. */
+    date: v.string(),
+    kind: v.string(),
+    value: v.number(),
+  })
+    .index("by_client_and_date", ["clientId", "date"])
+    .index("by_client_and_kind", ["clientId", "kind"]),
+
+  /** An enquiry from the marketing site, and where it went. */
+  leads: defineTable({
+    name: v.string(),
+    email: v.string(),
+    phone: v.string(),
+    message: v.string(),
+    interest: v.union(v.null(), v.string()),
+    source: v.string(),
+    status: v.union(
+      v.literal("new"),
+      v.literal("talking"),
+      v.literal("won"),
+      v.literal("lost"),
+    ),
+    notes: v.string(),
+    /** Set once a lead becomes a client. */
+    clientId: v.union(v.null(), v.id("users")),
+    updatedAt: v.number(),
+  }).index("by_status", ["status"]),
+});
