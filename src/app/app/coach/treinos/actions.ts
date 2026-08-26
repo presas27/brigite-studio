@@ -11,15 +11,18 @@ import {
   createWorkout,
   duplicateWorkout,
   findWorkout,
+  groupItems,
+  looseBlockId,
   moveItem,
   removeBlock,
   removeItem,
   reorderItems,
+  ungroupBlock,
   updateBlock,
   updateItem,
   updateWorkout,
 } from "@/lib/studio/library";
-import type { BlockKind } from "@/lib/studio/types";
+import type { BlockKind, WorkoutType } from "@/lib/studio/types";
 
 /**
  * Server actions for the workout builder. Every export starts with
@@ -29,7 +32,21 @@ import type { BlockKind } from "@/lib/studio/types";
  */
 
 const LIST_PATH = "/app/coach/treinos";
-const workoutPath = (workoutId: string) => `${LIST_PATH}/${workoutId}`;
+
+/**
+ * Where the workout being edited actually lives. A library template is edited
+ * under `/app/coach/treinos`; a client-scoped copy is edited inside its
+ * training phase, and revalidating the library path would leave that screen
+ * showing stale blocks. One indexed read per mutation buys correctness for
+ * both.
+ */
+function workoutPath(workoutId: string): string {
+  const workout = findWorkout(workoutId);
+  if (workout?.clientId && workout.phaseId) {
+    return `/app/coach/alunos/${workout.clientId}/plano/fase/${workout.phaseId}/treino/${workoutId}`;
+  }
+  return `${LIST_PATH}/${workoutId}`;
+}
 
 /** `Number.parseInt`, but an invalid or missing value means "leave unchanged". */
 function intField(formData: FormData, key: string): number | undefined {
@@ -57,9 +74,17 @@ function idField(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
-/** Create a workout and jump straight into its editor. */
+const WORKOUT_TYPES: readonly WorkoutType[] = ["regular", "circuit", "interval"];
+
+/** Anything the form did not offer falls back to `regular`, never to a throw. */
+function workoutTypeField(formData: FormData): WorkoutType {
+  const raw = textField(formData, "workoutType").trim() as WorkoutType;
+  return WORKOUT_TYPES.includes(raw) ? raw : "regular";
+}
+
+/** Create a library workout and jump straight into its editor. */
 export async function createWorkoutAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  const coach = await requireCoach();
   const name = textField(formData, "name").trim();
   if (!name) return;
 
@@ -67,6 +92,8 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
     name,
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
+    workoutType: workoutTypeField(formData),
+    coachId: coach.id,
   });
   revalidatePath(LIST_PATH);
   redirect(workoutPath(id));
@@ -83,6 +110,18 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
   });
+  revalidatePath(workoutPath(workoutId));
+}
+
+/**
+ * The workout's general instructions — the free text at the top of the builder,
+ * above the exercise list. Saved on blur like every other builder field.
+ */
+export async function updateInstructionsAction(formData: FormData): Promise<void> {
+  await requireCoach();
+  const workoutId = idField(formData, "workoutId");
+  if (!workoutId) return;
+  updateWorkout(workoutId, { instructions: textField(formData, "instructions") });
   revalidatePath(workoutPath(workoutId));
 }
 
@@ -243,5 +282,59 @@ export async function moveItemDownAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
   moveItem(itemId, 1);
+  revalidatePath(workoutPath(workoutId));
+}
+
+/* ----------------------------------------------- supersets and circuits */
+
+/**
+ * Add an exercise to the ungrouped list. The builder's "Add exercise" button
+ * sits outside every group, so this is where a new exercise lands until the
+ * coach combines it with another one.
+ */
+export async function addLooseExerciseAction(
+  workoutId: string,
+  exerciseId: string,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !exerciseId) return;
+  addItem(looseBlockId(workoutId), { exerciseId });
+  revalidatePath(workoutPath(workoutId));
+}
+
+/**
+ * Combine the selected exercises into a super set (two exercises back to back)
+ * or a circuit (three or more, repeated for a number of rounds). Fewer than two
+ * selected is a no-op — `groupItems` refuses it.
+ */
+export async function groupItemsAction(
+  workoutId: string,
+  itemIds: string[],
+  kind: "superset" | "circuit",
+  rounds?: number,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !Array.isArray(itemIds)) return;
+  groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
+  revalidatePath(workoutPath(workoutId));
+}
+
+/** Break a group up, returning its exercises to the ungrouped list. */
+export async function ungroupBlockAction(workoutId: string, blockId: string): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId) return;
+  ungroupBlock(blockId);
+  revalidatePath(workoutPath(workoutId));
+}
+
+/** How many times a circuit's list is repeated. */
+export async function setRoundsAction(
+  workoutId: string,
+  blockId: string,
+  rounds: number,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId || !Number.isFinite(rounds)) return;
+  updateBlock(blockId, { rounds });
   revalidatePath(workoutPath(workoutId));
 }

@@ -71,6 +71,7 @@ export function assignWorkout(input: {
     name: workout.name,
     focus: workout.focus,
     notes: workout.notes,
+    instructions: workout.instructions,
     blocks: workout.blocks,
   };
   const assignmentId = newId();

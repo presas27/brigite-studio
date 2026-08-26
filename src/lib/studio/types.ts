@@ -110,11 +110,33 @@ export type WorkoutBlock = {
   items: WorkoutItem[];
 };
 
+/**
+ * Which construction screen a workout uses. Only `regular` — instructions plus
+ * a list of exercises that can be grouped into supersets and circuits — has a
+ * builder of its own; `circuit` and `interval` are recorded on the workout and
+ * shown in its header.
+ */
+export type WorkoutType = "regular" | "circuit" | "interval";
+
 export type Workout = {
   id: string;
   name: string;
   focus: string;
+  /** Shown to the client with the workout. */
   notes: string;
+  /** The coach's description of how the session is structured. */
+  instructions: string;
+  workoutType: WorkoutType;
+  /** Owning coach. NULL only on rows written before phases existed. */
+  coachId: string | null;
+  /** NULL for a library template; set on a copy that belongs to one client. */
+  clientId: string | null;
+  /** The training phase a client-scoped copy lives in. */
+  phaseId: string | null;
+  /** The library workout this copy came from, when it came from one. */
+  sourceWorkoutId: string | null;
+  /** Running order inside its phase. Meaningless for library templates. */
+  position: number;
   archived: boolean;
   createdAt: number;
   updatedAt: number;
@@ -123,6 +145,31 @@ export type Workout = {
 
 /** Workout metadata without blocks — for lists. */
 export type WorkoutSummary = Omit<Workout, "blocks"> & { itemCount: number };
+
+/** Two ways to say how long a phase runs. See `TrainingPhase`. */
+export type PhaseDurationType = "calendar" | "weeks";
+
+/**
+ * One block of the client's plan: "Phase 1 - Base building". Either it sits on
+ * the calendar (`startDate`/`endDate`) or it is a bare number of `weeks` the
+ * coach has not dated yet — never both.
+ */
+export type TrainingPhase = {
+  id: string;
+  coachId: string;
+  clientId: string;
+  name: string;
+  position: number;
+  durationType: PhaseDurationType;
+  startDate: string | null;
+  endDate: string | null;
+  weeks: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** A phase with the size of its workout list — for the plan tab. */
+export type TrainingPhaseSummary = TrainingPhase & { workoutCount: number };
 
 export type AssignmentStatus = "scheduled" | "done" | "skipped";
 
@@ -158,6 +205,8 @@ export type WorkoutSnapshot = {
   name: string;
   focus: string;
   notes: string;
+  /** Absent on snapshots frozen before workouts had instructions. */
+  instructions?: string;
   blocks: WorkoutBlock[];
 };
 

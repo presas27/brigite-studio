@@ -9,6 +9,7 @@ import type {
   WorkoutBlock,
   WorkoutItem,
   WorkoutSummary,
+  WorkoutType,
 } from "./types";
 
 /**
@@ -229,46 +230,57 @@ export function workoutBlocks(workoutId: string): WorkoutBlock[] {
   }));
 }
 
-export function findWorkout(workoutId: string): Workout | undefined {
-  const row = get<Row>(
-    "SELECT id, name, focus, notes, archived, created_at, updated_at FROM workouts WHERE id = ?",
-    workoutId,
-  );
-  if (!row) return undefined;
+const WORKOUT_COLUMNS =
+  "id, name, focus, notes, instructions, workout_type, coach_id, client_id, phase_id, " +
+  "source_workout_id, position, archived, created_at, updated_at";
+
+/** Shared by the library and by `phases.ts`, which lists the same rows. */
+export function workoutMetaFromRow(row: Row): Omit<Workout, "blocks"> {
   return {
     id: String(row.id),
     name: String(row.name),
     focus: String(row.focus ?? ""),
     notes: String(row.notes ?? ""),
+    instructions: String(row.instructions ?? ""),
+    workoutType: String(row.workout_type ?? "regular") as WorkoutType,
+    coachId: row.coach_id == null ? null : String(row.coach_id),
+    clientId: row.client_id == null ? null : String(row.client_id),
+    phaseId: row.phase_id == null ? null : String(row.phase_id),
+    sourceWorkoutId: row.source_workout_id == null ? null : String(row.source_workout_id),
+    position: Number(row.position ?? 0),
     archived: Number(row.archived) === 1,
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
-    blocks: workoutBlocks(workoutId),
   };
 }
 
+export function findWorkout(workoutId: string): Workout | undefined {
+  const row = get<Row>(`SELECT ${WORKOUT_COLUMNS} FROM workouts WHERE id = ?`, workoutId);
+  if (!row) return undefined;
+  return { ...workoutMetaFromRow(row), blocks: workoutBlocks(workoutId) };
+}
+
+/**
+ * The library: templates only. A client-scoped copy inside a training phase is
+ * a `workouts` row too, and `client_id IS NULL` is what keeps it out of here —
+ * one client's adapted version of a workout is nobody else's template.
+ */
 export function listWorkouts(search?: string): WorkoutSummary[] {
   const like = search?.trim() ? `%${search.trim()}%` : null;
   const rows = all<Row>(
-    `SELECT w.id, w.name, w.focus, w.notes, w.archived, w.created_at, w.updated_at,
+    `SELECT w.id, w.name, w.focus, w.notes, w.instructions, w.workout_type, w.coach_id,
+            w.client_id, w.phase_id, w.source_workout_id, w.position, w.archived,
+            w.created_at, w.updated_at,
             (SELECT count(*) FROM workout_items i
                JOIN workout_blocks b ON b.id = i.block_id
               WHERE b.workout_id = w.id) AS item_count
        FROM workouts w
-      WHERE w.archived = 0 ${like ? "AND (w.name LIKE ? OR w.focus LIKE ?)" : ""}
+      WHERE w.archived = 0 AND w.client_id IS NULL
+            ${like ? "AND (w.name LIKE ? OR w.focus LIKE ?)" : ""}
       ORDER BY w.created_at DESC`,
     ...(like ? [like, like] : []),
   );
-  return rows.map((row) => ({
-    id: String(row.id),
-    name: String(row.name),
-    focus: String(row.focus ?? ""),
-    notes: String(row.notes ?? ""),
-    archived: Number(row.archived) === 1,
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
-    itemCount: Number(row.item_count),
-  }));
+  return rows.map((row) => ({ ...workoutMetaFromRow(row), itemCount: Number(row.item_count) }));
 }
 
 /** Every distinct workout focus in use, with its workout count. */
@@ -283,20 +295,41 @@ export function workoutFocuses(): { tag: string; count: number }[] {
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "pt"));
 }
 
+/**
+ * A workout row. Left plain it is a library template; give it `clientId` and
+ * `phaseId` and it is that client's own copy inside one training phase, which
+ * the library never lists.
+ */
 export function createWorkout(input: {
   name: string;
   focus?: string;
   notes?: string;
+  instructions?: string;
+  workoutType?: WorkoutType;
+  coachId?: string | null;
+  clientId?: string | null;
+  phaseId?: string | null;
+  sourceWorkoutId?: string | null;
+  position?: number;
 }): string {
   const workoutId = newId();
   const now = Date.now();
   run(
-    `INSERT INTO workouts (id, name, focus, notes, archived, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 0, ?, ?)`,
+    `INSERT INTO workouts
+       (id, name, focus, notes, instructions, workout_type, coach_id, client_id, phase_id,
+        source_workout_id, position, archived, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
     workoutId,
     input.name.trim(),
     input.focus ?? "",
     input.notes ?? "",
+    input.instructions ?? "",
+    input.workoutType ?? "regular",
+    input.coachId ?? null,
+    input.clientId ?? null,
+    input.phaseId ?? null,
+    input.sourceWorkoutId ?? null,
+    input.position ?? 0,
     now,
     now,
   );
@@ -305,7 +338,13 @@ export function createWorkout(input: {
 
 export function updateWorkout(
   workoutId: string,
-  patch: { name?: string; focus?: string; notes?: string },
+  patch: {
+    name?: string;
+    focus?: string;
+    notes?: string;
+    instructions?: string;
+    workoutType?: WorkoutType;
+  },
 ): void {
   const fields: string[] = [];
   const values: (string | number)[] = [];
@@ -320,6 +359,14 @@ export function updateWorkout(
   if (patch.notes !== undefined) {
     fields.push("notes = ?");
     values.push(patch.notes);
+  }
+  if (patch.instructions !== undefined) {
+    fields.push("instructions = ?");
+    values.push(patch.instructions);
+  }
+  if (patch.workoutType !== undefined) {
+    fields.push("workout_type = ?");
+    values.push(patch.workoutType);
   }
   if (fields.length === 0) return;
   fields.push("updated_at = ?");
@@ -549,12 +596,38 @@ export function reorderItems(blockId: string, itemIds: string[]): void {
   if (workoutId) touchWorkout(workoutId);
 }
 
-/** Deep-copy a workout, blocks and items included. */
-export function duplicateWorkout(workoutId: string, name: string): string | undefined {
+/**
+ * Deep-copy a workout — blocks and items included — applying `overrides` to
+ * the copy's own columns. This is what keeps the library safe: adding a
+ * template to a training phase copies it here and now, so every later edit the
+ * coach makes lands on the client's copy and the template is never touched.
+ */
+export function copyWorkout(
+  workoutId: string,
+  overrides: {
+    name?: string;
+    coachId?: string | null;
+    clientId?: string | null;
+    phaseId?: string | null;
+    sourceWorkoutId?: string | null;
+    position?: number;
+  } = {},
+): string | undefined {
   const source = findWorkout(workoutId);
   if (!source) return undefined;
   return tx(() => {
-    const copyId = createWorkout({ name, focus: source.focus, notes: source.notes });
+    const copyId = createWorkout({
+      name: overrides.name ?? source.name,
+      focus: source.focus,
+      notes: source.notes,
+      instructions: source.instructions,
+      workoutType: source.workoutType,
+      coachId: overrides.coachId ?? source.coachId,
+      clientId: overrides.clientId ?? null,
+      phaseId: overrides.phaseId ?? null,
+      sourceWorkoutId: overrides.sourceWorkoutId ?? null,
+      position: overrides.position ?? 0,
+    });
     for (const block of source.blocks) {
       const blockId = addBlock(copyId, {
         kind: block.kind,
@@ -577,4 +650,123 @@ export function duplicateWorkout(workoutId: string, name: string): string | unde
     }
     return copyId;
   });
+}
+
+/** Duplicate a library template as another library template. */
+export function duplicateWorkout(workoutId: string, name: string): string | undefined {
+  return copyWorkout(workoutId, { name });
+}
+
+/* --------------------------------------------------- supersets and circuits */
+
+/**
+ * Exercises that belong to no group. Every workout has exactly one of these:
+ * the `normal` block, kept after every group so the builder reads "groups,
+ * then whatever is still loose".
+ *
+ * Created on demand, and consolidated when it has to be: the block-first
+ * builder this replaced let a coach add several plain blocks to one workout,
+ * and an exercise-first list has one place for ungrouped work, not three. The
+ * extra blocks' exercises are folded into the survivor rather than dropped.
+ */
+export function looseBlockId(workoutId: string): string {
+  const normals = all<Row>(
+    `SELECT id FROM workout_blocks WHERE workout_id = ? AND kind = 'normal' ORDER BY position`,
+    workoutId,
+  ).map((row) => String(row.id));
+
+  if (normals.length === 0) return addBlock(workoutId, { kind: "normal" });
+  if (normals.length === 1) return normals[0];
+
+  const [keeper, ...extras] = normals;
+  tx(() => {
+    const merged = [keeper, ...extras].flatMap((blockId) =>
+      all<Row>("SELECT id FROM workout_items WHERE block_id = ? ORDER BY position", blockId).map(
+        (row) => String(row.id),
+      ),
+    );
+    reorderItems(keeper, merged);
+    for (const blockId of extras) run("DELETE FROM workout_blocks WHERE id = ?", blockId);
+  });
+  return keeper;
+}
+
+/**
+ * Pull `itemIds` out of wherever they sit and into one new group, in the order
+ * given. The group is appended after every existing block and the loose block
+ * is then pushed past it, which keeps two things true at once: groups stay in
+ * the order they were created, and the ungrouped list stays last.
+ *
+ * Returns the new block id, or `undefined` when fewer than two exercises were
+ * selected: a group of one is just an exercise.
+ */
+export function groupItems(
+  workoutId: string,
+  itemIds: string[],
+  kind: "superset" | "circuit",
+  rounds = 3,
+): string | undefined {
+  if (itemIds.length < 2) return undefined;
+  return tx(() => {
+    const loose = looseBlockId(workoutId);
+    const last = Number(
+      get<Row>(
+        "SELECT coalesce(max(position), -1) AS last FROM workout_blocks WHERE workout_id = ?",
+        workoutId,
+      )?.last ?? -1,
+    );
+    const blockId = newId();
+    run(
+      `INSERT INTO workout_blocks (id, workout_id, position, kind, label, rounds, rest_seconds)
+       VALUES (?, ?, ?, ?, '', ?, 60)`,
+      blockId,
+      workoutId,
+      last + 1,
+      kind,
+      kind === "circuit" ? Math.max(1, Math.trunc(rounds)) : 1,
+    );
+    run("UPDATE workout_blocks SET position = ? WHERE id = ?", last + 2, loose);
+    reorderItems(blockId, itemIds);
+    dropEmptyGroups(workoutId);
+    touchWorkout(workoutId);
+    return blockId;
+  });
+}
+
+/**
+ * Break a group up: its exercises go back to the loose list, in order, and the
+ * group itself goes away. The inverse of `groupItems`.
+ */
+export function ungroupBlock(blockId: string): void {
+  const workoutId = workoutIdForBlock(blockId);
+  if (!workoutId) return;
+  tx(() => {
+    const loose = looseBlockId(workoutId);
+    if (loose === blockId) return;
+    const looseItems = all<Row>(
+      "SELECT id FROM workout_items WHERE block_id = ? ORDER BY position",
+      loose,
+    ).map((row) => String(row.id));
+    const moving = all<Row>(
+      "SELECT id FROM workout_items WHERE block_id = ? ORDER BY position",
+      blockId,
+    ).map((row) => String(row.id));
+    reorderItems(loose, [...looseItems, ...moving]);
+    run("DELETE FROM workout_blocks WHERE id = ?", blockId);
+  });
+  touchWorkout(workoutId);
+}
+
+/**
+ * Groups left empty by a regroup are noise, not structure — a "Super set 2"
+ * with nothing in it would still take a number. The loose block survives empty
+ * because `looseBlockId` would only recreate it.
+ */
+function dropEmptyGroups(workoutId: string): void {
+  run(
+    `DELETE FROM workout_blocks
+      WHERE workout_id = ? AND kind <> 'normal'
+        AND NOT EXISTS (SELECT 1 FROM workout_items WHERE block_id = workout_blocks.id)`,
+    workoutId,
+  );
 }

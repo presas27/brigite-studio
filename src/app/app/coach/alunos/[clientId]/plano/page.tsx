@@ -2,16 +2,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/studio/Empty";
+import { AssignPhaseModal } from "@/components/studio/plan/AssignPhaseModal";
 import { AssignWorkoutModal } from "@/components/studio/plan/AssignWorkoutModal";
+import { PhaseList } from "@/components/studio/plan/PhaseList";
 import { UnscheduledList } from "@/components/studio/plan/UnscheduledList";
 import { WeekGrid } from "@/components/studio/plan/WeekGrid";
 import { Icon } from "@/components/studio/coach/icons";
+import { heading } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { dayKey, shiftDay, weekKey } from "@/lib/studio/db";
 import { listWorkouts } from "@/lib/studio/library";
+import { listPhases } from "@/lib/studio/phases";
 import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
 import type { Assignment } from "@/lib/studio/types";
-import { assign, markSkipped, move, remove } from "./actions";
+import { cn } from "@/lib/utils";
+import { assign, createPhaseAction, markSkipped, move, remove } from "./actions";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -42,13 +47,15 @@ export default async function CoachPlanPage({
   const sunday = shiftDay(monday, 6);
   const today = dayKey();
 
-  const [t, tWorkouts, locale] = await Promise.all([
+  const [t, tPhases, tWorkouts, locale] = await Promise.all([
     getTranslations("Studio.plan"),
+    getTranslations("Studio.plan.phases"),
     getTranslations("Studio.workouts"),
     getLocale(),
   ]);
 
   const workouts = listWorkouts();
+  const phases = listPhases(clientId);
   const assignments = assignmentsBetween(clientId, monday, sunday);
   const unscheduled = unscheduledAssignments(clientId);
 
@@ -65,12 +72,30 @@ export default async function CoachPlanPage({
   const removeAction = remove.bind(null, clientId);
   const markSkippedAction = markSkipped.bind(null, clientId);
   const moveAction = move.bind(null, clientId);
+  const createPhase = createPhaseAction.bind(null, clientId);
 
   const basePath = `/app/coach/alunos/${clientId}/plano`;
   const weekHref = (key: string) => `${basePath}?semana=${key}`;
 
   return (
     <div className="space-y-6">
+      {/* Phases say *what* the client trains right now; the week calendar
+          below still says *when*. Phases lead the tab because a coach opens
+          this page to see the plan's shape before its schedule. */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className={cn(heading, "text-lg")}>{tPhases("sectionTitle")}</h2>
+          <AssignPhaseModal createAction={createPhase} compact />
+        </div>
+        {phases.length === 0 ? (
+          <Empty title={tPhases("empty")} hint={tPhases("emptyHint")} />
+        ) : (
+          <PhaseList phases={phases} basePath={basePath} />
+        )}
+      </section>
+
+      <hr className="border-cream/10" />
+
       {/* Week nav and the one action that changes the week, on the same row —
           the assign button used to head the tab on a line of its own, which on
           a phone meant a full screen width spent on one pill. */}

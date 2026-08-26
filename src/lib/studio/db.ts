@@ -81,14 +81,45 @@ CREATE TABLE IF NOT EXISTS exercises (
   created_at    INTEGER NOT NULL
 );
 
+-- A block of training weeks for one client: "Phase 1 - Base building". The
+-- coach's plan is a sequence of these, and every workout the client trains
+-- hangs off one of them. Duration is either two calendar dates or a plain
+-- number of weeks; the other pair of columns stays NULL.
+CREATE TABLE IF NOT EXISTS training_phases (
+  id            TEXT PRIMARY KEY,
+  coach_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  client_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL,
+  position      INTEGER NOT NULL DEFAULT 0,
+  duration_type TEXT NOT NULL DEFAULT 'calendar'
+                CHECK (duration_type IN ('calendar', 'weeks')),
+  start_date    TEXT,
+  end_date      TEXT,
+  weeks         INTEGER,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
+
+-- Workouts are library templates when \`client_id\` is NULL. A workout with a
+-- \`client_id\` and a \`phase_id\` is a client-scoped copy living inside one
+-- training phase: it never shows in the library, and editing it cannot reach
+-- back into the template it was copied from (\`source_workout_id\`).
 CREATE TABLE IF NOT EXISTS workouts (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  focus       TEXT NOT NULL DEFAULT '',
-  notes       TEXT NOT NULL DEFAULT '',
-  archived    INTEGER NOT NULL DEFAULT 0,
-  created_at  INTEGER NOT NULL,
-  updated_at  INTEGER NOT NULL DEFAULT 0
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  focus         TEXT NOT NULL DEFAULT '',
+  notes         TEXT NOT NULL DEFAULT '',
+  instructions  TEXT NOT NULL DEFAULT '',
+  workout_type  TEXT NOT NULL DEFAULT 'regular'
+                CHECK (workout_type IN ('regular', 'circuit', 'interval')),
+  coach_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
+  client_id     TEXT REFERENCES users(id) ON DELETE CASCADE,
+  phase_id      TEXT REFERENCES training_phases(id) ON DELETE CASCADE,
+  source_workout_id TEXT,
+  position      INTEGER NOT NULL DEFAULT 0,
+  archived      INTEGER NOT NULL DEFAULT 0,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS workout_blocks (
@@ -206,6 +237,7 @@ CREATE INDEX IF NOT EXISTS idx_blocks_workout ON workout_blocks (workout_id, pos
 CREATE INDEX IF NOT EXISTS idx_items_block ON workout_items (block_id, position);
 CREATE INDEX IF NOT EXISTS idx_measurements_client ON measurements (client_id, date);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at);
+CREATE INDEX IF NOT EXISTS idx_phases_client ON training_phases (client_id, position);
 `;
 
 /**
@@ -298,6 +330,41 @@ function migrateExercisesCuesEn(handle: DatabaseSync): void {
   handle.exec("ALTER TABLE exercises ADD COLUMN cues_en TEXT NOT NULL DEFAULT ''");
 }
 
+/**
+ * Training phases. A workout used to be a library template and nothing else;
+ * it can now also be a client-scoped copy inside one phase, which needs the
+ * ownership columns below. `CREATE TABLE IF NOT EXISTS` no-ops on a database
+ * that predates them, so they go in by hand — and so does the index over
+ * them, which `SCHEMA` cannot carry: it runs before this function, when the
+ * column it indexes may not exist yet.
+ *
+ * `coach_id` backfills to the one coach the database was built around — exact
+ * while there is a single coach, and the column the plan is scoped by once
+ * there are several.
+ */
+function migrateWorkoutsPhaseColumns(handle: DatabaseSync): void {
+  const columns = (handle.prepare("PRAGMA table_info(workouts)").all() as { name: string }[]).map(
+    (column) => column.name,
+  );
+  const add = (name: string, ddl: string) => {
+    if (!columns.includes(name)) handle.exec(`ALTER TABLE workouts ADD COLUMN ${ddl}`);
+  };
+  add("instructions", "instructions TEXT NOT NULL DEFAULT ''");
+  add("workout_type", "workout_type TEXT NOT NULL DEFAULT 'regular'");
+  add("coach_id", "coach_id TEXT REFERENCES users(id) ON DELETE CASCADE");
+  add("client_id", "client_id TEXT REFERENCES users(id) ON DELETE CASCADE");
+  add("phase_id", "phase_id TEXT REFERENCES training_phases(id) ON DELETE CASCADE");
+  add("source_workout_id", "source_workout_id TEXT");
+  add("position", "position INTEGER NOT NULL DEFAULT 0");
+
+  handle.exec(`
+    UPDATE workouts
+       SET coach_id = (SELECT id FROM users WHERE role = 'coach' ORDER BY created_at LIMIT 1)
+     WHERE coach_id IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_workouts_phase ON workouts (phase_id, position);
+  `);
+}
+
 function open(): DatabaseSync {
   mkdirSync(DATA_DIR, { recursive: true });
   const db = new DatabaseSync(DB_PATH);
@@ -308,6 +375,7 @@ function open(): DatabaseSync {
   migrateAssignmentsColumns(db);
   migrateWorkoutsUpdatedAt(db);
   migrateExercisesCuesEn(db);
+  migrateWorkoutsPhaseColumns(db);
   return db;
 }
 
@@ -332,17 +400,29 @@ export function run(sql: string, ...params: Params): number {
   return Number(db().prepare(sql).run(...params).changes);
 }
 
-/** Run `fn` inside a transaction, rolling back on throw. */
+/**
+ * Run `fn` inside a transaction, rolling back on throw.
+ *
+ * Re-entrant: a repository function that already wraps its writes stays usable
+ * inside a larger one. SQLite refuses a nested `BEGIN`, so anything below the
+ * outermost call uses a savepoint instead and only its own writes unwind.
+ */
+let txDepth = 0;
+
 export function tx<T>(fn: () => T): T {
   const handle = db();
-  handle.exec("BEGIN");
+  const savepoint = txDepth > 0 ? `tx_${txDepth}` : null;
+  handle.exec(savepoint ? `SAVEPOINT ${savepoint}` : "BEGIN");
+  txDepth += 1;
   try {
     const result = fn();
-    handle.exec("COMMIT");
+    handle.exec(savepoint ? `RELEASE ${savepoint}` : "COMMIT");
     return result;
   } catch (err) {
-    handle.exec("ROLLBACK");
+    handle.exec(savepoint ? `ROLLBACK TO ${savepoint}; RELEASE ${savepoint}` : "ROLLBACK");
     throw err;
+  } finally {
+    txDepth -= 1;
   }
 }
 

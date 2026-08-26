@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { WorkoutBuilder } from "@/components/studio/workout/WorkoutBuilder";
 import { WorkoutSettings } from "@/components/studio/workout/WorkoutSettings";
@@ -12,10 +13,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * The workout builder: blocks of exercises, each block a grid you can drag
- * cards around in. The page holds no editing chrome of its own — every field
- * lives on the card or block it belongs to, so what you read is the workout
- * and not the form that produces it.
+ * The workout builder: instructions, then a flat exercise list the coach
+ * groups into supersets and circuits. The page holds no editing chrome of its
+ * own — every field lives on the row or group it belongs to, so what you read
+ * is the workout and not the form that produces it.
  */
 export default async function WorkoutBuilderPage({
   params,
@@ -28,17 +29,20 @@ export default async function WorkoutBuilderPage({
   const workout = findWorkout(workoutId);
   if (!workout) notFound();
 
-  const exercises = listExercises();
+  const [exercises, t] = await Promise.all([
+    listExercises(),
+    getTranslations("Studio.workouts"),
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         backHref="/app/coach/treinos"
-        title={workout.name}
+        title={`${workout.name} · ${t(`type.${workout.workoutType}`)}`}
         lead={workout.notes || undefined}
         action={<WorkoutSettings workout={workout} />}
       />
-      <WorkoutBuilder workoutId={workout.id} blocks={workout.blocks} exercises={exercises} />
+      <WorkoutBuilder workout={workout} exercises={exercises} />
     </div>
   );
 }

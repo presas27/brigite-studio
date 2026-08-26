@@ -1,26 +1,35 @@
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { addExerciseAction } from "@/app/app/coach/treinos/actions";
+import { addExerciseAction, addLooseExerciseAction } from "@/app/app/coach/treinos/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Modal } from "@/components/studio/Modal";
-import { field } from "@/components/studio/theme";
+import { buttonGhost, field } from "@/components/studio/theme";
 import type { Exercise } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Add exercises without leaving the block: type two letters, click the picture.
- * The dialog stays open after each pick, because a block is almost never one
- * exercise and reopening it four times is the slow way to build a circuit.
+ * Add exercises without leaving the builder: type two letters, click the
+ * picture. The dialog stays open after each pick, because a group is almost
+ * never one exercise and reopening it four times is the slow way to build a
+ * circuit.
+ *
+ * With a `blockId` the picks land in that group; without one they land in the
+ * loose list — the same picker serves both, since adding an exercise is the
+ * same gesture everywhere in the builder.
  */
 export function ExercisePicker({
   workoutId,
   blockId,
   exercises,
+  label,
+  compact = false,
 }: {
   workoutId: string;
-  blockId: string;
+  blockId?: string;
   exercises: Exercise[];
+  label?: string;
+  compact?: boolean;
 }) {
   const t = useTranslations("Studio.workouts");
   const common = useTranslations("Studio.common");
@@ -28,6 +37,8 @@ export function ExercisePicker({
   const [query, setQuery] = useState("");
   const [added, setAdded] = useState<string[]>([]);
   const [, startTransition] = useTransition();
+
+  const title = label ?? t("addExercise");
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -39,34 +50,39 @@ export function ExercisePicker({
     );
   }, [exercises, query]);
 
+  function openPicker() {
+    setQuery("");
+    setAdded([]);
+    setOpen(true);
+  }
+
   function add(exerciseId: string) {
     setAdded((current) => [...current, exerciseId]);
     startTransition(async () => {
-      await addExerciseAction(workoutId, blockId, exerciseId);
+      if (blockId) await addExerciseAction(workoutId, blockId, exerciseId);
+      else await addLooseExerciseAction(workoutId, exerciseId);
     });
   }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setQuery("");
-          setAdded([]);
-          setOpen(true);
-        }}
-        className="flex aspect-[3/2] w-full flex-col items-center justify-center gap-2 rounded-[1rem] border border-dashed border-cream/20 bg-transparent p-4 font-sans text-xs font-semibold text-cream/55 transition-colors hover:border-caramel/50 hover:bg-cream/[0.03] hover:text-cream"
-      >
-        <Icon name="plus" className="h-5 w-5" />
-        {t("addExercise")}
-      </button>
+      {compact ? (
+        <button type="button" onClick={openPicker} className={cn(buttonGhost, "gap-1.5 px-4 py-2 text-xs")}>
+          <Icon name="plus" className="h-4 w-4" />
+          {title}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={openPicker}
+          className="flex aspect-[3/2] w-full flex-col items-center justify-center gap-2 rounded-[1rem] border border-dashed border-cream/20 bg-transparent p-4 font-sans text-xs font-semibold text-cream/55 transition-colors hover:border-caramel/50 hover:bg-cream/[0.03] hover:text-cream"
+        >
+          <Icon name="plus" className="h-5 w-5" />
+          {title}
+        </button>
+      )}
 
-      <Modal
-        open={open}
-        onCloseAction={() => setOpen(false)}
-        title={t("addExercise")}
-        width="46rem"
-      >
+      <Modal open={open} onCloseAction={() => setOpen(false)} title={title} width="46rem">
         <div className="relative">
           <Icon
             name="search"

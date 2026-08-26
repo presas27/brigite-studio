@@ -45,6 +45,13 @@ export async function AddWorkoutModal({ compact = false }: { compact?: boolean }
             className={field}
           />
         </Field>
+        <Field label={t("typeLabel")} htmlFor="new-workout-type">
+          <select id="new-workout-type" name="workoutType" defaultValue="regular" className={field}>
+            <option value="regular">{t("type.regular")}</option>
+            <option value="circuit">{t("type.circuit")}</option>
+            <option value="interval">{t("type.interval")}</option>
+          </select>
+        </Field>
         <div className="flex justify-end">
           <SubmitButton pendingLabel={common("creating")}>{common("create")}</SubmitButton>
         </div>
