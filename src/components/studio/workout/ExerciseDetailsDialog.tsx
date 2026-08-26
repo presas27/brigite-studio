@@ -16,11 +16,14 @@ import { smallField } from "./parts";
 export function ExerciseDetailsDialog({
   workoutId,
   item,
+  circuit,
   open,
   onCloseAction,
 }: {
   workoutId: string;
   item: WorkoutItem;
+  /** Inside a circuit the set count is the block's round count, not the item's. */
+  circuit: boolean;
   open: boolean;
   onCloseAction: () => void;
 }) {
@@ -49,16 +52,20 @@ export function ExerciseDetailsDialog({
         {timed && <input type="hidden" name="reps" value={item.reps} />}
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Field label={common("sets")} htmlFor={`item-${item.id}-sets`}>
-            <input
-              id={`item-${item.id}-sets`}
-              name="sets"
-              type="number"
-              min={1}
-              defaultValue={item.sets}
-              className={smallField}
-            />
-          </Field>
+          {/* In a circuit the round count already carries the repetition, so a
+              per-exercise set count here would quietly multiply the volume. */}
+          {!circuit && (
+            <Field label={common("sets")} htmlFor={`item-${item.id}-sets`}>
+              <input
+                id={`item-${item.id}-sets`}
+                name="sets"
+                type="number"
+                min={1}
+                defaultValue={item.sets}
+                className={smallField}
+              />
+            </Field>
+          )}
           {timed ? (
             <Field label={common("seconds")} htmlFor={`item-${item.id}-seconds`}>
               <input

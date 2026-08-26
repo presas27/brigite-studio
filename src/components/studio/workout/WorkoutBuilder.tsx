@@ -5,10 +5,12 @@ import { useTranslations } from "next-intl";
 import { groupItemsAction, reorderItemsAction, updateInstructionsAction } from "@/app/app/coach/treinos/actions";
 import { Empty } from "@/components/studio/Empty";
 import { buttonGhost, buttonQuiet, eyebrow, field, heading, muted, surface } from "@/components/studio/theme";
+import { usePersistedView } from "@/components/studio/usePersistedView";
+import { ViewToggle } from "@/components/studio/ViewToggle";
 import type { Exercise, Workout, WorkoutBlock } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
+import { ExerciseList } from "./ExerciseList";
 import { ExercisePicker } from "./ExercisePicker";
-import { ExerciseRow } from "./ExerciseRow";
 import { GroupCard } from "./GroupCard";
 
 /**
@@ -17,8 +19,13 @@ import { GroupCard } from "./GroupCard";
  * and circuits two or more at a time. There is no "add block" any more —
  * every exercise starts loose and joins a group only when the coach asks.
  *
+ * Two views, same list and same behaviour: the horizontal picture grid, for
+ * reading the shape of a session, and the stacked rows, for reading its
+ * numbers. The choice is the coach's and it sticks — see `usePersistedView`,
+ * the same preference the libraries keep.
+ *
  * The drag machinery lives here rather than in a child because a drag can
- * cross groups: the order of every block is one piece of state, so a row
+ * cross groups: the order of every block is one piece of state, so a card
  * dropped into a neighbouring group is a single move rather than a remove
  * plus an add. The drop is applied on screen first and posted inside a
  * transition — the server answer arrives as new props and overwrites the
@@ -31,6 +38,7 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
   const [dragging, setDragging] = useState<{ itemId: string; blockId: string } | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [view, setView] = usePersistedView("studio.workout.builder.view");
   const [, startTransition] = useTransition();
 
   const groups = useMemo(
@@ -163,7 +171,10 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className={cn(heading, "text-lg")}>{t("exercisesTitle")}</h2>
-          <ExercisePicker workoutId={workout.id} exercises={exercises} compact />
+          <div className="flex items-center gap-2">
+            <ViewToggle view={view} onChangeAction={setView} />
+            <ExercisePicker workoutId={workout.id} exercises={exercises} compact />
+          </div>
         </div>
 
         {total === 0 && <Empty title={t("noExercises")} hint={t("noExercisesHint")} />}
@@ -178,6 +189,7 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
               rounds={block.rounds}
               exercises={exercises}
               selection={{ selected: selectedIds, onToggleAction: toggleSelected }}
+              view={view}
               draggingId={dragging?.itemId ?? null}
               overId={overId}
               onDragStartAction={(itemId, blockId) => setDragging({ itemId, blockId })}
@@ -199,29 +211,26 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
                 event.preventDefault();
                 drop(looseTargetId, "end");
               }}
-              className={cn("space-y-2", groups.length > 0 && "border-t border-cream/10 pt-3")}
+              className={cn(groups.length > 0 && "border-t border-cream/10 pt-3")}
             >
-              {looseRows.map(({ item, blockId }, index) => (
-                <ExerciseRow
-                  key={item.id}
-                  workoutId={workout.id}
-                  item={item}
-                  position={index + 1}
-                  circuit={false}
-                  selected={selectedIds.has(item.id)}
-                  onSelectAction={(checked) => toggleSelected(item.id, checked)}
-                  dragging={dragging?.itemId === item.id}
-                  over={overId === item.id && dragging?.itemId !== item.id}
-                  onDragStartAction={() => setDragging({ itemId: item.id, blockId })}
-                  onDragEndAction={() => {
-                    setDragging(null);
-                    setOverId(null);
-                  }}
-                  onDragOverAction={() => setOverId(item.id)}
-                  onDropOnAction={() => drop(looseTargetId, index)}
-                  onNudgeAction={(delta) => nudge(blockId, item.id, delta)}
-                />
-              ))}
+              <ExerciseList
+                workoutId={workout.id}
+                rows={looseRows}
+                view={view}
+                circuit={false}
+                selectedIds={selectedIds}
+                onToggleAction={toggleSelected}
+                draggingId={dragging?.itemId ?? null}
+                overId={overId}
+                onDragStartAction={(itemId, blockId) => setDragging({ itemId, blockId })}
+                onDragEndAction={() => {
+                  setDragging(null);
+                  setOverId(null);
+                }}
+                onDragOverAction={setOverId}
+                onDropOnAction={(blockId, index) => drop(blockId, index)}
+                onNudgeAction={nudge}
+              />
             </div>
           )}
         </div>

@@ -2,10 +2,11 @@ import { useRef, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { setRoundsAction, ungroupBlockAction } from "@/app/app/coach/treinos/actions";
 import { buttonQuiet, surface } from "@/components/studio/theme";
+import type { View } from "@/components/studio/ViewToggle";
 import type { Exercise, WorkoutBlock } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
+import { ExerciseList } from "./ExerciseList";
 import { ExercisePicker } from "./ExercisePicker";
-import { ExerciseRow } from "./ExerciseRow";
 import { smallField } from "./parts";
 
 type DragProps = {
@@ -32,12 +33,13 @@ type Props = DragProps & {
   rounds: number;
   exercises: Exercise[];
   selection: Selection;
+  view: View;
 };
 
 /**
  * One superset or circuit: a header (name, round count for a circuit, and
- * ungroup), then its exercises as rows, then a picker to add straight into
- * the group.
+ * ungroup), then its exercises in whichever view the builder is in, then a
+ * picker to add straight into the group.
  */
 export function GroupCard({
   workoutId,
@@ -46,6 +48,7 @@ export function GroupCard({
   rounds,
   exercises,
   selection,
+  view,
   draggingId,
   overId,
   onDragStartAction,
@@ -109,28 +112,31 @@ export function GroupCard({
           event.preventDefault();
           onDropAtEndAction(block.id);
         }}
-        className="space-y-2"
       >
-        {block.items.map((item, index) => (
-          <ExerciseRow
-            key={item.id}
-            workoutId={workoutId}
-            item={item}
-            position={index + 1}
-            circuit={circuit}
-            selected={selection.selected.has(item.id)}
-            onSelectAction={(checked) => selection.onToggleAction(item.id, checked)}
-            dragging={draggingId === item.id}
-            over={overId === item.id && draggingId !== item.id}
-            onDragStartAction={() => onDragStartAction(item.id, block.id)}
-            onDragEndAction={onDragEndAction}
-            onDragOverAction={() => onDragOverItemAction(item.id)}
-            onDropOnAction={() => onDropOnItemAction(block.id, index)}
-            onNudgeAction={(delta) => onNudgeAction(block.id, item.id, delta)}
-          />
-        ))}
-
-        <ExercisePicker workoutId={workoutId} blockId={block.id} exercises={exercises} compact />
+        <ExerciseList
+          workoutId={workoutId}
+          rows={block.items.map((item) => ({ item, blockId: block.id }))}
+          view={view}
+          dense
+          circuit={circuit}
+          selectedIds={selection.selected}
+          onToggleAction={selection.onToggleAction}
+          draggingId={draggingId}
+          overId={overId}
+          onDragStartAction={onDragStartAction}
+          onDragEndAction={onDragEndAction}
+          onDragOverAction={onDragOverItemAction}
+          onDropOnAction={onDropOnItemAction}
+          onNudgeAction={onNudgeAction}
+          footer={
+            <ExercisePicker
+              workoutId={workoutId}
+              blockId={block.id}
+              exercises={exercises}
+              compact={view === "list"}
+            />
+          }
+        />
       </div>
     </section>
   );
