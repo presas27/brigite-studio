@@ -5,9 +5,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "dev:convex": "convex dev",
+    "build": "convex deploy --cmd 'next build'",
+    "build:app": "next build",
     "start": "next start",
     "lint": "eslint",
+    "provision": "convex run seed:accounts && convex run seed:importLibrary && convex run seed:masterWorkouts",
     "trainerize:export": "bun run scripts/trainerize/export.ts",
     "trainerize:import": "bun run scripts/trainerize/import.ts"
   },

@@ -91,6 +91,23 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   /**
+   * One row per sign-in link asked for, so asking again too often can be
+   * refused.
+   *
+   * The old code rate-limited per IP in the Next process, which a serverless
+   * host makes meaningless — the counter died with the instance. Convex Auth
+   * sends the mail from the deployment, so the budget belongs here, and it is
+   * keyed on the address: what needs protecting is a client's mailbox and the
+   * studio's sending reputation, not a request count.
+   *
+   * Rows are swept by the same mutation that reads them; nothing accumulates.
+   */
+  signInAttempts: defineTable({
+    email: v.string(),
+    at: v.number(),
+  }).index("by_email", ["email"]),
+
+  /**
    * Every account, coach and client alike.
    *
    * This overrides the `users` table that `authTables` brings, because Convex
@@ -165,14 +182,56 @@ export default defineSchema({
     .index("by_archived_and_name", ["archived", "name"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["archived"] }),
 
+  /**
+   * A block of training weeks for one client: "Phase 1 — Base building". The
+   * coach's plan is a sequence of these, and every workout the client trains
+   * hangs off one of them.
+   *
+   * Duration is either two calendar dates or a plain number of weeks the coach
+   * has not dated yet — never both, which the mutation enforces since Convex
+   * has no `CHECK`.
+   */
+  trainingPhases: defineTable({
+    coachId: v.id("users"),
+    clientId: v.id("users"),
+    name: v.string(),
+    position: v.number(),
+    durationType: v.union(v.literal("calendar"), v.literal("weeks")),
+    /** `YYYY-MM-DD`, both set or both null. */
+    startDate: v.union(v.null(), v.string()),
+    endDate: v.union(v.null(), v.string()),
+    weeks: v.union(v.null(), v.number()),
+    updatedAt: v.number(),
+  }).index("by_client_and_position", ["clientId", "position"]),
+
+  /**
+   * A workout is a library template while `clientId` is null. One with a
+   * `clientId` and a `phaseId` is a client-scoped copy living inside a training
+   * phase: it never shows in the library, and editing it cannot reach back into
+   * the template it was copied from (`sourceWorkoutId`).
+   */
   workouts: defineTable({
     name: v.string(),
     focus: v.string(),
     notes: v.string(),
+    /** Free-text preamble the client reads before starting. */
+    instructions: v.string(),
+    /** Which construction screen the workout uses. */
+    workoutType: v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval")),
+    coachId: v.union(v.null(), v.id("users")),
+    clientId: v.union(v.null(), v.id("users")),
+    phaseId: v.union(v.null(), v.id("trainingPhases")),
+    /** The template this copy came from. Not a reference: the template may go. */
+    sourceWorkoutId: v.union(v.null(), v.string()),
+    /** Order inside a phase. Meaningless for library templates. */
+    position: v.number(),
     archived: v.boolean(),
     /** Last edit, not creation — the card shows when a workout was touched. */
     updatedAt: v.number(),
-  }).index("by_archived_and_updated", ["archived", "updatedAt"]),
+  })
+    .index("by_archived_and_updated", ["archived", "updatedAt"])
+    .index("by_phase_and_position", ["phaseId", "position"])
+    .index("by_client", ["clientId"]),
 
   workoutBlocks: defineTable({
     workoutId: v.id("workouts"),
@@ -216,6 +275,8 @@ export default defineSchema({
       name: v.string(),
       focus: v.string(),
       notes: v.string(),
+      /** The preamble the client reads before starting, frozen with the rest. */
+      instructions: v.string(),
       blocks: v.array(snapshotBlock),
     }),
     note: v.string(),
@@ -226,7 +287,11 @@ export default defineSchema({
     extraRestSeconds: v.number(),
   })
     .index("by_client_and_date", ["clientId", "date"])
-    .index("by_client_and_status", ["clientId", "status"]),
+    .index("by_client_and_status", ["clientId", "status"])
+    // Deleting a workout has to find every assignment that points at it, so it
+    // can null the reference the way `ON DELETE SET NULL` did. There is no
+    // client to scope that by: a library template is assigned to several.
+    .index("by_workout", ["workoutId"]),
 
   /**
    * One logged set. `itemId` and `exerciseId` are plain strings, copied from the

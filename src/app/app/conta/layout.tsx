@@ -4,10 +4,9 @@ import { CoachChrome } from "@/components/studio/coach/CoachChrome";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { currentUser } from "@/lib/studio/auth";
 import { clientAlerts } from "@/lib/studio/clientConsole";
-import { coachAlerts, findCheckin, unreadCount } from "@/lib/studio/coaching";
-import { weekKey } from "@/lib/studio/db";
+import { coachAlerts, findCheckin, unreadCount, unreadTotal } from "@/lib/studio/coaching";
+import { weekKey } from "@/lib/studio/dates";
 import { getThemeMode } from "@/lib/studio/theme-mode";
-import { listClients } from "@/lib/studio/users";
 
 /**
  * The account page is the one screen both roles share, so it borrows whichever
@@ -25,12 +24,9 @@ export default async function AccountLayout({ children }: { children: React.Reac
   const themeMode = await getThemeMode();
 
   if (user.role === "coach") {
-    const badges: Record<string, number> = {};
+    const [unread, alerts] = await Promise.all([unreadTotal(), coachAlerts()]);
 
-    const unread = listClients().reduce(
-      (total, client) => total + unreadCount(client.id, user.id),
-      0,
-    );
+    const badges: Record<string, number> = {};
     if (unread > 0) badges["/app/coach/mensagens"] = unread;
 
     return (
@@ -39,7 +35,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
         email={user.email}
         themeMode={themeMode}
         badges={badges}
-        alerts={coachAlerts(user.id)}
+        alerts={alerts}
         quickAdd={<AddWorkoutModal compact />}
       >
         {children}
@@ -47,12 +43,15 @@ export default async function AccountLayout({ children }: { children: React.Reac
     );
   }
 
+  const [unread, checkin, alerts] = await Promise.all([
+    unreadCount(user.id),
+    findCheckin(user.id, weekKey()),
+    clientAlerts(user.id),
+  ]);
+
   const badges: Record<string, number> = {};
-
-  const unread = unreadCount(user.id, user.id);
   if (unread > 0) badges["/app/aluno/mensagens"] = unread;
-
-  if (findCheckin(user.id, weekKey())?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
+  if (checkin?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
 
   return (
     <AlunoChrome
@@ -60,7 +59,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       email={user.email}
       themeMode={themeMode}
       badges={badges}
-      alerts={clientAlerts(user.id)}
+      alerts={alerts}
     >
       {children}
     </AlunoChrome>

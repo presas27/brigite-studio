@@ -26,15 +26,21 @@ export default async function ClientsPage({
 
   const [t, locale] = await Promise.all([getTranslations("Studio.clients"), getLocale()]);
 
-  const clients = listClients(true).filter((client) =>
+  const allClients = await listClients(true);
+  const clients = allClients.filter((client) =>
     showArchived ? client.status === "archived" : client.status !== "archived",
   );
 
-  const rows: ClientRow[] = clients.map((client) => {
-    const { done, total } = adherence(client.id);
-    const [lastSession] = assignmentHistory(client.id, 1);
-    return { client, done, total, lastSessionDate: lastSession?.date ?? null };
-  });
+  const rows: ClientRow[] = await Promise.all(
+    clients.map(async (client) => {
+      const [{ done, total }, history] = await Promise.all([
+        adherence(client.id),
+        assignmentHistory(client.id, 1),
+      ]);
+      const [lastSession] = history;
+      return { client, done, total, lastSessionDate: lastSession?.date ?? null };
+    }),
+  );
 
   const planOptions = PLAN_IDS.map((plan) => ({
     value: plan,

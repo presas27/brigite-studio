@@ -14,21 +14,29 @@ import { cn } from "@/lib/utils";
  * read ones, each group ordered by the most recent activity.
  */
 export default async function CoachMessagesPage() {
-  const coach = await requireCoach();
-  const t = await getTranslations("Studio.messages");
-  const locale = await getLocale();
+  await requireCoach();
 
-  const rows = listClients()
-    .map((client) => ({
-      client,
-      last: messagesFor(client.id, 1)[0],
-      unread: unreadCount(client.id, coach.id),
-    }))
-    .sort((a, b) => {
-      const unreadDelta = (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0);
-      if (unreadDelta !== 0) return unreadDelta;
-      return (b.last?.createdAt ?? 0) - (a.last?.createdAt ?? 0);
-    });
+  const [t, locale, clients] = await Promise.all([
+    getTranslations("Studio.messages"),
+    getLocale(),
+    listClients(),
+  ]);
+
+  const rows = (
+    await Promise.all(
+      clients.map(async (client) => {
+        const [last, unread] = await Promise.all([
+          messagesFor(client.id, 1),
+          unreadCount(client.id),
+        ]);
+        return { client, last: last[0], unread };
+      }),
+    )
+  ).sort((a, b) => {
+    const unreadDelta = (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0);
+    if (unreadDelta !== 0) return unreadDelta;
+    return (b.last?.createdAt ?? 0) - (a.last?.createdAt ?? 0);
+  });
 
   return (
     <div className="space-y-6">

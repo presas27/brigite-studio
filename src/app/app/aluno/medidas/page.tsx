@@ -14,8 +14,12 @@ export default async function AlunoMedidasPage() {
   const t = await getTranslations("Studio.medidas");
   const common = await getTranslations("Studio.common");
 
-  const lastWeight = measurements(client.id, "weight", 1)[0]?.value ?? "";
-  const lastHeight = measurements(client.id, "height", 1)[0]?.value ?? "";
+  const [weightEntries, heightEntries] = await Promise.all([
+    measurements(client.id, "weight", 1),
+    measurements(client.id, "height", 1),
+  ]);
+  const lastWeight = weightEntries[0]?.value ?? "";
+  const lastHeight = heightEntries[0]?.value ?? "";
 
   return (
     <div className="space-y-8">

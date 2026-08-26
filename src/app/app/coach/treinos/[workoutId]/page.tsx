@@ -26,13 +26,12 @@ export default async function WorkoutBuilderPage({
   await requireCoach();
   const { workoutId } = await params;
 
-  const workout = findWorkout(workoutId);
-  if (!workout) notFound();
-
-  const [exercises, t] = await Promise.all([
+  const [workout, exercises, t] = await Promise.all([
+    findWorkout(workoutId),
     listExercises(),
     getTranslations("Studio.workouts"),
   ]);
+  if (!workout) notFound();
 
   return (
     <div className="space-y-6">

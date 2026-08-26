@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PlanCalendar } from "@/components/studio/calendar/PlanCalendar";
 import type { SessionsByDay } from "@/components/studio/calendar/types";
 import { requireClient } from "@/lib/studio/auth";
-import { dayKey, monthGrid, shiftDay, shiftMonth, weekKey } from "@/lib/studio/db";
+import { dayKey, monthGrid, shiftDay, shiftMonth, weekKey } from "@/lib/studio/dates";
 import { assignmentsBetween } from "@/lib/studio/plan";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -44,7 +44,7 @@ export default async function AlunoPlanoPage({
     view === "month" ? monthGrid(month) : Array.from({ length: 7 }, (_, i) => shiftDay(monday, i));
 
   const sessions: SessionsByDay = {};
-  for (const assignment of assignmentsBetween(client.id, days[0], days[days.length - 1])) {
+  for (const assignment of await assignmentsBetween(client.id, days[0], days[days.length - 1])) {
     (sessions[assignment.date] ??= []).push({
       id: assignment.id,
       clientId: client.id,

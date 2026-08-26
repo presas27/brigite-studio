@@ -20,7 +20,7 @@ import type { Assignment } from "@/lib/studio/types";
  * check in — either way, only the right people can write to it.
  */
 async function assignmentFor(assignmentId: string): Promise<Assignment> {
-  const assignment = findAssignment(assignmentId);
+  const assignment = await findAssignment(assignmentId);
   if (!assignment) throw new Error("Assignment not found");
   await requireClientAccess(assignment.clientId);
   return assignment;
@@ -42,7 +42,7 @@ export async function logSet(input: {
   rpe: number | null;
 }): Promise<void> {
   const assignment = await assignmentFor(input.assignmentId);
-  recordSet({
+  await recordSet({
     assignmentId: assignment.id,
     itemId: input.itemId,
     exerciseId: input.exerciseId,
@@ -64,12 +64,12 @@ export async function unlogSet(input: {
   setIndex: number;
 }): Promise<void> {
   const assignment = await assignmentFor(input.assignmentId);
-  clearSet(assignment.id, input.itemId, input.setIndex);
+  await clearSet(assignment.id, input.itemId, input.setIndex);
 }
 
 export async function beginSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
-  startAssignment(assignment.id);
+  await startAssignment(assignment.id);
   revalidatePath(`/app/aluno/treino/${assignment.id}`);
 }
 
@@ -88,14 +88,14 @@ export async function finishSession(
   const effort =
     input.effort == null || Number.isNaN(input.effort) ? null : input.effort;
   const extraRestSeconds = Number.isFinite(input.extraRestSeconds) ? input.extraRestSeconds : 0;
-  completeAssignment(assignment.id, { effort, extraRestSeconds });
+  await completeAssignment(assignment.id, { effort, extraRestSeconds });
   revalidateSession(assignment.id);
   revalidatePath("/app/aluno/progresso");
 }
 
 export async function skipSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
-  setAssignmentStatus(assignment.id, "skipped");
+  await setAssignmentStatus(assignment.id, "skipped");
   revalidateSession(assignment.id);
 }
 
@@ -107,7 +107,7 @@ export async function skipSession(assignmentId: string): Promise<void> {
  */
 export async function discardSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
-  discardAssignment(assignment.id);
+  await discardAssignment(assignment.id);
   revalidateSession(assignment.id);
 }
 

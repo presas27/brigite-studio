@@ -1,122 +1,26 @@
-import { createHmac, randomBytes, createHash, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { get, run } from "./db";
-import { seedStudio } from "./seed";
-import { activateUser, findClient, findUser } from "./users";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { sq } from "./convexServer";
 import type { Client, User } from "./types";
 
 /**
- * Authentication for `/app`. Passwordless by design: the only way in is a
- * one-time link mailed to an address Sara has already added. There is no
- * self-registration and no password to leak.
+ * Who is signed in, and where to send them when they should not be here.
  *
- * Two secrets-free pieces:
- *  - the sign-in link carries a random token whose SHA-256 hash is what we
- *    store, so a database read cannot mint a login;
- *  - the session is a stateless HMAC cookie, so there is no session table to
- *    grow or clean up.
+ * Sign-in itself is Convex Auth's: an emailed link, and nothing else. The token
+ * lives in a cookie the proxy (`src/proxy.ts`) refreshes, and every Convex
+ * function reads the identity out of it — which is the whole point of the move.
+ * Nothing in this file is a security boundary; `convex/model/authz.ts` is. What
+ * these functions decide is which screen a visitor lands on.
+ *
+ * There is no `startSession`/`endSession` any more: minting and dropping the
+ * session is `signIn`/`signOut` in `src/app/app/actions.ts`, over the auth
+ * proxy route.
  */
-
-const SESSION_COOKIE = "studio_session";
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1_000; // 30 days
-const LINK_TTL_MS = 20 * 60 * 1_000; // 20 minutes
-
-function secret(): string {
-  return (
-    process.env.STUDIO_SECRET ??
-    process.env.CONTACT_FORM_SECRET ??
-    process.env.RESEND_API_KEY ??
-    "brigite-studio-dev-fallback-secret"
-  );
-}
-
-function sign(payload: string): string {
-  return createHmac("sha256", secret()).update(payload).digest("hex");
-}
-
-/* ------------------------------------------------------------ sign-in links */
-
-/**
- * Mint a one-time sign-in token for a user. Returns the raw token to put in
- * the emailed URL; only its hash is persisted.
- */
-export function createSignInToken(userId: string): string {
-  const token = randomBytes(32).toString("base64url");
-  const hash = createHash("sha256").update(token).digest("hex");
-  run(
-    "INSERT INTO magic_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)",
-    hash,
-    userId,
-    Date.now() + LINK_TTL_MS,
-  );
-  return token;
-}
-
-/**
- * Burn a sign-in token and return the user it belonged to. Expired, unknown or
- * already-used tokens all return `undefined` — the caller must not distinguish
- * between them in what it shows the visitor.
- */
-export function consumeSignInToken(token: string): User | undefined {
-  const hash = createHash("sha256").update(token).digest("hex");
-  const row = get<{ user_id: string; expires_at: number; used_at: number | null }>(
-    "SELECT user_id, expires_at, used_at FROM magic_tokens WHERE token_hash = ?",
-    hash,
-  );
-  if (!row || row.used_at != null || Number(row.expires_at) < Date.now()) return undefined;
-
-  run("UPDATE magic_tokens SET used_at = ? WHERE token_hash = ?", Date.now(), hash);
-  run("DELETE FROM magic_tokens WHERE expires_at < ?", Date.now());
-
-  const user = findUser(String(row.user_id));
-  if (!user || user.status === "archived") return undefined;
-  activateUser(user.id);
-  return user;
-}
-
-/* ----------------------------------------------------------------- sessions */
-
-export async function startSession(userId: string): Promise<void> {
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  const payload = `${userId}.${expiresAt}`;
-  (await cookies()).set(SESSION_COOKIE, `${payload}.${sign(payload)}`, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/app",
-    maxAge: Math.floor(SESSION_TTL_MS / 1_000),
-  });
-}
-
-export async function endSession(): Promise<void> {
-  (await cookies()).delete({ name: SESSION_COOKIE, path: "/app" });
-}
 
 /** The signed-in user, or `undefined`. Safe to call from any server context. */
 export async function currentUser(): Promise<User | undefined> {
-  // The layout seeds too, but a layout and the page under it render in parallel:
-  // on a cold instance with an empty database the page's session lookup can win
-  // the race, find no row for a perfectly valid cookie, and bounce the visitor
-  // to the sign-in screen. Seeding here first makes the lookup deterministic.
-  // Idempotent and one indexed read once the coach row exists.
-  seedStudio();
-
-  const raw = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (!raw) return undefined;
-
-  const parts = raw.split(".");
-  if (parts.length !== 3) return undefined;
-  const [userId, expiresAt, provided] = parts;
-
-  const expected = sign(`${userId}.${expiresAt}`);
-  const a = Buffer.from(provided, "hex");
-  const b = Buffer.from(expected, "hex");
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return undefined;
-  if (!/^\d+$/.test(expiresAt) || Number(expiresAt) < Date.now()) return undefined;
-
-  const user = findUser(userId);
-  return user && user.status !== "archived" ? user : undefined;
+  return (await sq(api.users.me)) ?? undefined;
 }
 
 /** Gate for coach-only routes and actions. Redirects when not the coach. */
@@ -129,11 +33,12 @@ export async function requireCoach(): Promise<User> {
 
 /** Gate for client-only routes and actions. */
 export async function requireClient(): Promise<Client> {
-  const user = await currentUser();
-  if (!user) redirect("/app/entrar");
-  if (user.role !== "client") redirect("/app/coach");
-  const client = findClient(user.id);
-  if (!client) redirect("/app/entrar");
+  const client = await sq(api.users.meAsClient);
+  if (!client) {
+    const user = await currentUser();
+    if (!user) redirect("/app/entrar");
+    redirect(user.role === "coach" ? "/app/coach" : "/app/entrar");
+  }
   return client;
 }
 
@@ -148,7 +53,8 @@ export async function requireClientAccess(clientId: string): Promise<{
   const viewer = await currentUser();
   if (!viewer) redirect("/app/entrar");
   if (viewer.role === "client" && viewer.id !== clientId) redirect("/app/aluno");
-  const client = findClient(clientId);
+
+  const client = await sq(api.users.findClient, { clientId: clientId as Id<"users"> });
   if (!client) redirect(viewer.role === "coach" ? "/app/coach/alunos" : "/app/aluno");
   return { viewer, client };
 }

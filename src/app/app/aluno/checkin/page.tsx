@@ -1,7 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { requireClient } from "@/lib/studio/auth";
 import { findCheckin, listCheckins } from "@/lib/studio/coaching";
-import { weekKey } from "@/lib/studio/db";
+import { weekKey } from "@/lib/studio/dates";
 import { ArcRating } from "@/components/studio/checkin/ArcRating";
 import { CheckinHistory } from "@/components/studio/checkin/CheckinHistory";
 import { CheckinPanel } from "@/components/studio/checkin/CheckinPanel";
@@ -21,9 +21,11 @@ export default async function ClientCheckinPage() {
   const locale = await getLocale();
 
   const week = weekKey();
-  const checkin = findCheckin(client.id, week);
+  const [checkin, history] = await Promise.all([
+    findCheckin(client.id, week),
+    listCheckins(client.id),
+  ]);
   const alreadyDone = checkin?.submittedAt != null;
-  const history = listCheckins(client.id);
 
   return (
     <div className="space-y-8">

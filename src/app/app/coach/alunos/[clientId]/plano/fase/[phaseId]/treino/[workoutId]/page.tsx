@@ -23,17 +23,15 @@ export default async function PhaseWorkoutPage({
   params: Promise<{ clientId: string; phaseId: string; workoutId: string }>;
 }) {
   const { clientId, phaseId, workoutId } = await params;
-  const { viewer } = await requireClientAccess(clientId);
-  if (viewer.role !== "coach") redirect("/app/aluno");
-
-  const workout = findWorkout(workoutId);
-  if (!workout || workout.clientId !== clientId || workout.phaseId !== phaseId) notFound();
-
-  const exercises = listExercises();
-  const [t, tPhases] = await Promise.all([
+  const [{ viewer }, workout, exercises, t, tPhases] = await Promise.all([
+    requireClientAccess(clientId),
+    findWorkout(workoutId),
+    listExercises(),
     getTranslations("Studio.workouts"),
     getTranslations("Studio.plan.phases"),
   ]);
+  if (viewer.role !== "coach") redirect("/app/aluno");
+  if (!workout || workout.clientId !== clientId || workout.phaseId !== phaseId) notFound();
 
   const phasePath = `/app/coach/alunos/${clientId}/plano/fase/${phaseId}`;
 

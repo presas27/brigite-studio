@@ -8,7 +8,7 @@ import { CheckinReplyCard } from "@/components/studio/week/CheckinReplyCard";
 import { WeekNav } from "@/components/studio/week/WeekNav";
 import { requireCoach } from "@/lib/studio/auth";
 import { findCheckin, listCheckins } from "@/lib/studio/coaching";
-import { weekKey } from "@/lib/studio/db";
+import { weekKey } from "@/lib/studio/dates";
 import { listClients } from "@/lib/studio/users";
 import type { Checkin, Client } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
@@ -40,18 +40,28 @@ export default async function CoachCheckinsOverviewPage({
     getLocale(),
   ]);
 
-  const clients = listClients();
+  const clients = await listClients();
+
+  const rows = await Promise.all(
+    clients.map(async (client) => {
+      const [recentCheckins, checkin] = await Promise.all([
+        listCheckins(client.id, 1),
+        findCheckin(client.id, monday),
+      ]);
+      return { client, recentCheckins, checkin };
+    }),
+  );
+
   // Rows only ever get created by `submitCheckin`, which sets `submittedAt`
   // in the same write — so any checkin in a client's history means they have
   // submitted at least once, regardless of what this particular week shows.
-  const everSubmitted = clients.some((client) => listCheckins(client.id, 1).length > 0);
+  const everSubmitted = rows.some((row) => row.recentCheckins.length > 0);
 
   const unanswered: { client: Client; checkin: Checkin }[] = [];
   const answered: { client: Client; checkin: Checkin }[] = [];
   const notSubmitted: Client[] = [];
 
-  for (const client of clients) {
-    const checkin = findCheckin(client.id, monday);
+  for (const { client, checkin } of rows) {
     if (!checkin || checkin.submittedAt == null) {
       notSubmitted.push(client);
     } else if (checkin.repliedAt == null) {

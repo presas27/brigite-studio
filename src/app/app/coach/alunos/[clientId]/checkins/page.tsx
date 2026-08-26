@@ -6,7 +6,7 @@ import { parseDayKey } from "@/components/studio/plan/date";
 import { eyebrow, heading, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { weekKey } from "@/lib/studio/db";
+import { weekKey } from "@/lib/studio/dates";
 import { listCheckins } from "@/lib/studio/coaching";
 import { reply } from "./actions";
 
@@ -26,7 +26,7 @@ export default async function CoachCheckinsPage({
   const { respondido } = await searchParams;
   const [t, locale] = await Promise.all([getTranslations("Studio.checkin"), getLocale()]);
 
-  const checkins = listCheckins(clientId, HISTORY_LIMIT);
+  const checkins = await listCheckins(clientId, HISTORY_LIMIT);
 
   return (
     <div className="space-y-6">

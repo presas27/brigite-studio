@@ -84,7 +84,7 @@ export function ExerciseForm({
         </select>
       </Field>
 
-      <Field label={t("videoLabel")} htmlFor={`${idPrefix}-video`} hint={t("videoHint")}>
+      <Field label={t("videoLabel")} htmlFor={`${idPrefix}-video`} hint={t("videoHintYoutube")}>
         <input
           id={`${idPrefix}-video`}
           name="videoUrl"

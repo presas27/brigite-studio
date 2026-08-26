@@ -16,14 +16,14 @@ export async function send(
   _prev: ComposerState,
   formData: FormData,
 ): Promise<ComposerState> {
-  const coach = await requireCoach();
+  await requireCoach();
   await requireClientAccess(clientId);
 
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { ok: false, error: "required" };
   if (body.length > MAX_MESSAGE_LENGTH) return { ok: false, error: "tooLong" };
 
-  sendMessage({ clientId, authorId: coach.id, body });
+  await sendMessage({ clientId, body });
   revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
   revalidatePath("/app/coach/mensagens");
   return { ok: true };
@@ -31,9 +31,9 @@ export async function send(
 
 /** See `MarkThreadRead` for why this runs from a client effect, never during render. */
 export async function markThreadReadAction(clientId: string): Promise<void> {
-  const coach = await requireCoach();
+  await requireCoach();
   await requireClientAccess(clientId);
-  markThreadRead(clientId, coach.id);
+  await markThreadRead(clientId);
   revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
   revalidatePath("/app/coach/mensagens");
 }

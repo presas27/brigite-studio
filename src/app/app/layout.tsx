@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { seedStudio } from "@/lib/studio/seed";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { StudioConvexProvider } from "@/components/studio/ConvexProvider";
 
 /**
  * Root of the studio app.
@@ -8,8 +9,14 @@ import { seedStudio } from "@/lib/studio/seed";
  * marketing site keeps `/app` unlisted — clients arrive through the emailed
  * sign-in link, never by browsing.
  *
- * The layout also runs the idempotent seed, so a fresh checkout has Sara's
- * coach account and starter library on first request instead of an empty shell.
+ * The two providers are what make the session real on both sides of the render:
+ * the server one reads the auth cookies so Server Components can pass a token
+ * to Convex, the client one gives the browser `signIn`/`signOut`. Neither wraps
+ * the marketing site, which has no session and no need of a socket.
+ *
+ * Nothing seeds here any more. The database is durable now, so the coach
+ * account and the library are provisioned once (`convex/seed.ts`) instead of
+ * being rebuilt by whichever request happened to land on a cold machine.
  */
 export const metadata: Metadata = {
   title: "Studio",
@@ -17,6 +24,9 @@ export const metadata: Metadata = {
 };
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
-  seedStudio();
-  return children;
+  return (
+    <ConvexAuthNextjsServerProvider>
+      <StudioConvexProvider>{children}</StudioConvexProvider>
+    </ConvexAuthNextjsServerProvider>
+  );
 }

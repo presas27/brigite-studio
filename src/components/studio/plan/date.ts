@@ -8,15 +8,3 @@ export function parseDayKey(key: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-/**
- * Monday of the week containing a `YYYY-MM-DD` key.
- *
- * The client-safe twin of `weekKey` in `lib/studio/db`: that module opens the
- * SQLite connection, so nothing rendered in the browser can import it.
- */
-export function mondayOf(key: string): string {
-  const [y, m, d] = key.split("-").map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d));
-  utc.setUTCDate(utc.getUTCDate() - ((utc.getUTCDay() + 6) % 7));
-  return utc.toISOString().slice(0, 10);
-}

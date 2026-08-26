@@ -16,8 +16,8 @@ import {
   surfaceLink,
 } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
-import { coachAlerts, recentActivity, unreadCount } from "@/lib/studio/coaching";
-import { dayKey } from "@/lib/studio/db";
+import { coachAlerts, recentActivity, unreadTotal } from "@/lib/studio/coaching";
+import { dayKey } from "@/lib/studio/dates";
 import { assignmentsOn } from "@/lib/studio/plan";
 import { listClients } from "@/lib/studio/users";
 import { cn } from "@/lib/utils";
@@ -44,18 +44,22 @@ export default async function OverviewPage() {
     getLocale(),
   ]);
 
-  const clients = listClients();
-  const alerts = coachAlerts(coach.id);
-  const activity = recentActivity(24);
+  const [clients, alerts, activity, unreadMessages] = await Promise.all([
+    listClients(),
+    coachAlerts(),
+    recentActivity(24),
+    unreadTotal(),
+  ]);
 
   const today = dayKey();
-  const todaySessions = clients.flatMap((client) =>
-    assignmentsOn(client.id, today).map((assignment) => ({ client, assignment })),
-  );
-  const unreadMessages = clients.reduce(
-    (total, client) => total + unreadCount(client.id, coach.id),
-    0,
-  );
+  const todaySessions = (
+    await Promise.all(
+      clients.map(async (client) => {
+        const assignments = await assignmentsOn(client.id, today);
+        return assignments.map((assignment) => ({ client, assignment }));
+      }),
+    )
+  ).flat();
 
   // Two, not four. "Vídeos por ver" and "treinos esta semana" were already in
   // the gold panel underneath, spelled out client by client — a number on top

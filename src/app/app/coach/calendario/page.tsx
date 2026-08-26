@@ -2,7 +2,7 @@ import { getLocale } from "next-intl/server";
 import { PlanCalendar } from "@/components/studio/calendar/PlanCalendar";
 import type { SessionsByDay } from "@/components/studio/calendar/types";
 import { requireCoach } from "@/lib/studio/auth";
-import { dayKey, monthGrid, shiftDay, shiftMonth, weekKey } from "@/lib/studio/db";
+import { dayKey, monthGrid, shiftDay, shiftMonth, weekKey } from "@/lib/studio/dates";
 import { studioAssignmentsBetween } from "@/lib/studio/plan";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -41,7 +41,8 @@ export default async function CoachCalendarPage({
     view === "month" ? monthGrid(month) : Array.from({ length: 7 }, (_, i) => shiftDay(monday, i));
 
   const sessions: SessionsByDay = {};
-  for (const assignment of studioAssignmentsBetween(days[0], days[days.length - 1])) {
+  const rangeAssignments = await studioAssignmentsBetween(days[0], days[days.length - 1]);
+  for (const assignment of rangeAssignments) {
     (sessions[assignment.date] ??= []).push({
       id: assignment.id,
       clientId: assignment.clientId,

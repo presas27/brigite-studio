@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { signInAsDemo } from "@/app/app/actions";
+import { DemoSignIn } from "@/components/studio/DemoSignIn";
 import { SignInForm } from "@/components/studio/SignInForm";
-import { buttonGhost, buttonPrimary, eyebrow, heading, muted } from "@/components/studio/theme";
+import { heading, muted } from "@/components/studio/theme";
 import { SolMark } from "@/components/ui/SolMark";
-import { PILOT_CLIENTS } from "@/lib/studio/seed";
 import { currentUser } from "@/lib/studio/auth";
 
 export const metadata: Metadata = {
@@ -22,15 +21,10 @@ export const metadata: Metadata = {
  * the site's opening screen, with the content on an ink card floating over it.
  * Inside the app itself the gradient is rationed to a single surface per screen.
  */
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ erro?: string }>;
-}) {
+export default async function SignInPage() {
   const user = await currentUser();
   if (user) redirect(user.role === "coach" ? "/app/coach" : "/app/aluno");
 
-  const { erro } = await searchParams;
   const t = await getTranslations("Studio.signIn");
 
   return (
@@ -44,41 +38,12 @@ export default async function SignInPage({
         <h1 className={`${heading} text-[2rem] text-cream`}>{t("title")}</h1>
         <p className={`mt-2 ${muted}`}>{t("lead")}</p>
 
-        {erro === "link" && (
-          <div className="mt-6 rounded-[1rem] bg-silk/10 p-4 ring-1 ring-silk/30">
-            <p className="font-sans text-sm font-semibold text-cream">{t("failedTitle")}</p>
-            <p className={`mt-1 ${muted}`}>{t("failedLead")}</p>
-          </div>
-        )}
 
         <div className="mt-6">
           <SignInForm />
         </div>
 
-        {process.env.STUDIO_DEMO === "1" && (
-          <div className="mt-6 border-t border-cream/10 pt-6">
-            <p className={eyebrow}>{t("demoTitle")}</p>
-            <p className={`mt-2 ${muted}`}>{t("demoLead")}</p>
-            <div className="mt-4 space-y-2">
-              <form action={signInAsDemo}>
-                <input type="hidden" name="as" value="coach" />
-                <button type="submit" className={`${buttonPrimary} w-full`}>
-                  {t("demoAsCoach")}
-                </button>
-              </form>
-              {/* One button per pilot account. Sara needs to land in either
-                  chair without a mailbox, and so does whoever is watching. */}
-              {PILOT_CLIENTS.map((client) => (
-                <form key={client.email} action={signInAsDemo}>
-                  <input type="hidden" name="as" value={client.email} />
-                  <button type="submit" className={`${buttonGhost} w-full`}>
-                    {t("demoAsClient", { name: client.name.split(" ")[0] })}
-                  </button>
-                </form>
-              ))}
-            </div>
-          </div>
-        )}
+        {process.env.STUDIO_DEMO === "1" && <DemoSignIn />}
 
         <Link
           href="/"

@@ -1,6 +1,6 @@
-import { all, get, run, shiftDay, tx, type Row } from "./db";
-import { newId } from "./id";
-import { copyWorkout, createWorkout, workoutMetaFromRow } from "./library";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { sm, sq } from "@/lib/studio/convexServer";
 import type {
   PhaseDurationType,
   TrainingPhase,
@@ -15,97 +15,66 @@ import type {
  * building"), and the phase says how long that stretch of training runs.
  *
  * Two invariants matter here:
- *  1. A phase is scoped by `coach_id` as well as `client_id`. Nothing in this
+ *  1. A phase is scoped by `coachId` as well as `clientId`. Nothing in this
  *     file assumes a single coach.
  *  2. Adding a library workout to a phase *copies* it. The coach then edits the
  *     copy, and the template stays exactly as every other client sees it. This
  *     is the same reasoning as the assignment snapshot in `plan.ts`, one level
  *     earlier: the moment work leaves the library it stops being shared.
+ *
+ * The rules themselves now live in `convex/phases.ts` — the duration invariant,
+ * the cascade that empties a phase before deleting it, the copy-on-add — and
+ * this module is the thin server-side call into them. Nothing here decides
+ * anything; if a behaviour looks missing, it moved rather than went.
+ *
+ * Identity is one thing that did change shape. The coach is no longer part of
+ * any call: Convex takes the actor from the verified session, so `createPhase`
+ * has no `coachId` parameter to pass the wrong value to. Whoever is signed in
+ * owns the phase they create, and nothing else is expressible.
  */
 
-const PHASE_COLUMNS =
-  "id, coach_id, client_id, name, position, duration_type, start_date, end_date, weeks, " +
-  "created_at, updated_at";
-
-function mapPhase(row: Row): TrainingPhase {
-  return {
-    id: String(row.id),
-    coachId: String(row.coach_id),
-    clientId: String(row.client_id),
-    name: String(row.name),
-    position: Number(row.position),
-    durationType: String(row.duration_type) as PhaseDurationType,
-    startDate: row.start_date == null ? null : String(row.start_date),
-    endDate: row.end_date == null ? null : String(row.end_date),
-    weeks: row.weeks == null ? null : Number(row.weeks),
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
-  };
-}
-
 /** Every phase of one client's plan, in the order the coach arranged them. */
-export function listPhases(clientId: string): TrainingPhaseSummary[] {
-  const rows = all<Row>(
-    `SELECT ${PHASE_COLUMNS},
-            (SELECT count(*) FROM workouts w
-              WHERE w.phase_id = training_phases.id AND w.archived = 0) AS workout_count
-       FROM training_phases
-      WHERE client_id = ?
-      ORDER BY position, created_at`,
-    clientId,
-  );
-  return rows.map((row) => ({ ...mapPhase(row), workoutCount: Number(row.workout_count) }));
+export async function listPhases(clientId: string): Promise<TrainingPhaseSummary[]> {
+  return sq(api.phases.list, { clientId: clientId as Id<"users"> });
 }
 
-export function findPhase(phaseId: string): TrainingPhase | undefined {
-  const row = get<Row>(`SELECT ${PHASE_COLUMNS} FROM training_phases WHERE id = ?`, phaseId);
-  return row ? mapPhase(row) : undefined;
+export async function findPhase(phaseId: string): Promise<TrainingPhase | undefined> {
+  // Convex has no `undefined`, so "no such phase" arrives as null and is turned
+  // back into the absence the callers already branch on.
+  return (await sq(api.phases.find, { phaseId: phaseId as Id<"trainingPhases"> })) ?? undefined;
 }
 
 /**
  * Duration comes in one of two shapes and only one is ever stored:
  *  - `calendar` keeps the two dates the coach picked;
- *  - `weeks` keeps the count, and derives the end date only if a start date
- *    came with it. A phase the coach has not dated yet is a legitimate state —
- *    six weeks of hypertrophy, starting whenever the current phase ends.
+ *  - `weeks` keeps the count and no dates at all — six weeks of hypertrophy,
+ *    starting whenever the current phase ends, is a phase the coach has not
+ *    dated yet and that is a legitimate state.
+ *
+ * Which fields survive is decided in the mutation, not here. See
+ * `normaliseDuration` in `convex/phases.ts`.
  */
-export function createPhase(input: {
-  coachId: string;
+export async function createPhase(input: {
   clientId: string;
   name: string;
   durationType: PhaseDurationType;
   startDate?: string | null;
   endDate?: string | null;
   weeks?: number | null;
-}): string {
-  const phaseId = newId();
-  const now = Date.now();
-  const last = get<Row>(
-    "SELECT coalesce(max(position), -1) AS last FROM training_phases WHERE client_id = ?",
-    input.clientId,
-  );
-  const duration = normaliseDuration(input);
-  run(
-    `INSERT INTO training_phases
-       (id, coach_id, client_id, name, position, duration_type, start_date, end_date, weeks,
-        created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    phaseId,
-    input.coachId,
-    input.clientId,
-    input.name.trim(),
-    Number(last?.last ?? -1) + 1,
-    duration.durationType,
-    duration.startDate,
-    duration.endDate,
-    duration.weeks,
-    now,
-    now,
-  );
-  return phaseId;
+}): Promise<string> {
+  return sm(api.phases.create, {
+    clientId: input.clientId as Id<"users">,
+    name: input.name,
+    durationType: input.durationType,
+    // Spread rather than pass: an absent field means "not given", and sending
+    // it as an explicit null would mean "clear it", which is a different thing.
+    ...(input.startDate === undefined ? {} : { startDate: input.startDate }),
+    ...(input.endDate === undefined ? {} : { endDate: input.endDate }),
+    ...(input.weeks === undefined ? {} : { weeks: input.weeks }),
+  });
 }
 
-export function updatePhase(
+export async function updatePhase(
   phaseId: string,
   patch: {
     name?: string;
@@ -114,93 +83,27 @@ export function updatePhase(
     endDate?: string | null;
     weeks?: number | null;
   },
-): void {
-  const current = findPhase(phaseId);
-  if (!current) return;
-  const duration = normaliseDuration({
-    durationType: patch.durationType ?? current.durationType,
-    startDate: patch.startDate === undefined ? current.startDate : patch.startDate,
-    endDate: patch.endDate === undefined ? current.endDate : patch.endDate,
-    weeks: patch.weeks === undefined ? current.weeks : patch.weeks,
+): Promise<void> {
+  await sm(api.phases.update, {
+    phaseId: phaseId as Id<"trainingPhases">,
+    ...(patch.name === undefined ? {} : { name: patch.name }),
+    ...(patch.durationType === undefined ? {} : { durationType: patch.durationType }),
+    ...(patch.startDate === undefined ? {} : { startDate: patch.startDate }),
+    ...(patch.endDate === undefined ? {} : { endDate: patch.endDate }),
+    ...(patch.weeks === undefined ? {} : { weeks: patch.weeks }),
   });
-  run(
-    `UPDATE training_phases
-        SET name = ?, duration_type = ?, start_date = ?, end_date = ?, weeks = ?, updated_at = ?
-      WHERE id = ?`,
-    (patch.name ?? current.name).trim(),
-    duration.durationType,
-    duration.startDate,
-    duration.endDate,
-    duration.weeks,
-    Date.now(),
-    phaseId,
-  );
 }
 
 /** Deletes the phase and, by cascade, the client-scoped workouts inside it. */
-export function removePhase(phaseId: string): void {
-  run("DELETE FROM training_phases WHERE id = ?", phaseId);
-}
-
-/**
- * Keeps the two duration shapes from bleeding into each other: a calendar phase
- * has no week count, and a weeks phase has no end date it did not derive.
- */
-function normaliseDuration(input: {
-  durationType: PhaseDurationType;
-  startDate?: string | null;
-  endDate?: string | null;
-  weeks?: number | null;
-}): {
-  durationType: PhaseDurationType;
-  startDate: string | null;
-  endDate: string | null;
-  weeks: number | null;
-} {
-  const start = input.startDate?.trim() || null;
-  if (input.durationType === "calendar") {
-    return {
-      durationType: "calendar",
-      startDate: start,
-      endDate: input.endDate?.trim() || null,
-      weeks: null,
-    };
-  }
-  const weeks = input.weeks == null ? null : Math.max(1, Math.trunc(input.weeks));
-  return {
-    durationType: "weeks",
-    startDate: start,
-    // A phase of N weeks that starts on a day ends the day before week N+1.
-    endDate: start && weeks ? shiftDay(start, weeks * 7 - 1) : null,
-    weeks,
-  };
+export async function removePhase(phaseId: string): Promise<void> {
+  await sm(api.phases.remove, { phaseId: phaseId as Id<"trainingPhases"> });
 }
 
 /* ------------------------------------------------------ workouts in a phase */
 
 /** The workouts of one phase, in the coach's order. */
-export function phaseWorkouts(phaseId: string): WorkoutSummary[] {
-  const rows = all<Row>(
-    `SELECT w.id, w.name, w.focus, w.notes, w.instructions, w.workout_type, w.coach_id,
-            w.client_id, w.phase_id, w.source_workout_id, w.position, w.archived,
-            w.created_at, w.updated_at,
-            (SELECT count(*) FROM workout_items i
-               JOIN workout_blocks b ON b.id = i.block_id
-              WHERE b.workout_id = w.id) AS item_count
-       FROM workouts w
-      WHERE w.phase_id = ? AND w.archived = 0
-      ORDER BY w.position, w.created_at`,
-    phaseId,
-  );
-  return rows.map((row) => ({ ...workoutMetaFromRow(row), itemCount: Number(row.item_count) }));
-}
-
-function nextPosition(phaseId: string): number {
-  const row = get<Row>(
-    "SELECT coalesce(max(position), -1) AS last FROM workouts WHERE phase_id = ?",
-    phaseId,
-  );
-  return Number(row?.last ?? -1) + 1;
+export async function phaseWorkouts(phaseId: string): Promise<WorkoutSummary[]> {
+  return sq(api.phases.workouts, { phaseId: phaseId as Id<"trainingPhases"> });
 }
 
 /**
@@ -208,25 +111,20 @@ function nextPosition(phaseId: string): number {
  * coach's first edit has nowhere to leak: the row they are editing was never
  * the library's. `sourceWorkoutId` keeps the provenance visible.
  */
-export function addLibraryWorkoutToPhase(
+export async function addLibraryWorkoutToPhase(
   phaseId: string,
   libraryWorkoutId: string,
-): string | undefined {
-  const phase = findPhase(phaseId);
-  if (!phase) return undefined;
-  return tx(() =>
-    copyWorkout(libraryWorkoutId, {
-      coachId: phase.coachId,
-      clientId: phase.clientId,
-      phaseId: phase.id,
-      sourceWorkoutId: libraryWorkoutId,
-      position: nextPosition(phaseId),
-    }),
+): Promise<string | undefined> {
+  return (
+    (await sm(api.phases.addLibraryWorkout, {
+      phaseId: phaseId as Id<"trainingPhases">,
+      libraryWorkoutId: libraryWorkoutId as Id<"workouts">,
+    })) ?? undefined
   );
 }
 
 /** "Build workout": a new workout that exists only for this client's phase. */
-export function createPhaseWorkout(
+export async function createPhaseWorkout(
   phaseId: string,
   input: {
     name: string;
@@ -234,25 +132,25 @@ export function createPhaseWorkout(
     notes?: string;
     workoutType?: WorkoutType;
   },
-): string | undefined {
-  const phase = findPhase(phaseId);
-  if (!phase) return undefined;
-  return createWorkout({
-    name: input.name,
-    focus: input.focus,
-    notes: input.notes,
-    workoutType: input.workoutType,
-    coachId: phase.coachId,
-    clientId: phase.clientId,
-    phaseId: phase.id,
-    position: nextPosition(phaseId),
-  });
+): Promise<string | undefined> {
+  return (
+    (await sm(api.phases.createWorkout, {
+      phaseId: phaseId as Id<"trainingPhases">,
+      name: input.name,
+      ...(input.focus === undefined ? {} : { focus: input.focus }),
+      ...(input.notes === undefined ? {} : { notes: input.notes }),
+      ...(input.workoutType === undefined ? {} : { workoutType: input.workoutType }),
+    })) ?? undefined
+  );
 }
 
 /**
  * Hard delete, not archive: a client-scoped copy has no life outside its phase,
  * and any session already built from it kept its own snapshot.
  */
-export function removePhaseWorkout(phaseId: string, workoutId: string): void {
-  run("DELETE FROM workouts WHERE id = ? AND phase_id = ?", workoutId, phaseId);
+export async function removePhaseWorkout(phaseId: string, workoutId: string): Promise<void> {
+  await sm(api.phases.removeWorkout, {
+    phaseId: phaseId as Id<"trainingPhases">,
+    workoutId: workoutId as Id<"workouts">,
+  });
 }

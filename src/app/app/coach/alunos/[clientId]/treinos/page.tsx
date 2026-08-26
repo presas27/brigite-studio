@@ -29,7 +29,7 @@ export default async function ClientSessionsPage({
     getLocale(),
   ]);
 
-  const sessions = sessionHistory(client.id, HISTORY_LIMIT);
+  const sessions = await sessionHistory(client.id, HISTORY_LIMIT);
 
   if (sessions.length === 0) {
     return <Empty title={t("empty")} hint={t("emptyHint")} />;

@@ -29,8 +29,8 @@ async function assertCoach(clientId: string): Promise<void> {
 }
 
 /** Guards against a phase id from another client's plan reaching these writes. */
-function assertPhaseBelongsTo(phaseId: string, clientId: string): boolean {
-  return findPhase(phaseId)?.clientId === clientId;
+async function assertPhaseBelongsTo(phaseId: string, clientId: string): Promise<boolean> {
+  return (await findPhase(phaseId))?.clientId === clientId;
 }
 
 const WORKOUT_TYPES: readonly WorkoutType[] = ["regular", "circuit", "interval"];
@@ -46,11 +46,11 @@ export async function addFromLibraryAction(
   formData: FormData,
 ): Promise<void> {
   await assertCoach(clientId);
-  if (!assertPhaseBelongsTo(phaseId, clientId)) return;
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
 
-  const copyId = addLibraryWorkoutToPhase(phaseId, workoutId);
+  const copyId = await addLibraryWorkoutToPhase(phaseId, workoutId);
   revalidatePath(phasePath(clientId, phaseId));
   if (copyId) redirect(`${phasePath(clientId, phaseId)}/treino/${copyId}`);
 }
@@ -62,12 +62,12 @@ export async function buildWorkoutAction(
   formData: FormData,
 ): Promise<void> {
   await assertCoach(clientId);
-  if (!assertPhaseBelongsTo(phaseId, clientId)) return;
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
 
   const rawType = String(formData.get("workoutType") ?? "").trim() as WorkoutType;
-  const workoutId = createPhaseWorkout(phaseId, {
+  const workoutId = await createPhaseWorkout(phaseId, {
     name,
     focus: String(formData.get("focus") ?? ""),
     notes: String(formData.get("notes") ?? ""),
@@ -84,10 +84,10 @@ export async function removeWorkoutAction(
   formData: FormData,
 ): Promise<void> {
   await assertCoach(clientId);
-  if (!assertPhaseBelongsTo(phaseId, clientId)) return;
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
-  removePhaseWorkout(phaseId, workoutId);
+  await removePhaseWorkout(phaseId, workoutId);
   revalidatePath(phasePath(clientId, phaseId));
 }
 
@@ -103,11 +103,11 @@ export async function scheduleWorkoutAction(
   formData: FormData,
 ): Promise<void> {
   await assertCoach(clientId);
-  if (!assertPhaseBelongsTo(phaseId, clientId)) return;
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
 
-  assignWorkout({
+  await assignWorkout({
     clientId,
     workoutId,
     date: String(formData.get("date") ?? "").trim() || null,

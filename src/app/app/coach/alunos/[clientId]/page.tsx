@@ -20,7 +20,7 @@ import {
   surfaceLink,
 } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { weekKey } from "@/lib/studio/db";
+import { weekKey } from "@/lib/studio/dates";
 import { adherence, assignmentHistory, nextAssignment } from "@/lib/studio/plan";
 import { cn } from "@/lib/utils";
 
@@ -69,9 +69,11 @@ export default async function ClientOverviewPage({
     getLocale(),
   ]);
 
-  const next = nextAssignment(client.id);
-  const history = assignmentHistory(client.id, 5);
-  const { done, total } = adherence(client.id);
+  const [next, history, { done, total }] = await Promise.all([
+    nextAssignment(client.id),
+    assignmentHistory(client.id, 5),
+    adherence(client.id),
+  ]);
   const [lastSession] = history;
   const planHref = `/app/coach/alunos/${client.id}/plano`;
   const sessionsHref = `/app/coach/alunos/${client.id}/treinos`;

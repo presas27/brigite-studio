@@ -5,7 +5,7 @@ import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireClient } from "@/lib/studio/auth";
 import { clientSessions, sessionFocuses } from "@/lib/studio/clientConsole";
-import { dayKey } from "@/lib/studio/db";
+import { dayKey } from "@/lib/studio/dates";
 
 export const metadata: Metadata = { title: "Treinos" };
 
@@ -22,7 +22,7 @@ export default async function AlunoTreinosPage() {
   const client = await requireClient();
   const t = await getTranslations("Studio.aluno");
 
-  const sessions = clientSessions(client.id);
+  const sessions = await clientSessions(client.id);
 
   return (
     <div className="space-y-8">

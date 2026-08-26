@@ -23,7 +23,7 @@ export function MessageThread({
   locale: string;
 }) {
   const entries = groupThread(messages);
-  // Anchored to Europe/Lisbon to match `dayKey`/`weekKey` in `lib/studio/db.ts`,
+  // Anchored to Europe/Lisbon to match `dayKey`/`weekKey` in `lib/studio/dates.ts`,
   // so a message logged just after midnight never lands on the wrong day.
   const dayFormatter = new Intl.DateTimeFormat(locale, {
     weekday: "long",

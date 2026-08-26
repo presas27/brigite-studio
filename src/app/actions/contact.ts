@@ -8,6 +8,7 @@ import { verifyFormToken } from "@/lib/form-token";
 import { screen } from "@/lib/moderation";
 import { rateLimit } from "@/lib/rate-limit";
 import { site } from "@/lib/site";
+import { createLead } from "@/lib/studio/leads";
 
 /** Sender for both emails — the domain must be verified in Resend. */
 const FROM = "Brigite's Studio <site@brigitestudio.com>";
@@ -61,6 +62,19 @@ export async function sendContactEmail(
   // Content moderation (anti-troll): silently drop hate speech / heavy spam.
   const moderation = screen({ name, message });
   if (moderation.verdict === "reject") return { status: "success" };
+
+  /**
+   * Record the enquiry before mailing it. The email is a notification, not a
+   * record: it lands in one inbox and is as durable as that inbox's habits.
+   * The lead is what the coach's pipeline screen reads, and it survives.
+   *
+   * A failure here must not lose the message, so it is caught and logged and
+   * the mail goes out regardless — the reverse (no mail because the write
+   * failed) would be the worse trade.
+   */
+  await createLead({ name, email, phone, message, source: "site" }).catch((err: unknown) => {
+    console.error("[contact] lead not recorded", err);
+  });
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {

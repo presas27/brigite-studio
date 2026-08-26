@@ -8,7 +8,7 @@ import { WeightCard } from "@/components/studio/aluno/overview/WeightCard";
 import { heading } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
 import { clientOverview } from "@/lib/studio/clientConsole";
-import { dayKey } from "@/lib/studio/db";
+import { dayKey } from "@/lib/studio/dates";
 import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
 import { cn } from "@/lib/utils";
 
@@ -30,14 +30,16 @@ export default async function AlunoHojePage() {
   const t = await getTranslations("Studio.aluno");
 
   const today = dayKey();
-  const overview = clientOverview(client.id);
+  const [overview, todaySessions, next] = await Promise.all([
+    clientOverview(client.id),
+    assignmentsOn(client.id, today),
+    nextAssignment(client.id, today),
+  ]);
 
   // Today's session is the hero; with nothing today the gold moves to the next
   // one, and the list below drops it so it is never printed twice.
-  const todaySession = assignmentsOn(client.id, today).find(
-    (assignment) => assignment.status !== "skipped",
-  );
-  const hero = todaySession ?? nextAssignment(client.id, today);
+  const todaySession = todaySessions.find((assignment) => assignment.status !== "skipped");
+  const hero = todaySession ?? next;
   const upcoming = overview.upcoming
     .filter((session) => session.id !== hero?.id)
     .slice(0, 3);

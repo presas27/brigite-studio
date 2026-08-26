@@ -15,7 +15,7 @@ export default async function ClientMessagesPage() {
   const client = await requireClient();
   const t = await getTranslations("Studio.messages");
   const locale = await getLocale();
-  const messages = messagesFor(client.id);
+  const messages = await messagesFor(client.id);
 
   return (
     <div className="space-y-6">

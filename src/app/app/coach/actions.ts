@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSignInToken, requireCoach } from "@/lib/studio/auth";
-import { sendSignInLink } from "@/lib/studio/email";
+import { requireCoach } from "@/lib/studio/auth";
+import { sendInvite } from "@/lib/studio/email";
 import { requestOrigin } from "@/lib/studio/origin";
 import {
   createClient,
@@ -33,8 +33,12 @@ export type AddClientState =
   | { status: "invalid" };
 
 /**
- * Add a client and immediately send her the sign-in invite — a roster entry
- * with no way in is useless, so the two happen as one step.
+ * Add a client and immediately send the invite — a roster entry nobody has been
+ * told about is useless, so the two happen as one step.
+ *
+ * The invite no longer carries a way in. It says an account exists; the client
+ * then asks for their own single-use link on `/app/entrar`, which is the only
+ * shape of this that does not have the coach minting somebody else's session.
  */
 export async function addClient(
   _prev: AddClientState,
@@ -51,17 +55,14 @@ export async function addClient(
   if (!name || name.length > 200 || !EMAIL_RE.test(email) || email.length > 320 || !isPlanId(plan)) {
     return { status: "invalid" };
   }
-  if (findUserByEmail(email)) return { status: "duplicate" };
+  if (await findUserByEmail(email)) return { status: "duplicate" };
 
-  const client = createClient({ email, name, plan, goals, injuries });
+  const client = await createClient({ email, name, plan, goals, injuries });
 
-  const token = createSignInToken(client.id);
-  await sendSignInLink({
+  await sendInvite({
     to: client.email,
     name: client.name.split(" ")[0] || client.name,
-    token,
     locale: client.locale,
-    invite: true,
     origin: await requestOrigin(),
   });
 
@@ -80,7 +81,7 @@ export async function saveClient(formData: FormData): Promise<void> {
   const plan = String(formData.get("plan") ?? "");
   const sessionsLeft = Number(formData.get("sessionsLeft") ?? 0);
 
-  updateClient(clientId, {
+  await updateClient(clientId, {
     ...(name ? { name } : {}),
     ...(isPlanId(plan) ? { plan } : {}),
     goals: String(formData.get("goals") ?? ""),
@@ -99,7 +100,7 @@ export async function saveNotes(formData: FormData): Promise<void> {
   const clientId = String(formData.get("clientId") ?? "");
   if (!clientId) return;
 
-  updateClient(clientId, { notes: String(formData.get("notes") ?? "") });
+  await updateClient(clientId, { notes: String(formData.get("notes") ?? "") });
   revalidatePath(`/app/coach/alunos/${clientId}`);
 }
 
@@ -111,26 +112,23 @@ export async function setStatus(formData: FormData): Promise<void> {
   const status = String(formData.get("status") ?? "") as UserStatus;
   if (!clientId || (status !== "active" && status !== "archived")) return;
 
-  setClientStatus(clientId, status);
+  await setClientStatus(clientId, status);
   revalidatePath(`/app/coach/alunos/${clientId}`);
   revalidatePath("/app/coach/alunos");
 }
 
-/** Mint a fresh sign-in token and resend the invite email. */
+/** Send the invite again. There is no token to mint: the client asks for their own link. */
 export async function resendInvite(formData: FormData): Promise<void> {
   await requireCoach();
 
   const clientId = String(formData.get("clientId") ?? "");
-  const client = clientId ? findClient(clientId) : undefined;
+  const client = clientId ? await findClient(clientId) : undefined;
   if (!client) return;
 
-  const token = createSignInToken(client.id);
-  await sendSignInLink({
+  await sendInvite({
     to: client.email,
     name: client.name.split(" ")[0] || client.name,
-    token,
     locale: client.locale,
-    invite: true,
     origin: await requestOrigin(),
   });
 

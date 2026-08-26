@@ -9,7 +9,18 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as coaching from "../coaching.js";
 import type * as http from "../http.js";
+import type * as leads from "../leads.js";
+import type * as library from "../library.js";
+import type * as model_authz from "../model/authz.js";
+import type * as model_library from "../model/library.js";
+import type * as model_shape from "../model/shape.js";
+import type * as phases from "../phases.js";
+import type * as plan from "../plan.js";
+import type * as seed from "../seed.js";
+import type * as signInLimit from "../signInLimit.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +30,18 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  coaching: typeof coaching;
   http: typeof http;
+  leads: typeof leads;
+  library: typeof library;
+  "model/authz": typeof model_authz;
+  "model/library": typeof model_library;
+  "model/shape": typeof model_shape;
+  phases: typeof phases;
+  plan: typeof plan;
+  seed: typeof seed;
+  signInLimit: typeof signInLimit;
+  users: typeof users;
 }>;
 
 /**

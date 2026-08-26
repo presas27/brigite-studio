@@ -12,6 +12,13 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
+    /* The Convex functions return the app's own domain types, and those types
+     * are declared in `src/`, where they are imported through `@/`. Teaching
+     * this project the same alias is what lets one set of shapes be the
+     * contract on both sides of the wire. */
+    "baseUrl": ".",
+    "paths": { "@/*": ["../src/*"] },
+
     /* These compiler options are required by Convex */
     "target": "ESNext",
     "lib": ["ES2023", "dom"],

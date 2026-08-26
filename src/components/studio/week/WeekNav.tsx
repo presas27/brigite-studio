@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { buttonGhost } from "@/components/studio/theme";
-import { shiftDay, weekKey } from "@/lib/studio/db";
+import { shiftDay, weekKey } from "@/lib/studio/dates";
 import type { Translate } from "@/components/studio/plan/types";
 
 /**

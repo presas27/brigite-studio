@@ -7,7 +7,7 @@ import { AddWorkoutToPhaseModal } from "@/components/studio/plan/AddWorkoutToPha
 import { PhaseSettings } from "@/components/studio/plan/PhaseSettings";
 import { PhaseWorkoutList } from "@/components/studio/plan/PhaseWorkoutList";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { dayKey } from "@/lib/studio/db";
+import { dayKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
 import { findPhase, listPhases, phaseWorkouts } from "@/lib/studio/phases";
 import {
@@ -35,21 +35,21 @@ export default async function PhasePage({
   params: Promise<{ clientId: string; phaseId: string }>;
 }) {
   const { clientId, phaseId } = await params;
-  const { viewer } = await requireClientAccess(clientId);
+  const [{ viewer }, phase, workouts, libraryWorkouts, phases, tPhases, common, locale] =
+    await Promise.all([
+      requireClientAccess(clientId),
+      findPhase(phaseId),
+      phaseWorkouts(phaseId),
+      listWorkouts(),
+      listPhases(clientId),
+      getTranslations("Studio.plan.phases"),
+      getTranslations("Studio.common"),
+      getLocale(),
+    ]);
   if (viewer.role !== "coach") redirect("/app/aluno");
-
-  const phase = findPhase(phaseId);
   if (!phase || phase.clientId !== clientId) notFound();
 
-  const [tPhases, common, locale] = await Promise.all([
-    getTranslations("Studio.plan.phases"),
-    getTranslations("Studio.common"),
-    getLocale(),
-  ]);
-
-  const index = listPhases(clientId).findIndex((candidate) => candidate.id === phaseId) + 1;
-  const workouts = phaseWorkouts(phaseId);
-  const libraryWorkouts = listWorkouts();
+  const index = phases.findIndex((candidate) => candidate.id === phaseId) + 1;
 
   // Full, year-inclusive dates here — this is the one place a coach checks
   // exactly when a phase runs, unlike the dd/mm week-nav pill on the plan tab.

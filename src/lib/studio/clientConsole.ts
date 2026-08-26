@@ -1,5 +1,5 @@
 import { findCheckin, listCheckins, measurements, messagesFor } from "./coaching";
-import { dayKey, shiftDay, weekKey } from "./db";
+import { dayKey, shiftDay, weekKey } from "./dates";
 import { assignmentsBetween, assignmentsOn } from "./plan";
 import type { AssignmentStatus, ScheduledAssignment } from "./types";
 
@@ -7,10 +7,10 @@ import type { AssignmentStatus, ScheduledAssignment } from "./types";
  * The aluna's side of the console — the mirror of `coachAlerts` /
  * `recentActivity` in `coaching.ts`, from the other end of the relationship.
  *
- * Everything here composes the already-exported reads rather than opening new
- * SQL. One aluna is a handful of rows in every table involved, so the extra
- * round trips cost nothing and the coaching module stays the single place that
- * knows the schema.
+ * Everything here composes the already-exported reads rather than querying
+ * Convex directly — the coaching and plan modules stay the single place that
+ * knows the schema. Each read is a network round trip now, so independent
+ * ones run together in a `Promise.all` instead of one after another.
  */
 
 /** How far back the library and the feed look. A year of training is plenty of history to browse. */
@@ -40,11 +40,19 @@ function atNoon(key: string): number {
  * This list is only what she still has to do something about, which is what
  * makes the bell worth opening.
  */
-export function clientAlerts(clientId: string): ClientAlert[] {
+export async function clientAlerts(clientId: string): Promise<ClientAlert[]> {
   const alerts: ClientAlert[] = [];
   const today = dayKey();
+  const week = weekKey();
 
-  for (const assignment of assignmentsOn(clientId, today)) {
+  const [todaySessions, checkin, messages, missedAssignments] = await Promise.all([
+    assignmentsOn(clientId, today),
+    findCheckin(clientId, week),
+    messagesFor(clientId),
+    assignmentsBetween(clientId, shiftDay(today, -MISSED_WINDOW_DAYS), shiftDay(today, -1)),
+  ]);
+
+  for (const assignment of todaySessions) {
     if (assignment.status !== "scheduled") continue;
     alerts.push({
       kind: "session",
@@ -54,12 +62,11 @@ export function clientAlerts(clientId: string): ClientAlert[] {
     });
   }
 
-  const week = weekKey();
-  if (findCheckin(clientId, week)?.submittedAt == null) {
+  if (checkin?.submittedAt == null) {
     alerts.push({ kind: "checkin", at: atNoon(week), weekOf: week });
   }
 
-  const unread = messagesFor(clientId).filter(
+  const unread = messages.filter(
     (message) => message.authorRole === "coach" && message.readAt == null,
   );
   if (unread.length > 0) {
@@ -70,11 +77,7 @@ export function clientAlerts(clientId: string): ClientAlert[] {
     });
   }
 
-  for (const assignment of assignmentsBetween(
-    clientId,
-    shiftDay(today, -MISSED_WINDOW_DAYS),
-    shiftDay(today, -1),
-  )) {
+  for (const assignment of missedAssignments) {
     if (assignment.status !== "scheduled") continue;
     alerts.push({
       kind: "missed",
@@ -107,11 +110,17 @@ export type ClientActivityItem = {
 };
 
 /** What has happened to this aluna lately, newest first. */
-export function clientActivity(clientId: string, limit = 12): ClientActivityItem[] {
+export async function clientActivity(clientId: string, limit = 12): Promise<ClientActivityItem[]> {
   const items: ClientActivityItem[] = [];
   const today = dayKey();
 
-  for (const assignment of assignmentsBetween(clientId, shiftDay(today, -HISTORY_DAYS), today)) {
+  const [assignments, checkins, messages] = await Promise.all([
+    assignmentsBetween(clientId, shiftDay(today, -HISTORY_DAYS), today),
+    listCheckins(clientId, 12),
+    messagesFor(clientId, 30),
+  ]);
+
+  for (const assignment of assignments) {
     if (assignment.status === "scheduled") continue;
     items.push({
       id: `session-${assignment.id}`,
@@ -123,7 +132,7 @@ export function clientActivity(clientId: string, limit = 12): ClientActivityItem
     });
   }
 
-  for (const checkin of listCheckins(clientId, 12)) {
+  for (const checkin of checkins) {
     if (checkin.submittedAt != null) {
       items.push({
         id: `checkin-${checkin.id}`,
@@ -146,7 +155,7 @@ export function clientActivity(clientId: string, limit = 12): ClientActivityItem
     }
   }
 
-  for (const message of messagesFor(clientId, 30)) {
+  for (const message of messages) {
     items.push({
       id: `message-${message.id}`,
       kind: message.authorRole === "coach" ? "coachMessage" : "message",
@@ -198,9 +207,14 @@ function toSession(assignment: ScheduledAssignment): ClientSession {
  * planned weeks ahead. The library page browses this; the calendar reads the
  * raw assignments for the month it is drawing.
  */
-export function clientSessions(clientId: string): ClientSession[] {
+export async function clientSessions(clientId: string): Promise<ClientSession[]> {
   const today = dayKey();
-  return assignmentsBetween(clientId, shiftDay(today, -HISTORY_DAYS), shiftDay(today, HORIZON_DAYS))
+  const assignments = await assignmentsBetween(
+    clientId,
+    shiftDay(today, -HISTORY_DAYS),
+    shiftDay(today, HORIZON_DAYS),
+  );
+  return assignments
     .map(toSession)
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
@@ -335,11 +349,11 @@ function toOverviewSession(assignment: ScheduledAssignment): OverviewSession {
  * rather than a measure. A week with nothing scheduled ends the walk — a
  * streak has to be built out of training, not out of empty calendars.
  */
-function weekStreak(clientId: string, thisMonday: string): number {
+async function weekStreak(clientId: string, thisMonday: string): Promise<number> {
   let streak = 0;
   for (let back = 1; back <= STREAK_LIMIT; back += 1) {
     const monday = shiftDay(thisMonday, -7 * back);
-    const week = assignmentsBetween(clientId, monday, shiftDay(monday, 6));
+    const week = await assignmentsBetween(clientId, monday, shiftDay(monday, 6));
     if (week.length === 0) break;
     if (!week.every((assignment) => assignment.status === "done")) break;
     streak += 1;
@@ -354,12 +368,19 @@ function weekStreak(clientId: string, thisMonday: string): number {
  * computed apart they drift by a day at the window's edge, and a headline that
  * disagrees with the dots beside it is worse than either one alone.
  */
-export function clientOverview(clientId: string): ClientOverview {
+export async function clientOverview(clientId: string): Promise<ClientOverview> {
   const today = dayKey();
   const monday = weekKey();
-
   const days = Array.from({ length: 7 }, (_, offset) => shiftDay(monday, offset));
-  const thisWeek = assignmentsBetween(clientId, monday, days[6]);
+
+  const [thisWeek, window, upcomingAssignments, weightReadings, streakWeeks] = await Promise.all([
+    assignmentsBetween(clientId, monday, days[6]),
+    assignmentsBetween(clientId, shiftDay(today, -ADHERENCE_DAYS), today),
+    assignmentsBetween(clientId, shiftDay(today, 1), shiftDay(today, HORIZON_DAYS)),
+    measurements(clientId, "weight", WEIGHT_POINTS),
+    weekStreak(clientId, monday),
+  ]);
+
   const byDate = new Map<string, ScheduledAssignment[]>();
   for (const assignment of thisWeek) {
     byDate.set(assignment.date, [...(byDate.get(assignment.date) ?? []), assignment]);
@@ -375,7 +396,6 @@ export function clientOverview(clientId: string): ClientOverview {
     };
   });
 
-  const window = assignmentsBetween(clientId, shiftDay(today, -ADHERENCE_DAYS), today);
   const adherenceDone = window.filter((assignment) => assignment.status === "done").length;
 
   const focusCounts = new Map<string, number>();
@@ -385,12 +405,12 @@ export function clientOverview(clientId: string): ClientOverview {
     focusCounts.set(tag, (focusCounts.get(tag) ?? 0) + 1);
   }
 
-  const upcoming = assignmentsBetween(clientId, shiftDay(today, 1), shiftDay(today, HORIZON_DAYS))
+  const upcoming = upcomingAssignments
     .filter((assignment) => assignment.status === "scheduled")
     .slice(0, UPCOMING_LIMIT)
     .map(toOverviewSession);
 
-  const readings = measurements(clientId, "weight", WEIGHT_POINTS)
+  const readings = weightReadings
     .slice()
     .reverse()
     .map((measurement) => measurement.value);
@@ -414,6 +434,6 @@ export function clientOverview(clientId: string): ClientOverview {
             delta: readings.length > 1 ? Number((latest - readings[0]).toFixed(1)) : null,
             series: readings,
           },
-    streakWeeks: weekStreak(clientId, monday),
+    streakWeeks,
   };
 }

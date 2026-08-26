@@ -10,7 +10,7 @@ import { WeekGrid } from "@/components/studio/plan/WeekGrid";
 import { Icon } from "@/components/studio/coach/icons";
 import { heading } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { dayKey, shiftDay, weekKey } from "@/lib/studio/db";
+import { dayKey, shiftDay, weekKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
 import { listPhases } from "@/lib/studio/phases";
 import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
@@ -47,17 +47,17 @@ export default async function CoachPlanPage({
   const sunday = shiftDay(monday, 6);
   const today = dayKey();
 
-  const [t, tPhases, tWorkouts, locale] = await Promise.all([
-    getTranslations("Studio.plan"),
-    getTranslations("Studio.plan.phases"),
-    getTranslations("Studio.workouts"),
-    getLocale(),
-  ]);
-
-  const workouts = listWorkouts();
-  const phases = listPhases(clientId);
-  const assignments = assignmentsBetween(clientId, monday, sunday);
-  const unscheduled = unscheduledAssignments(clientId);
+  const [t, tPhases, tWorkouts, locale, workouts, phases, assignments, unscheduled] =
+    await Promise.all([
+      getTranslations("Studio.plan"),
+      getTranslations("Studio.plan.phases"),
+      getTranslations("Studio.workouts"),
+      getLocale(),
+      listWorkouts(),
+      listPhases(clientId),
+      assignmentsBetween(clientId, monday, sunday),
+      unscheduledAssignments(clientId),
+    ]);
 
   const byDate: Record<string, Assignment[]> = {};
   for (const assignment of assignments) {

@@ -40,8 +40,8 @@ const LIST_PATH = "/app/coach/treinos";
  * showing stale blocks. One indexed read per mutation buys correctness for
  * both.
  */
-function workoutPath(workoutId: string): string {
-  const workout = findWorkout(workoutId);
+async function workoutPath(workoutId: string): Promise<string> {
+  const workout = await findWorkout(workoutId);
   if (workout?.clientId && workout.phaseId) {
     return `/app/coach/alunos/${workout.clientId}/plano/fase/${workout.phaseId}/treino/${workoutId}`;
   }
@@ -88,7 +88,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
   const name = textField(formData, "name").trim();
   if (!name) return;
 
-  const id = createWorkout({
+  const id = await createWorkout({
     name,
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
@@ -96,7 +96,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
     coachId: coach.id,
   });
   revalidatePath(LIST_PATH);
-  redirect(workoutPath(id));
+  redirect(await workoutPath(id));
 }
 
 export async function updateWorkoutAction(formData: FormData): Promise<void> {
@@ -105,12 +105,12 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
   if (!workoutId) return;
 
   const name = textField(formData, "name").trim();
-  updateWorkout(workoutId, {
+  await updateWorkout(workoutId, {
     name: name || undefined,
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
   });
-  revalidatePath(workoutPath(workoutId));
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /**
@@ -121,15 +121,15 @@ export async function updateInstructionsAction(formData: FormData): Promise<void
   await requireCoach();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
-  updateWorkout(workoutId, { instructions: textField(formData, "instructions") });
-  revalidatePath(workoutPath(workoutId));
+  await updateWorkout(workoutId, { instructions: textField(formData, "instructions") });
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function archiveWorkoutAction(formData: FormData): Promise<void> {
   await requireCoach();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
-  archiveWorkout(workoutId);
+  await archiveWorkout(workoutId);
   revalidatePath(LIST_PATH);
 }
 
@@ -138,11 +138,11 @@ export async function duplicateWorkoutAction(formData: FormData): Promise<void> 
   await requireCoach();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
-  const source = findWorkout(workoutId);
+  const source = await findWorkout(workoutId);
   if (!source) return;
 
   const t = await getTranslations("Studio.workouts");
-  duplicateWorkout(workoutId, `${source.name} ${t("copySuffix")}`);
+  await duplicateWorkout(workoutId, `${source.name} ${t("copySuffix")}`);
   revalidatePath(LIST_PATH);
 }
 
@@ -151,13 +151,13 @@ export async function addBlockAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
 
-  addBlock(workoutId, {
+  await addBlock(workoutId, {
     kind: textField(formData, "kind") as BlockKind,
     label: textField(formData, "label"),
     rounds: intField(formData, "rounds"),
     restSeconds: intField(formData, "restSeconds"),
   });
-  revalidatePath(workoutPath(workoutId));
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function updateBlockAction(formData: FormData): Promise<void> {
@@ -166,13 +166,13 @@ export async function updateBlockAction(formData: FormData): Promise<void> {
   const blockId = idField(formData, "blockId");
   if (!workoutId || !blockId) return;
 
-  updateBlock(blockId, {
+  await updateBlock(blockId, {
     kind: textField(formData, "kind") as BlockKind,
     label: textField(formData, "label"),
     rounds: intField(formData, "rounds"),
     restSeconds: intField(formData, "restSeconds"),
   });
-  revalidatePath(workoutPath(workoutId));
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function removeBlockAction(formData: FormData): Promise<void> {
@@ -180,8 +180,8 @@ export async function removeBlockAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   const blockId = idField(formData, "blockId");
   if (!workoutId || !blockId) return;
-  removeBlock(blockId);
-  revalidatePath(workoutPath(workoutId));
+  await removeBlock(blockId);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function addItemAction(formData: FormData): Promise<void> {
@@ -191,8 +191,8 @@ export async function addItemAction(formData: FormData): Promise<void> {
   const exerciseId = idField(formData, "exerciseId");
   if (!workoutId || !blockId || !exerciseId) return;
 
-  addItem(blockId, { exerciseId });
-  revalidatePath(workoutPath(workoutId));
+  await addItem(blockId, { exerciseId });
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function updateItemAction(formData: FormData): Promise<void> {
@@ -201,7 +201,7 @@ export async function updateItemAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
 
-  updateItem(itemId, {
+  await updateItem(itemId, {
     sets: intField(formData, "sets"),
     reps: textField(formData, "reps"),
     seconds: nullableIntField(formData, "seconds"),
@@ -210,7 +210,7 @@ export async function updateItemAction(formData: FormData): Promise<void> {
     rpe: textField(formData, "rpe"),
     notes: textField(formData, "notes"),
   });
-  revalidatePath(workoutPath(workoutId));
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /**
@@ -228,8 +228,8 @@ export async function reorderItemsAction(
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !blockId || !Array.isArray(itemIds)) return;
-  reorderItems(blockId, itemIds.map(String).filter(Boolean));
-  revalidatePath(workoutPath(workoutId));
+  await reorderItems(blockId, itemIds.map(String).filter(Boolean));
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /** Switch a block between per-exercise sets and rounds of the whole list. */
@@ -242,8 +242,8 @@ export async function setBlockKindAction(
   if (!workoutId || !blockId) return;
   // Leaving the circuit resets the round count: "3 rounds of sets of 3" is a
   // prescription nobody means, and it silently doubles the volume.
-  updateBlock(blockId, { kind, ...(kind === "normal" ? { rounds: 1 } : {}) });
-  revalidatePath(workoutPath(workoutId));
+  await updateBlock(blockId, { kind, ...(kind === "normal" ? { rounds: 1 } : {}) });
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /** Add an exercise from the picker. Returns nothing — the grid re-renders. */
@@ -254,8 +254,8 @@ export async function addExerciseAction(
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !blockId || !exerciseId) return;
-  addItem(blockId, { exerciseId });
-  revalidatePath(workoutPath(workoutId));
+  await addItem(blockId, { exerciseId });
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function removeItemAction(formData: FormData): Promise<void> {
@@ -263,8 +263,8 @@ export async function removeItemAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
-  removeItem(itemId);
-  revalidatePath(workoutPath(workoutId));
+  await removeItem(itemId);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function moveItemUpAction(formData: FormData): Promise<void> {
@@ -272,8 +272,8 @@ export async function moveItemUpAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
-  moveItem(itemId, -1);
-  revalidatePath(workoutPath(workoutId));
+  await moveItem(itemId, -1);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 export async function moveItemDownAction(formData: FormData): Promise<void> {
@@ -281,8 +281,8 @@ export async function moveItemDownAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
-  moveItem(itemId, 1);
-  revalidatePath(workoutPath(workoutId));
+  await moveItem(itemId, 1);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /* ----------------------------------------------- supersets and circuits */
@@ -298,8 +298,8 @@ export async function addLooseExerciseAction(
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !exerciseId) return;
-  addItem(looseBlockId(workoutId), { exerciseId });
-  revalidatePath(workoutPath(workoutId));
+  await addItem(await looseBlockId(workoutId), { exerciseId });
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /**
@@ -315,16 +315,16 @@ export async function groupItemsAction(
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !Array.isArray(itemIds)) return;
-  groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
-  revalidatePath(workoutPath(workoutId));
+  await groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /** Break a group up, returning its exercises to the ungrouped list. */
 export async function ungroupBlockAction(workoutId: string, blockId: string): Promise<void> {
   await requireCoach();
   if (!workoutId || !blockId) return;
-  ungroupBlock(blockId);
-  revalidatePath(workoutPath(workoutId));
+  await ungroupBlock(blockId);
+  revalidatePath(await workoutPath(workoutId));
 }
 
 /** How many times a circuit's list is repeated. */
@@ -335,6 +335,6 @@ export async function setRoundsAction(
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !blockId || !Number.isFinite(rounds)) return;
-  updateBlock(blockId, { rounds });
-  revalidatePath(workoutPath(workoutId));
+  await updateBlock(blockId, { rounds });
+  revalidatePath(await workoutPath(workoutId));
 }

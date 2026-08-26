@@ -24,8 +24,11 @@ export default async function ClientMessagesPage({
   const { viewer, client } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno/mensagens");
 
-  const [t, locale] = await Promise.all([getTranslations("Studio.messages"), getLocale()]);
-  const messages = messagesFor(clientId);
+  const [t, locale, messages] = await Promise.all([
+    getTranslations("Studio.messages"),
+    getLocale(),
+    messagesFor(clientId),
+  ]);
 
   return (
     <>

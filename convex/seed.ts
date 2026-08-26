@@ -1,0 +1,427 @@
+import { v } from "convex/values";
+import { internalAction, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { exerciseKeys, insertExercise, insertWorkout } from "./model/library";
+import { COACH_EMAIL, PILOT_CLIENTS } from "../src/lib/studio/pilot";
+import { TRAINERIZE_LIBRARY } from "../src/lib/studio/library-trainerize";
+import { searchKey } from "../src/lib/utils";
+import type { ExerciseSeed } from "../src/lib/studio/types";
+
+/**
+ * Provisioning. Run once per deployment, by hand, from the CLI:
+ *
+ * ```
+ * npx convex run seed:accounts
+ * npx convex run seed:importLibrary
+ * npx convex run seed:masterWorkouts
+ * ```
+ *
+ * Everything here is `internal`, which means the only caller that can reach it
+ * is the Convex CLI with the deployment's admin key. That is deliberate and it
+ * is also the reason this is no longer a function the app calls on a request:
+ * the studio used to re-seed itself on every page load because the database it
+ * ran on could vanish between two clicks. It cannot now. Creating Sara's
+ * account is a thing that happens once, in the open, by someone who meant it.
+ *
+ * All three steps are idempotent, so re-running one after adding exercises to
+ * `library-trainerize.ts` imports only what is new.
+ */
+
+/**
+ * The library Sara filmed herself. The master workouts below are built out of
+ * these names, so this list stays hand-written even after the Trainerize
+ * import: aerial, hand balancing and mobility progressions are exactly what a
+ * commercial database does not have.
+ */
+const STARTER_LIBRARY: ExerciseSeed[] = [
+  {
+    name: "Agachamento com barra",
+    cues: "Pés à largura dos ombros\nJoelhos alinhados com os pés\nTronco firme na descida",
+    tags: ["força", "membros inferiores"],
+    tracking: "reps",
+  },
+  {
+    name: "Peso morto romeno",
+    cues: "Anca atrás, coluna neutra\nBarra colada às pernas\nSente os isquiotibiais",
+    tags: ["força", "cadeia posterior"],
+    tracking: "reps",
+  },
+  {
+    name: "Elevação na barra",
+    cues: "Omoplatas ativas antes de puxar\nSem balanço\nQueixo acima da barra",
+    tags: ["força", "membros superiores"],
+    tracking: "reps",
+  },
+  {
+    name: "Prancha frontal",
+    cues: "Costelas para baixo\nGlúteos ativos\nRespiração contínua",
+    tags: ["core"],
+    tracking: "hold",
+  },
+  {
+    name: "Parada de mãos à parede",
+    cues: "Mãos à largura dos ombros\nEmpurra o chão\nColuna longa, sem arco lombar",
+    tags: ["equilibrismo", "força"],
+    tracking: "hold",
+  },
+  {
+    name: "Parada de cabeça controlada",
+    cues: "Triângulo estável antes de subir\nEntra e sai devagar\nSem saltar",
+    tags: ["equilibrismo"],
+    tracking: "hold",
+  },
+  {
+    name: "Mobilidade de ombro com bastão",
+    cues: "Amplitude sem dor\nMovimento lento\nSem compensar com a lombar",
+    tags: ["mobilidade", "ombro"],
+    tracking: "reps",
+  },
+  {
+    name: "Abertura de anca em posição de sapo",
+    cues: "Peso distribuído\nRespira na posição\nSem forçar o joelho",
+    tags: ["mobilidade", "anca"],
+    tracking: "hold",
+  },
+  {
+    name: "Ponte de ombros",
+    cues: "Abre o peito\nEmpurra o chão com as mãos\nPescoço relaxado",
+    tags: ["mobilidade", "coluna"],
+    tracking: "hold",
+  },
+  {
+    name: "Subida de tecido — trepar",
+    cues: "Fecha a chave com o pé antes de subir\nBraços a puxar em conjunto\nDesce sempre controlada",
+    tags: ["aéreo", "força"],
+    tracking: "reps",
+  },
+  {
+    name: "Inversão em argolas aéreas",
+    cues: "Core ativo antes de inverter\nOmbros longe das orelhas\nSaída controlada",
+    tags: ["aéreo"],
+    tracking: "reps",
+  },
+  {
+    name: "Suspensão em trapézio",
+    cues: "Pega firme, ombros ativos\nRespira\nDesce antes de perder a forma",
+    tags: ["aéreo", "força"],
+    tracking: "hold",
+  },
+];
+
+/**
+ * Sara's account and the two the pilot runs with.
+ *
+ * The clients arrive empty: active accounts, no plan, no history, no
+ * measurements. This used to fabricate a month of completed sessions so the
+ * preview had charts to draw, and that is exactly wrong for a pilot — Sara
+ * would be reading adherence numbers nobody earned. She writes the plans; the
+ * clients do the sessions; every number on screen is then true.
+ */
+export const accounts = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const created: string[] = [];
+
+    const existingCoach = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", COACH_EMAIL))
+      .unique();
+    if (!existingCoach) {
+      await ctx.db.insert("users", {
+        email: COACH_EMAIL,
+        name: "Sara Brigites",
+        role: "coach",
+        locale: "pt",
+        status: "active",
+      });
+      created.push(COACH_EMAIL);
+    }
+
+    for (const person of PILOT_CLIENTS) {
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", person.email))
+        .unique();
+      if (existing) continue;
+
+      const userId = await ctx.db.insert("users", {
+        email: person.email,
+        name: person.name,
+        role: "client",
+        locale: "pt",
+        // Active rather than invited: the pilot signs in by button, and an
+        // invitation nobody has to spend is a state that would never clear.
+        status: "active",
+      });
+      await ctx.db.insert("clientProfiles", {
+        userId,
+        plan: "online",
+        // Left blank on purpose. Goals and injuries are facts about a real
+        // person, and Sara is the one who takes them down.
+        goals: "",
+        injuries: "",
+        notes: "",
+        tags: [],
+        sessionsLeft: 0,
+        startedAt: Date.now(),
+      });
+      created.push(person.email);
+    }
+
+    return { created };
+  },
+});
+
+/** One chunk of the seeded library. Skips anything the library already holds. */
+export const exerciseBatch = internalMutation({
+  args: {
+    entries: v.array(
+      v.object({
+        name: v.string(),
+        cues: v.string(),
+        cuesEn: v.optional(v.string()),
+        tags: v.array(v.string()),
+        tracking: v.union(
+          v.literal("reps"),
+          v.literal("time"),
+          v.literal("hold"),
+          v.literal("distance"),
+        ),
+        videoUrl: v.optional(v.union(v.null(), v.string())),
+      }),
+    ),
+  },
+  handler: async (ctx, { entries }) => {
+    // Archived rows count as present: a movement Sara archived on purpose must
+    // not reappear, and nothing she edited is overwritten. This only ever adds
+    // what is missing.
+    const present = await exerciseKeys(ctx);
+
+    let inserted = 0;
+    for (const entry of entries) {
+      const key = searchKey(entry.name).trim();
+      if (!key || present.has(key)) continue;
+      present.add(key);
+      await insertExercise(ctx, {
+        name: entry.name,
+        cues: entry.cues,
+        cuesEn: entry.cuesEn ?? "",
+        tags: entry.tags,
+        tracking: entry.tracking,
+        videoUrl: entry.videoUrl ?? null,
+      });
+      inserted += 1;
+    }
+    return inserted;
+  },
+});
+
+/**
+ * Import the whole seeded library — Sara's own entries plus whatever came out
+ * of her Trainerize account.
+ *
+ * An action driving batched mutations rather than one big mutation: two
+ * thousand inserts is more than one transaction should carry, and a batch that
+ * fails leaves the ones before it in place, so re-running finishes the job.
+ */
+const BATCH = 200;
+
+export const importLibrary = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const entries = [...STARTER_LIBRARY, ...TRAINERIZE_LIBRARY];
+    let inserted = 0;
+
+    for (let start = 0; start < entries.length; start += BATCH) {
+      inserted += await ctx.runMutation(internal.seed.exerciseBatch, {
+        entries: entries.slice(start, start + BATCH),
+      });
+    }
+
+    return { total: entries.length, inserted };
+  },
+});
+
+/**
+ * Three master workouts in the library, built from the starter names.
+ *
+ * They are templates, not anybody's plan: `clientId` and `phaseId` stay null,
+ * so they show in the library and get copied into a client's phase when Sara
+ * puts one there.
+ */
+export const masterWorkouts = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const coach = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "coach"))
+      .first();
+    if (!coach) throw new Error("Run seed:accounts first — there is no coach to own these");
+
+    const coachId = coach._id;
+    const exercises = await ctx.db.query("exercises").collect();
+    if (exercises.length === 0) {
+      throw new Error("Run seed:importLibrary first — the library is empty");
+    }
+    const byName = new Map(exercises.map((exercise) => [exercise.name, exercise._id]));
+
+    // Existing library templates, read once: three inserts must not re-read the
+    // whole table three times, and nothing else writes to it while this runs.
+    const templates = await ctx.db
+      .query("workouts")
+      .withIndex("by_client", (q) => q.eq("clientId", null))
+      .collect();
+
+    /** Add one workout, unless a template of that name is already there. */
+    async function template(
+      name: string,
+      focus: string,
+      notes: string,
+      blocks: {
+        kind: "normal" | "circuit";
+        label: string;
+        rounds?: number;
+        restSeconds: number;
+        items: {
+          exercise: string;
+          sets: number;
+          reps?: string;
+          seconds?: number | null;
+          restSeconds?: number;
+          rpe?: string;
+        }[];
+      }[],
+    ) {
+      if (templates.some((workout) => workout.name === name)) return false;
+
+      const workoutId = await insertWorkout(ctx, {
+        name,
+        focus,
+        notes,
+        instructions: "",
+        workoutType: "regular",
+        coachId,
+        clientId: null,
+        phaseId: null,
+        sourceWorkoutId: null,
+        position: 0,
+      });
+
+      let blockPosition = 0;
+      for (const block of blocks) {
+        const blockId = await ctx.db.insert("workoutBlocks", {
+          workoutId,
+          position: blockPosition,
+          kind: block.kind,
+          label: block.label,
+          rounds: block.rounds ?? 1,
+          restSeconds: block.restSeconds,
+        });
+        blockPosition += 1;
+
+        let itemPosition = 0;
+        for (const item of block.items) {
+          const exerciseId = byName.get(item.exercise);
+          if (!exerciseId) continue;
+          await ctx.db.insert("workoutItems", {
+            blockId,
+            position: itemPosition,
+            exerciseId,
+            sets: item.sets,
+            reps: item.reps ?? "",
+            seconds: item.seconds ?? null,
+            tempo: "",
+            restSeconds: item.restSeconds ?? 60,
+            rpe: item.rpe ?? "",
+            notes: "",
+          });
+          itemPosition += 1;
+        }
+      }
+      return true;
+    }
+
+    const added: string[] = [];
+
+    if (
+      await template(
+        "Força — corpo inteiro A",
+        "Força",
+        "Aquece 8 minutos antes. Progride carga só com técnica limpa.",
+        [
+          {
+            kind: "normal",
+            label: "Principal",
+            restSeconds: 120,
+            items: [
+              { exercise: "Agachamento com barra", sets: 4, reps: "6-8", restSeconds: 120, rpe: "7-8" },
+              { exercise: "Peso morto romeno", sets: 3, reps: "8-10", restSeconds: 120, rpe: "7-8" },
+              { exercise: "Elevação na barra", sets: 4, reps: "AMRAP", restSeconds: 120, rpe: "7-8" },
+            ],
+          },
+          {
+            kind: "circuit",
+            label: "Core",
+            rounds: 3,
+            restSeconds: 45,
+            items: [
+              { exercise: "Prancha frontal", sets: 1, seconds: 40, restSeconds: 30 },
+              { exercise: "Ponte de ombros", sets: 1, seconds: 40, restSeconds: 30 },
+            ],
+          },
+        ],
+      )
+    ) {
+      added.push("Força — corpo inteiro A");
+    }
+
+    if (
+      await template(
+        "Mobilidade e equilibrismo",
+        "Mobilidade",
+        "Sem pressa. Filma a parada de mãos para eu ver a linha.",
+        [
+          {
+            kind: "normal",
+            label: "Mobilidade",
+            restSeconds: 45,
+            items: [
+              { exercise: "Mobilidade de ombro com bastão", sets: 3, reps: "10", seconds: 45 },
+              { exercise: "Abertura de anca em posição de sapo", sets: 3, reps: "10", seconds: 45 },
+            ],
+          },
+          {
+            kind: "normal",
+            label: "Equilibrismo",
+            restSeconds: 90,
+            items: [
+              { exercise: "Parada de mãos à parede", sets: 5, seconds: 20, restSeconds: 90 },
+              { exercise: "Parada de cabeça controlada", sets: 5, seconds: 20, restSeconds: 90 },
+            ],
+          },
+        ],
+      )
+    ) {
+      added.push("Mobilidade e equilibrismo");
+    }
+
+    if (
+      await template("Aéreo — base", "Aéreo", "Nunca treines aéreo sozinha. Colchão sempre.", [
+        {
+          kind: "normal",
+          label: "Tecido",
+          restSeconds: 120,
+          items: [
+            { exercise: "Subida de tecido — trepar", sets: 3, reps: "3", seconds: 20, restSeconds: 120 },
+            { exercise: "Inversão em argolas aéreas", sets: 3, reps: "3", seconds: 20, restSeconds: 120 },
+            { exercise: "Suspensão em trapézio", sets: 3, reps: "3", seconds: 20, restSeconds: 120 },
+          ],
+        },
+      ])
+    ) {
+      added.push("Aéreo — base");
+    }
+
+    return { added };
+  },
+});

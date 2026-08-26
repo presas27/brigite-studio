@@ -33,7 +33,7 @@ export async function createExerciseAction(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { status: "error", reason: "required" };
 
-  createExercise({
+  await createExercise({
     name,
     cues: String(formData.get("cues") ?? ""),
     tags: parseTags(formData.get("tags")),
@@ -54,7 +54,7 @@ export async function updateExerciseAction(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { status: "error", reason: "required" };
 
-  updateExercise(exerciseId, {
+  await updateExercise(exerciseId, {
     name,
     cues: String(formData.get("cues") ?? ""),
     tags: parseTags(formData.get("tags")),
@@ -74,7 +74,7 @@ export async function updateExerciseAction(
  */
 export async function archiveExerciseAction(exerciseId: string): Promise<void> {
   await requireCoach();
-  archiveExercise(exerciseId);
+  await archiveExercise(exerciseId);
   revalidatePath(LIBRARY_PATH);
   redirect(LIBRARY_PATH);
 }
@@ -95,7 +95,7 @@ export async function saveCuesAction(
 
   // Cues are one per line; a stray blank line from trimming or pasting is
   // noise, not content, so it's dropped rather than preserved as an empty cue.
-  updateExercise(exerciseId, {
+  await updateExercise(exerciseId, {
     cues: String(formData.get("cues") ?? "")
       .split("\n")
       .map((line) => line.trim())
@@ -124,7 +124,7 @@ export async function saveTagsAction(
   // means the same tag was added twice client-side, not two distinct tags.
   const tags = [...new Set(parseTags(formData.get("tags")))];
 
-  updateExercise(exerciseId, { tags });
+  await updateExercise(exerciseId, { tags });
 
   revalidatePath(LIBRARY_PATH);
   revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
@@ -140,7 +140,7 @@ export async function saveVideoUrlAction(
   const videoUrl = String(formData.get("videoUrl") ?? "").trim();
 
   if (!videoUrl) {
-    updateExercise(exerciseId, { videoUrl: null });
+    await updateExercise(exerciseId, { videoUrl: null });
     revalidatePath(LIBRARY_PATH);
     revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
     return { status: "ok" };
@@ -158,7 +158,7 @@ export async function saveVideoUrlAction(
     return { status: "error", reason: "url" };
   }
 
-  updateExercise(exerciseId, { videoUrl });
+  await updateExercise(exerciseId, { videoUrl });
   revalidatePath(LIBRARY_PATH);
   revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
   return { status: "ok" };

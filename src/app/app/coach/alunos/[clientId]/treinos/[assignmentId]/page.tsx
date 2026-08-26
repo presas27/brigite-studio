@@ -24,7 +24,7 @@ export default async function ClientSessionReportPage({
   const { viewer, client } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
-  const report = sessionReport(assignmentId);
+  const report = await sessionReport(assignmentId);
   // Guard the id in the URL, not just its existence: an assignment belonging to
   // another client must not be readable by walking this route.
   if (!report || report.assignment.clientId !== client.id) notFound();

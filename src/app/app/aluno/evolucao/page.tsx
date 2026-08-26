@@ -10,7 +10,7 @@ export default async function AlunoEvolucaoPage() {
   const client = await requireClient();
   const t = await getTranslations("Studio.evolucao");
 
-  const weightEntries = measurements(client.id, "weight", 24);
+  const weightEntries = await measurements(client.id, "weight", 24);
   const weightSeries =
     weightEntries.length > 0
       ? seriesFromMeasurements(weightEntries, { id: "weight", unit: "kg", direction: "lower-is-better" })

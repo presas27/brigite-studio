@@ -22,8 +22,10 @@ export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
   const common = await getTranslations("Studio.common");
   const locale = await getLocale();
 
-  const weightEntries = measurements(clientId, "weight", HISTORY_LIMIT);
-  const heightEntries = measurements(clientId, "height", HISTORY_LIMIT);
+  const [weightEntries, heightEntries] = await Promise.all([
+    measurements(clientId, "weight", HISTORY_LIMIT),
+    measurements(clientId, "height", HISTORY_LIMIT),
+  ]);
   const entries = mergeBodyMetrics(weightEntries, heightEntries);
 
   const latest = entries[0];

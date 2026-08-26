@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireClientAccess, requireCoach } from "@/lib/studio/auth";
+import { requireClientAccess } from "@/lib/studio/auth";
 import { createPhase, removePhase, updatePhase } from "@/lib/studio/phases";
 import { assignWorkout, moveAssignment, removeAssignment, repeatWeek, setAssignmentStatus } from "@/lib/studio/plan";
 import type { PhaseDurationType } from "@/lib/studio/types";
@@ -27,7 +27,6 @@ async function assertCoach(clientId: string): Promise<void> {
  * one is kept is decided by `durationType` in `createPhase`.
  */
 export async function createPhaseAction(clientId: string, formData: FormData): Promise<void> {
-  const coach = await requireCoach();
   await assertCoach(clientId);
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
@@ -36,8 +35,7 @@ export async function createPhaseAction(clientId: string, formData: FormData): P
     String(formData.get("durationType") ?? "") === "weeks" ? "weeks" : "calendar";
   const weeksRaw = Number.parseInt(String(formData.get("weeks") ?? ""), 10);
 
-  const phaseId = createPhase({
-    coachId: coach.id,
+  const phaseId = await createPhase({
     clientId,
     name,
     durationType,
@@ -59,7 +57,7 @@ export async function updatePhaseAction(clientId: string, formData: FormData): P
     String(formData.get("durationType") ?? "") === "weeks" ? "weeks" : "calendar";
   const weeksRaw = Number.parseInt(String(formData.get("weeks") ?? ""), 10);
 
-  updatePhase(phaseId, {
+  await updatePhase(phaseId, {
     name: String(formData.get("name") ?? "").trim() || undefined,
     durationType,
     startDate: String(formData.get("startDate") ?? "").trim() || null,
@@ -76,7 +74,7 @@ export async function deletePhaseAction(clientId: string, formData: FormData): P
   await assertCoach(clientId);
   const phaseId = String(formData.get("phaseId") ?? "").trim();
   if (!phaseId) return;
-  removePhase(phaseId);
+  await removePhase(phaseId);
   revalidatePath(planPath(clientId));
   redirect(planPath(clientId));
 }
@@ -93,7 +91,7 @@ export async function assign(clientId: string, formData: FormData): Promise<void
   const date = String(formData.get("date") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim();
   if (!workoutId) return;
-  assignWorkout({ clientId, workoutId, date: date || null, note: note || undefined });
+  await assignWorkout({ clientId, workoutId, date: date || null, note: note || undefined });
   revalidatePath(planPath(clientId));
 }
 
@@ -102,7 +100,7 @@ export async function remove(clientId: string, formData: FormData): Promise<void
   await assertCoach(clientId);
   const assignmentId = String(formData.get("assignmentId") ?? "");
   if (!assignmentId) return;
-  removeAssignment(assignmentId);
+  await removeAssignment(assignmentId);
   revalidatePath(planPath(clientId));
 }
 
@@ -112,7 +110,7 @@ export async function move(clientId: string, formData: FormData): Promise<void> 
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const date = String(formData.get("date") ?? "");
   if (!assignmentId || !date) return;
-  moveAssignment(assignmentId, date);
+  await moveAssignment(assignmentId, date);
   revalidatePath(planPath(clientId));
 }
 
@@ -121,7 +119,7 @@ export async function markSkipped(clientId: string, formData: FormData): Promise
   await assertCoach(clientId);
   const assignmentId = String(formData.get("assignmentId") ?? "");
   if (!assignmentId) return;
-  setAssignmentStatus(assignmentId, "skipped");
+  await setAssignmentStatus(assignmentId, "skipped");
   revalidatePath(planPath(clientId));
 }
 
@@ -133,7 +131,7 @@ export async function repeat(clientId: string, formData: FormData): Promise<void
   await assertCoach(clientId);
   const monday = String(formData.get("monday") ?? "");
   if (!monday) return;
-  const count = repeatWeek(clientId, monday, 1);
+  const count = await repeatWeek(clientId, monday, 1);
   revalidatePath(planPath(clientId));
   redirect(`${planPath(clientId)}?semana=${monday}&repetido=${count}`);
 }

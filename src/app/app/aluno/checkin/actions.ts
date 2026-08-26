@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireClient } from "@/lib/studio/auth";
 import { submitCheckin } from "@/lib/studio/coaching";
-import { weekKey } from "@/lib/studio/db";
+import { weekKey } from "@/lib/studio/dates";
 import { clampScale } from "@/lib/studio/scale";
 
 /** Free-text fields — generous but bounded, this is a weekly note, not a journal. */
@@ -27,7 +27,7 @@ function parseWeight(formData: FormData): number | undefined {
 export async function submit(formData: FormData): Promise<void> {
   const client = await requireClient();
 
-  submitCheckin({
+  await submitCheckin({
     clientId: client.id,
     weekOf: weekKey(),
     energy: parseScale(formData, "energy"),

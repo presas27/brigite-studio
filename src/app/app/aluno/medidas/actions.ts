@@ -18,8 +18,8 @@ export async function submit(formData: FormData): Promise<void> {
   const heightCm = parsePositiveNumber(formData, "heightCm");
   if (weightKg == null || heightCm == null) return;
 
-  recordMeasurement({ clientId: client.id, kind: "weight", value: weightKg });
-  recordMeasurement({ clientId: client.id, kind: "height", value: heightCm });
+  await recordMeasurement({ clientId: client.id, kind: "weight", value: weightKg });
+  await recordMeasurement({ clientId: client.id, kind: "height", value: heightCm });
 
   revalidatePath("/app/aluno/medidas");
   revalidatePath("/app/aluno/progresso");

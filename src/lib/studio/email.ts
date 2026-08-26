@@ -3,11 +3,18 @@ import type { Locale } from "@/i18n/config";
 import { site } from "@/lib/site";
 
 /**
- * Transactional email for the studio app. Only two messages exist: the sign-in
- * link and the invite (same link, different framing), both plain inline-styled
- * HTML to match `src/lib/emails.ts`.
+ * Transactional email for the studio app. One message: the invite Sara sends
+ * when she adds someone, in plain inline-styled HTML to match
+ * `src/lib/emails.ts`.
  *
- * Without `RESEND_API_KEY` the link is logged to the server console instead of
+ * The sign-in link is not here any more, and cannot be: Convex Auth mints it
+ * and mails it from the deployment (`convex/auth.ts`), which is the only place
+ * that can hold a single-use token honestly. So an invite no longer carries a
+ * link to a session — it tells a new client that an account exists and where to
+ * ask for their own link. Nobody, not even the coach, can mint a way into
+ * somebody else's account.
+ *
+ * Without `RESEND_API_KEY` the invite is logged to the server console instead of
  * being sent. That is deliberate: the app stays fully usable in development and
  * the failure mode is visible rather than silent.
  */
@@ -16,22 +23,16 @@ const FROM = "Brigite's Studio <site@brigitestudio.com>";
 
 const copy = {
   pt: {
-    signInSubject: "O teu acesso ao Brigite's Studio",
-    inviteSubject: "A Sara convidou-te para o Brigite's Studio",
-    signInLead: "Toca no botão para entrares. O link é válido durante 20 minutos.",
-    inviteLead:
-      "A Sara criou-te acesso à área de treino. Toca no botão para entrares — o link é válido durante 20 minutos.",
+    subject: "A Sara convidou-te para o Brigite's Studio",
+    lead: "A Sara criou-te acesso à área de treino. Entra com este email — recebes um link de acesso válido durante 20 minutos.",
     cta: "Entrar",
-    ignore: "Se não foste tu a pedir isto, ignora este email.",
+    ignore: "Se não esperavas isto, ignora este email.",
   },
   en: {
-    signInSubject: "Your Brigite's Studio sign-in link",
-    inviteSubject: "Sara invited you to Brigite's Studio",
-    signInLead: "Tap the button to sign in. The link is valid for 20 minutes.",
-    inviteLead:
-      "Sara set up your training area. Tap the button to sign in — the link is valid for 20 minutes.",
+    subject: "Sara invited you to Brigite's Studio",
+    lead: "Sara set up your training area. Sign in with this address — you will get an access link valid for 20 minutes.",
     cta: "Sign in",
-    ignore: "If you did not request this, ignore this email.",
+    ignore: "If you were not expecting this, ignore this email.",
   },
 } as const;
 
@@ -48,31 +49,27 @@ function layout(name: string, lead: string, url: string, cta: string, ignore: st
 }
 
 /**
- * Send a sign-in link. `invite` only changes the wording. Returns the URL so
- * the caller can surface it in development.
+ * Tell someone their account exists. Returns the URL so the caller can surface
+ * it in development.
  *
- * `origin` should be the origin of the request that asked for the link. Using
- * it rather than the canonical site URL means the link works from a dev server
- * on any port and from a Vercel preview deployment, instead of always bouncing
- * the visitor to production.
+ * `origin` should be the origin of the request that asked for it. Using it
+ * rather than the canonical site URL means the invite works from a dev server on
+ * any port and from a preview deployment, instead of always pointing the new
+ * client at production.
  */
-export async function sendSignInLink(input: {
+export async function sendInvite(input: {
   to: string;
   name: string;
-  token: string;
   locale: Locale;
-  invite?: boolean;
   origin?: string;
 }): Promise<{ sent: boolean; url: string }> {
   const base = input.origin ?? process.env.NEXT_PUBLIC_SITE_URL ?? site.url;
-  const url = `${base}/app/entrar/verificar?token=${encodeURIComponent(input.token)}`;
+  const url = `${base}/app/entrar`;
   const words = copy[input.locale] ?? copy.pt;
-  const subject = input.invite ? words.inviteSubject : words.signInSubject;
-  const lead = input.invite ? words.inviteLead : words.signInLead;
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.info(`[studio] sign-in link for ${input.to}: ${url}`);
+    console.info(`[studio] invite for ${input.to}: ${url}`);
     return { sent: false, url };
   }
 
@@ -80,13 +77,13 @@ export async function sendSignInLink(input: {
     await new Resend(apiKey).emails.send({
       from: FROM,
       to: input.to,
-      subject,
-      html: layout(input.name, lead, url, words.cta, words.ignore),
-      text: `${lead}\n\n${url}\n\n${words.ignore}`,
+      subject: words.subject,
+      html: layout(input.name, words.lead, url, words.cta, words.ignore),
+      text: `${words.lead}\n\n${url}\n\n${words.ignore}`,
     });
     return { sent: true, url };
   } catch (err) {
-    console.error("[studio] sign-in email failed", err);
+    console.error("[studio] invite email failed", err);
     return { sent: false, url };
   }
 }

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { signOut } from "@/app/app/actions";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Icon } from "@/components/studio/coach/icons";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,8 @@ export function AccountMenu({
   className?: string;
 }) {
   const t = useTranslations("Studio.account");
+  const { signOut } = useAuthActions();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
 
@@ -102,16 +105,21 @@ export function AccountMenu({
                 {t("details")}
               </Link>
 
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  role="menuitem"
-                  className={cn(itemClass, "text-silk hover:bg-silk/10 hover:text-silk")}
-                >
-                  <Icon name="logout" className="h-4 w-4 shrink-0" />
-                  {t("signOut")}
-                </button>
-              </form>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  // Dropping the session is a browser-side act — it is the
+                  // browser's auth cookies that change — so this is Convex
+                  // Auth's `signOut`, not a Server Action. The push is what
+                  // makes the now-signed-out tree re-render.
+                  void signOut().then(() => router.push("/app/entrar"));
+                }}
+                className={cn(itemClass, "text-silk hover:bg-silk/10 hover:text-silk")}
+              >
+                <Icon name="logout" className="h-4 w-4 shrink-0" />
+                {t("signOut")}
+              </button>
             </div>
           </motion.div>
         )}

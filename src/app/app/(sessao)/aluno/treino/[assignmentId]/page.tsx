@@ -29,7 +29,7 @@ export default async function TreinoPage({
   params: Promise<{ assignmentId: string }>;
 }) {
   const { assignmentId } = await params;
-  const assignment = findAssignment(assignmentId);
+  const assignment = await findAssignment(assignmentId);
   if (!assignment) notFound();
 
   const { client } = await requireClientAccess(assignment.clientId);
@@ -37,15 +37,22 @@ export default async function TreinoPage({
   const exerciseIds = Array.from(
     new Set(assignment.snapshot.blocks.flatMap((block) => block.items.map((item) => item.exerciseId))),
   );
+
+  const [initialLogs, previousLogsList] = await Promise.all([
+    logsFor(assignment.id),
+    Promise.all(
+      exerciseIds.map((exerciseId) => lastLogsForExercise(client.id, exerciseId, assignment.id)),
+    ),
+  ]);
   const previousByExercise: Record<string, SetLog[]> = {};
-  for (const exerciseId of exerciseIds) {
-    previousByExercise[exerciseId] = lastLogsForExercise(client.id, exerciseId, assignment.id);
-  }
+  exerciseIds.forEach((exerciseId, index) => {
+    previousByExercise[exerciseId] = previousLogsList[index];
+  });
 
   return (
     <SessionPlayer
       assignment={assignment}
-      initialLogs={logsFor(assignment.id)}
+      initialLogs={initialLogs}
       previousByExercise={previousByExercise}
       logSetAction={logSet}
       unlogSetAction={unlogSet}

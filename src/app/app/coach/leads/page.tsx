@@ -7,7 +7,7 @@ import { LeadRow } from "@/components/studio/leads/LeadRow";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { chip, chipAccent } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
-import { leadCounts, listLeads, seedLeads } from "@/lib/studio/leads";
+import { leadCounts, listLeads } from "@/lib/studio/leads";
 import type { LeadStatus } from "@/lib/studio/types";
 
 export const metadata: Metadata = {
@@ -32,17 +32,16 @@ export default async function LeadsPage({
   searchParams: Promise<{ estado?: string }>;
 }) {
   await requireCoach();
-  // Stand-in enquiries until the site's contact form posts real ones. See
-  // `lib/studio/leads.ts`.
-  seedLeads();
 
   const { estado } = await searchParams;
   const status = isStatus(estado) ? estado : undefined;
 
-  const [t, locale] = await Promise.all([getTranslations("Studio.leads"), getLocale()]);
-
-  const leads = listLeads(status);
-  const counts = leadCounts();
+  const [t, locale, leads, counts] = await Promise.all([
+    getTranslations("Studio.leads"),
+    getLocale(),
+    listLeads(status),
+    leadCounts(),
+  ]);
 
   return (
     <div className="space-y-6">

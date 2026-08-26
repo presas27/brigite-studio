@@ -1,125 +1,72 @@
-import { all, dayKey, get, run, shiftDay, tx, type Row } from "./db";
-import { newId } from "./id";
-import { findWorkout } from "./library";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { sm, sq } from "@/lib/studio/convexServer";
+import { dayKey } from "./dates";
 import type {
   Assignment,
   AssignmentStatus,
   ScheduledAssignment,
   SetLog,
-  WorkoutSnapshot,
 } from "./types";
 
 /**
  * The training plan: workouts placed on a client's calendar, and what the
  * client actually logged against them.
  *
- * Two invariants matter here and are easy to get wrong:
+ * The two invariants that matter have moved into `convex/plan.ts`, where they
+ * are enforced next to the data:
  *  1. An assignment stores a frozen `snapshot` of the workout. Editing the
  *     template later never rewrites a session the client already saw.
- *  2. Logs are keyed by `item_id` from that snapshot, so re-ordering the
+ *  2. Logs are keyed by `itemId` from that snapshot, so re-ordering the
  *     template cannot scramble past numbers.
+ *
+ * What is left here is the shape the app was written against: the same
+ * functions, the same arguments, the same return values — only awaited. Each
+ * one is one Convex call with the caller's session token attached (`sq`/`sm`),
+ * and the function on the other side authorizes itself. Nothing on this side
+ * decides who may read what.
  */
-
-const EMPTY_SNAPSHOT: WorkoutSnapshot = { name: "", focus: "", notes: "", blocks: [] };
-
-function parseSnapshot(raw: unknown): WorkoutSnapshot {
-  try {
-    const parsed: unknown = JSON.parse(String(raw ?? ""));
-    if (parsed && typeof parsed === "object" && "blocks" in parsed) {
-      return parsed as WorkoutSnapshot;
-    }
-  } catch {
-    /* fall through */
-  }
-  return EMPTY_SNAPSHOT;
-}
-
-function mapAssignment(row: Row): Assignment {
-  return {
-    id: String(row.id),
-    clientId: String(row.client_id),
-    workoutId: row.workout_id == null ? null : String(row.workout_id),
-    date: row.date == null ? null : String(row.date),
-    status: String(row.status) as AssignmentStatus,
-    note: String(row.note ?? ""),
-    startedAt: row.started_at == null ? null : Number(row.started_at),
-    doneAt: row.done_at == null ? null : Number(row.done_at),
-    effort: row.effort == null ? null : Number(row.effort),
-    extraRestSeconds: Number(row.extra_rest_seconds ?? 0),
-    createdAt: Number(row.created_at),
-    snapshot: parseSnapshot(row.snapshot),
-  };
-}
-
-const ASSIGNMENT_COLUMNS =
-  "id, client_id, workout_id, date, status, note, snapshot, started_at, done_at, effort, extra_rest_seconds, created_at";
 
 /**
  * Place a workout on a client's calendar, freezing the template as it is now.
  * `date: null` leaves it unscheduled — it lands in the "sem dia" bucket until
- * the coach assigns it a day.
+ * the coach assigns it a day. `undefined` means the workout was gone and
+ * nothing was written.
  */
-export function assignWorkout(input: {
+export async function assignWorkout(input: {
   clientId: string;
   workoutId: string;
   date: string | null;
   note?: string;
-}): string | undefined {
-  const workout = findWorkout(input.workoutId);
-  if (!workout) return undefined;
-  const snapshot: WorkoutSnapshot = {
-    name: workout.name,
-    focus: workout.focus,
-    notes: workout.notes,
-    instructions: workout.instructions,
-    blocks: workout.blocks,
-  };
-  const assignmentId = newId();
-  run(
-    `INSERT INTO assignments
-       (id, client_id, workout_id, date, status, snapshot, note, created_at)
-     VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?)`,
-    assignmentId,
-    input.clientId,
-    input.workoutId,
-    input.date,
-    JSON.stringify(snapshot),
-    input.note ?? "",
-    Date.now(),
-  );
-  return assignmentId;
+}): Promise<string | undefined> {
+  const assignmentId = await sm(api.plan.assignWorkout, {
+    clientId: input.clientId as Id<"users">,
+    workoutId: input.workoutId as Id<"workouts">,
+    date: input.date,
+    note: input.note ?? "",
+  });
+  return assignmentId ?? undefined;
 }
 
-export function findAssignment(assignmentId: string): Assignment | undefined {
-  const row = get<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments WHERE id = ?`,
-    assignmentId,
-  );
-  return row && mapAssignment(row);
+export async function findAssignment(assignmentId: string): Promise<Assignment | undefined> {
+  const assignment = await sq(api.plan.findAssignment, {
+    assignmentId: assignmentId as Id<"assignments">,
+  });
+  return assignment ?? undefined;
 }
 
 /** Assignments for a client between two `YYYY-MM-DD` keys, inclusive. */
-export function assignmentsBetween(clientId: string, from: string, to: string): ScheduledAssignment[] {
-  const rows = all<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
-      WHERE client_id = ? AND date BETWEEN ? AND ?
-      ORDER BY date, created_at`,
-    clientId,
-    from,
-    to,
-  );
-  return rows.map(mapAssignment) as ScheduledAssignment[];
+export async function assignmentsBetween(
+  clientId: string,
+  from: string,
+  to: string,
+): Promise<ScheduledAssignment[]> {
+  return sq(api.plan.assignmentsBetween, { clientId: clientId as Id<"users">, from, to });
 }
 
 /** A client's workouts assigned with no day yet, oldest first. */
-export function unscheduledAssignments(clientId: string): Assignment[] {
-  const rows = all<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
-      WHERE client_id = ? AND date IS NULL
-      ORDER BY created_at`,
-    clientId,
-  );
-  return rows.map(mapAssignment);
+export async function unscheduledAssignments(clientId: string): Promise<Assignment[]> {
+  return sq(api.plan.unscheduledAssignments, { clientId: clientId as Id<"users"> });
 }
 
 /**
@@ -127,73 +74,47 @@ export function unscheduledAssignments(clientId: string): Assignment[] {
  * already attached. The studio-wide calendar reads a whole month at once —
  * one query per client per page would be thirty round trips to draw a grid.
  */
-export function studioAssignmentsBetween(
+export async function studioAssignmentsBetween(
   from: string,
   to: string,
-): (ScheduledAssignment & { clientName: string })[] {
-  const rows = all<Row>(
-    `SELECT a.id, a.client_id, a.workout_id, a.date, a.status, a.note, a.snapshot,
-            a.started_at, a.done_at, a.created_at, u.name AS client_name
-       FROM assignments a
-       JOIN users u ON u.id = a.client_id
-      WHERE a.date BETWEEN ? AND ? AND u.status != 'archived'
-      ORDER BY a.date, u.name COLLATE NOCASE, a.created_at`,
-    from,
-    to,
-  );
-  return rows.map((row) => ({ ...mapAssignment(row), clientName: String(row.client_name) })) as (ScheduledAssignment & {
-    clientName: string;
-  })[];
+): Promise<(ScheduledAssignment & { clientName: string })[]> {
+  return sq(api.plan.studioAssignmentsBetween, { from, to });
 }
 
-export function assignmentsOn(clientId: string, date: string): ScheduledAssignment[] {
-  const rows = all<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
-      WHERE client_id = ? AND date = ? ORDER BY created_at`,
-    clientId,
-    date,
-  );
-  return rows.map(mapAssignment) as ScheduledAssignment[];
+export async function assignmentsOn(
+  clientId: string,
+  date: string,
+): Promise<ScheduledAssignment[]> {
+  return sq(api.plan.assignmentsOn, { clientId: clientId as Id<"users">, date });
 }
 
 /** The client's next unfinished session — today's if there is one, else the soonest ahead. */
-export function nextAssignment(clientId: string, from: string = dayKey()): ScheduledAssignment | undefined {
-  const row = get<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
-      WHERE client_id = ? AND date >= ? AND status = 'scheduled'
-      ORDER BY date, created_at LIMIT 1`,
-    clientId,
+export async function nextAssignment(
+  clientId: string,
+  from: string = dayKey(),
+): Promise<ScheduledAssignment | undefined> {
+  const assignment = await sq(api.plan.nextAssignment, {
+    clientId: clientId as Id<"users">,
     from,
-  );
-  return row && (mapAssignment(row) as ScheduledAssignment);
+  });
+  return assignment ?? undefined;
 }
 
 /** Completed sessions, newest first. */
-export function assignmentHistory(clientId: string, limit = 30): Assignment[] {
-  const rows = all<Row>(
-    `SELECT ${ASSIGNMENT_COLUMNS} FROM assignments
-      WHERE client_id = ? AND status != 'scheduled'
-      ORDER BY date DESC, created_at DESC LIMIT ?`,
-    clientId,
-    limit,
-  );
-  return rows.map(mapAssignment);
+export async function assignmentHistory(clientId: string, limit = 30): Promise<Assignment[]> {
+  return sq(api.plan.assignmentHistory, { clientId: clientId as Id<"users">, limit });
 }
 
-export function moveAssignment(assignmentId: string, date: string): void {
-  run("UPDATE assignments SET date = ? WHERE id = ?", date, assignmentId);
+export async function moveAssignment(assignmentId: string, date: string): Promise<void> {
+  await sm(api.plan.moveAssignment, { assignmentId: assignmentId as Id<"assignments">, date });
 }
 
-export function removeAssignment(assignmentId: string): void {
-  run("DELETE FROM assignments WHERE id = ?", assignmentId);
+export async function removeAssignment(assignmentId: string): Promise<void> {
+  await sm(api.plan.removeAssignment, { assignmentId: assignmentId as Id<"assignments"> });
 }
 
-export function startAssignment(assignmentId: string): void {
-  run(
-    "UPDATE assignments SET started_at = ? WHERE id = ? AND started_at IS NULL",
-    Date.now(),
-    assignmentId,
-  );
+export async function startAssignment(assignmentId: string): Promise<void> {
+  await sm(api.plan.startAssignment, { assignmentId: assignmentId as Id<"assignments"> });
 }
 
 /**
@@ -202,17 +123,16 @@ export function startAssignment(assignmentId: string): void {
  * month of history in one boot, and stamping all of it with `Date.now()` would
  * put four weeks of training in the same second of the activity feed.
  */
-export function setAssignmentStatus(
+export async function setAssignmentStatus(
   assignmentId: string,
   status: AssignmentStatus,
   at: number = Date.now(),
-): void {
-  run(
-    "UPDATE assignments SET status = ?, done_at = ? WHERE id = ?",
+): Promise<void> {
+  await sm(api.plan.setAssignmentStatus, {
+    assignmentId: assignmentId as Id<"assignments">,
     status,
-    status === "done" ? at : null,
-    assignmentId,
-  );
+    at,
+  });
 }
 
 /**
@@ -221,19 +141,16 @@ export function setAssignmentStatus(
  * `setAssignmentStatus` because only this path has those two answers — marking
  * a session skipped from the week grid never does.
  */
-export function completeAssignment(
+export async function completeAssignment(
   assignmentId: string,
   input: { effort: number | null; extraRestSeconds: number; at?: number },
-): void {
-  run(
-    `UPDATE assignments
-        SET status = 'done', done_at = ?, effort = ?, extra_rest_seconds = ?
-      WHERE id = ?`,
-    input.at ?? Date.now(),
-    input.effort == null ? null : Math.min(10, Math.max(1, Math.round(input.effort))),
-    Math.max(0, Math.round(input.extraRestSeconds)),
-    assignmentId,
-  );
+): Promise<void> {
+  await sm(api.plan.completeAssignment, {
+    assignmentId: assignmentId as Id<"assignments">,
+    effort: input.effort,
+    extraRestSeconds: input.extraRestSeconds,
+    at: input.at ?? Date.now(),
+  });
 }
 
 /**
@@ -242,71 +159,21 @@ export function completeAssignment(
  * by mistake or abandoned — not the same as skipping it, which is a fact about
  * the week that Sara needs to see.
  */
-export function discardAssignment(assignmentId: string): void {
-  tx(() => {
-    run("DELETE FROM set_logs WHERE assignment_id = ?", assignmentId);
-    run(
-      `UPDATE assignments
-          SET status = 'scheduled', started_at = NULL, done_at = NULL,
-              effort = NULL, extra_rest_seconds = 0
-        WHERE id = ?`,
-      assignmentId,
-    );
-  });
+export async function discardAssignment(assignmentId: string): Promise<void> {
+  await sm(api.plan.discardAssignment, { assignmentId: assignmentId as Id<"assignments"> });
 }
 
 /** Copy a whole week of assignments forward by `weeks`. Returns how many landed. */
-export function repeatWeek(clientId: string, mondayKey: string, weeks = 1): number {
-  const source = assignmentsBetween(clientId, mondayKey, shiftDay(mondayKey, 6));
-  if (source.length === 0) return 0;
-  return tx(() => {
-    let created = 0;
-    for (let week = 1; week <= weeks; week += 1) {
-      for (const assignment of source) {
-        run(
-          `INSERT INTO assignments
-             (id, client_id, workout_id, date, status, snapshot, note, created_at)
-           VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?)`,
-          newId(),
-          clientId,
-          assignment.workoutId,
-          shiftDay(assignment.date, week * 7),
-          JSON.stringify(assignment.snapshot),
-          assignment.note,
-          Date.now(),
-        );
-        created += 1;
-      }
-    }
-    return created;
-  });
+export async function repeatWeek(
+  clientId: string,
+  mondayKey: string,
+  weeks = 1,
+): Promise<number> {
+  return sm(api.plan.repeatWeek, { clientId: clientId as Id<"users">, mondayKey, weeks });
 }
 
-function mapLog(row: Row): SetLog {
-  return {
-    id: String(row.id),
-    assignmentId: String(row.assignment_id),
-    itemId: String(row.item_id),
-    exerciseId: String(row.exercise_id),
-    setIndex: Number(row.set_index),
-    reps: row.reps == null ? null : Number(row.reps),
-    loadKg: row.load_kg == null ? null : Number(row.load_kg),
-    seconds: row.seconds == null ? null : Number(row.seconds),
-    rpe: row.rpe == null ? null : Number(row.rpe),
-    notes: String(row.notes ?? ""),
-    loggedAt: Number(row.logged_at),
-  };
-}
-
-const LOG_COLUMNS =
-  "id, assignment_id, item_id, exercise_id, set_index, reps, load_kg, seconds, rpe, notes, logged_at";
-
-export function logsFor(assignmentId: string): SetLog[] {
-  const rows = all<Row>(
-    `SELECT ${LOG_COLUMNS} FROM set_logs WHERE assignment_id = ? ORDER BY item_id, set_index`,
-    assignmentId,
-  );
-  return rows.map(mapLog);
+export async function logsFor(assignmentId: string): Promise<SetLog[]> {
+  return sq(api.plan.logsFor, { assignmentId: assignmentId as Id<"assignments"> });
 }
 
 /**
@@ -314,7 +181,7 @@ export function logsFor(assignmentId: string): SetLog[] {
  * re-sending the same set does not duplicate it — this is what makes the
  * offline queue on the client safe to replay.
  */
-export function recordSet(input: {
+export async function recordSet(input: {
   assignmentId: string;
   itemId: string;
   exerciseId: string;
@@ -324,117 +191,71 @@ export function recordSet(input: {
   seconds?: number | null;
   rpe?: number | null;
   notes?: string;
-}): void {
-  const existing = get<Row>(
-    "SELECT id FROM set_logs WHERE assignment_id = ? AND item_id = ? AND set_index = ?",
-    input.assignmentId,
-    input.itemId,
-    input.setIndex,
-  );
-  if (existing) {
-    run(
-      `UPDATE set_logs SET reps = ?, load_kg = ?, seconds = ?, rpe = ?, notes = ?, logged_at = ?
-        WHERE id = ?`,
-      input.reps ?? null,
-      input.loadKg ?? null,
-      input.seconds ?? null,
-      input.rpe ?? null,
-      input.notes ?? "",
-      Date.now(),
-      String(existing.id),
-    );
-    return;
-  }
-  run(
-    `INSERT INTO set_logs
-       (id, assignment_id, item_id, exercise_id, set_index, reps, load_kg, seconds, rpe, notes, logged_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    newId(),
-    input.assignmentId,
-    input.itemId,
-    input.exerciseId,
-    input.setIndex,
-    input.reps ?? null,
-    input.loadKg ?? null,
-    input.seconds ?? null,
-    input.rpe ?? null,
-    input.notes ?? "",
-    Date.now(),
-  );
+}): Promise<void> {
+  await sm(api.plan.recordSet, {
+    assignmentId: input.assignmentId as Id<"assignments">,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId,
+    setIndex: input.setIndex,
+    reps: input.reps ?? null,
+    loadKg: input.loadKg ?? null,
+    seconds: input.seconds ?? null,
+    rpe: input.rpe ?? null,
+    notes: input.notes ?? "",
+  });
 }
 
-export function clearSet(assignmentId: string, itemId: string, setIndex: number): void {
-  run(
-    "DELETE FROM set_logs WHERE assignment_id = ? AND item_id = ? AND set_index = ?",
-    assignmentId,
+export async function clearSet(
+  assignmentId: string,
+  itemId: string,
+  setIndex: number,
+): Promise<void> {
+  await sm(api.plan.clearSet, {
+    assignmentId: assignmentId as Id<"assignments">,
     itemId,
     setIndex,
-  );
+  });
 }
 
 /**
  * The client's previous numbers for an exercise, so the logger can pre-fill
  * instead of asking them to remember. Excludes the session in progress.
  */
-export function lastLogsForExercise(
+export async function lastLogsForExercise(
   clientId: string,
   exerciseId: string,
   excludeAssignmentId?: string,
-): SetLog[] {
-  const previous = get<Row>(
-    `SELECT l.assignment_id FROM set_logs l
-       JOIN assignments a ON a.id = l.assignment_id
-      WHERE a.client_id = ? AND l.exercise_id = ?
-        ${excludeAssignmentId ? "AND l.assignment_id != ?" : ""}
-      ORDER BY l.logged_at DESC LIMIT 1`,
-    clientId,
+): Promise<SetLog[]> {
+  return sq(api.plan.lastLogsForExercise, {
+    clientId: clientId as Id<"users">,
     exerciseId,
-    ...(excludeAssignmentId ? [excludeAssignmentId] : []),
-  );
-  if (!previous) return [];
-  const rows = all<Row>(
-    `SELECT ${LOG_COLUMNS} FROM set_logs
-      WHERE assignment_id = ? AND exercise_id = ? ORDER BY set_index`,
-    String(previous.assignment_id),
-    exerciseId,
-  );
-  return rows.map(mapLog);
+    // Left out entirely rather than sent as null: the argument means "there is
+    // a session in progress", and there usually is not.
+    ...(excludeAssignmentId
+      ? { excludeAssignmentId: excludeAssignmentId as Id<"assignments"> }
+      : {}),
+  });
 }
 
 /** Heaviest set and longest hold ever logged, per exercise. */
-export function personalRecords(
+export async function personalRecords(
   clientId: string,
-): { exerciseId: string; exerciseName: string; bestLoadKg: number | null; bestSeconds: number | null; bestReps: number | null }[] {
-  const rows = all<Row>(
-    `SELECT l.exercise_id, e.name AS exercise_name,
-            max(l.load_kg) AS best_load, max(l.seconds) AS best_seconds, max(l.reps) AS best_reps
-       FROM set_logs l
-       JOIN assignments a ON a.id = l.assignment_id
-       JOIN exercises e ON e.id = l.exercise_id
-      WHERE a.client_id = ?
-      GROUP BY l.exercise_id
-      ORDER BY e.name COLLATE NOCASE`,
-    clientId,
-  );
-  return rows.map((row) => ({
-    exerciseId: String(row.exercise_id),
-    exerciseName: String(row.exercise_name),
-    bestLoadKg: row.best_load == null ? null : Number(row.best_load),
-    bestSeconds: row.best_seconds == null ? null : Number(row.best_seconds),
-    bestReps: row.best_reps == null ? null : Number(row.best_reps),
-  }));
+): Promise<
+  {
+    exerciseId: string;
+    exerciseName: string;
+    bestLoadKg: number | null;
+    bestSeconds: number | null;
+    bestReps: number | null;
+  }[]
+> {
+  return sq(api.plan.personalRecords, { clientId: clientId as Id<"users"> });
 }
 
 /** Share of scheduled sessions completed over the last `days` days. */
-export function adherence(clientId: string, days = 28): { done: number; total: number } {
-  const from = shiftDay(dayKey(), -days);
-  const row = get<Row>(
-    `SELECT count(*) AS total, sum(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done
-       FROM assignments
-      WHERE client_id = ? AND date BETWEEN ? AND ?`,
-    clientId,
-    from,
-    dayKey(),
-  );
-  return { done: Number(row?.done ?? 0), total: Number(row?.total ?? 0) };
+export async function adherence(
+  clientId: string,
+  days = 28,
+): Promise<{ done: number; total: number }> {
+  return sq(api.plan.adherence, { clientId: clientId as Id<"users">, days });
 }

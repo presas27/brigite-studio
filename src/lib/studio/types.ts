@@ -205,8 +205,8 @@ export type WorkoutSnapshot = {
   name: string;
   focus: string;
   notes: string;
-  /** Absent on snapshots frozen before workouts had instructions. */
-  instructions?: string;
+  /** The preamble the client reads before starting, frozen with the rest. */
+  instructions: string;
   blocks: WorkoutBlock[];
 };
 

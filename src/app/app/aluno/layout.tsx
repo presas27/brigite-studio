@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AlunoChrome } from "@/components/studio/aluno/AlunoChrome";
-import { EphemeralNotice } from "@/components/studio/EphemeralNotice";
 import { buttonPrimary } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
 import { clientAlerts } from "@/lib/studio/clientConsole";
 import { findCheckin, unreadCount } from "@/lib/studio/coaching";
-import { dayKey, weekKey } from "@/lib/studio/db";
+import { dayKey, weekKey } from "@/lib/studio/dates";
 import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
 import { getThemeMode } from "@/lib/studio/theme-mode";
 import { cn } from "@/lib/utils";
@@ -19,28 +18,33 @@ import { cn } from "@/lib/utils";
  * answer to "is there anything for me" — an aluna should be able to tell
  * without navigating, exactly as Sara can.
  *
- * `unreadCount` takes the same id twice on purpose: client id as thread owner,
- * client id again as the reader.
+ * Every read below is independent of the others, so they run as one wave —
+ * five network round trips otherwise, for a chrome that wraps every page.
  */
 export default async function AlunoLayout({ children }: { children: React.ReactNode }) {
   const client = await requireClient();
   const t = await getTranslations("Studio.session");
 
-  const badges: Record<string, number> = {};
+  const today = dayKey();
+  const [unread, checkin, todaysAssignments, next, alerts] = await Promise.all([
+    unreadCount(client.id),
+    findCheckin(client.id, weekKey()),
+    assignmentsOn(client.id, today),
+    nextAssignment(client.id, today),
+    clientAlerts(client.id),
+  ]);
 
-  const unread = unreadCount(client.id, client.id);
+  const badges: Record<string, number> = {};
   if (unread > 0) badges["/app/aluno/mensagens"] = unread;
 
   // One pip, not a count: a week has exactly one check-in, so a number here
   // would only ever say "1" and would read as a quantity of work.
-  if (findCheckin(client.id, weekKey())?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
+  if (checkin?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
 
   // The topbar's one action is the session she is here for: today's if there is
   // one, otherwise the next one ahead — never a dead button.
-  const today = dayKey();
   const session =
-    assignmentsOn(client.id, today).find((assignment) => assignment.status === "scheduled") ??
-    nextAssignment(client.id, today);
+    todaysAssignments.find((assignment) => assignment.status === "scheduled") ?? next;
 
   return (
     <AlunoChrome
@@ -48,7 +52,7 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
       email={client.email}
       themeMode={await getThemeMode()}
       badges={badges}
-      alerts={clientAlerts(client.id)}
+      alerts={alerts}
       quickAction={
         session && (
           <Link
@@ -60,7 +64,6 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
         )
       }
     >
-      <EphemeralNotice />
       {children}
     </AlunoChrome>
   );

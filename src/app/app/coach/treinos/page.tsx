@@ -16,10 +16,12 @@ export const metadata: Metadata = {
 export default async function WorkoutsPage() {
   await requireCoach();
 
-  const [t, locale] = await Promise.all([getTranslations("Studio.workouts"), getLocale()]);
-
-  const workouts = listWorkouts();
-  const focuses = workoutFocuses();
+  const [t, locale, workouts, focuses] = await Promise.all([
+    getTranslations("Studio.workouts"),
+    getLocale(),
+    listWorkouts(),
+    workoutFocuses(),
+  ]);
 
   return (
     <div className="space-y-8">

@@ -19,9 +19,11 @@ export const metadata: Metadata = {
 export default async function LibraryPage() {
   await requireCoach();
 
-  const t = await getTranslations("Studio.library");
-  const exercises = listExercises();
-  const tags = exerciseTags();
+  const [t, exercises, tags] = await Promise.all([
+    getTranslations("Studio.library"),
+    listExercises(),
+    exerciseTags(),
+  ]);
 
   return (
     <div className="space-y-8">

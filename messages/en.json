@@ -173,11 +173,7 @@
       "sending": "Sending…",
       "sentTitle": "Check your email",
       "sentLead": "If this address has access, the link is on its way. It is valid for 20 minutes.",
-      "devLink": "Development link",
       "backToSite": "Back to the site",
-      "failedTitle": "Invalid link",
-      "failedLead": "The link expired or was already used. Request a new one.",
-      "retry": "Request a new link",
       "demoTitle": "Quick entry",
       "demoLead": "Test environment. Sign in without email, on either side.",
       "demoAsCoach": "Sign in as Sara (coach)",
@@ -219,8 +215,7 @@
       "allCategories": "All",
       "viewGrid": "Grid view",
       "viewList": "List view",
-      "noMatches": "No matches.",
-      "ephemeralData": "Test environment: the database lives on whichever machine serves each request, so anything you save here may be gone on the next one. Do not build anything for real until saving is permanent."
+      "noMatches": "No matches."
     },
     "today": {
       "title": "Today",

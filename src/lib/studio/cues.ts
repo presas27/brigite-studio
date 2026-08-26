@@ -5,7 +5,8 @@ import type { Locale } from "@/i18n/config";
  *
  * Its own module, away from `library.ts`, because the session player is a
  * client component and needs this: anything it imports is bundled for the
- * browser, and `library.ts` reaches `node:sqlite` through `db.ts`.
+ * browser, and `library.ts` is server-only — it carries the Convex session
+ * token, which has no business in a bundle.
  */
 
 /**

@@ -77,10 +77,13 @@ export default async function AlunoProgressoPage() {
     getLocale(),
   ]);
 
-  const stats = adherence(client.id);
-  const records = personalRecords(client.id);
-  const weight = measurements(client.id, "weight", 24).slice().reverse();
-  const history = assignmentHistory(client.id, 30);
+  const [stats, records, weightEntries, history] = await Promise.all([
+    adherence(client.id),
+    personalRecords(client.id),
+    measurements(client.id, "weight", 24),
+    assignmentHistory(client.id, 30),
+  ]);
+  const weight = weightEntries.slice().reverse();
 
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 

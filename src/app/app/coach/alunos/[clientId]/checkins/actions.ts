@@ -17,7 +17,7 @@ export async function reply(clientId: string, checkinId: string, formData: FormD
   const text = String(formData.get("reply") ?? "").trim();
   if (!text) return;
 
-  replyToCheckin(checkinId, text);
+  await replyToCheckin(checkinId, text);
   revalidatePath(checkinsPath(clientId));
   redirect(`${checkinsPath(clientId)}?respondido=${checkinId}`);
 }

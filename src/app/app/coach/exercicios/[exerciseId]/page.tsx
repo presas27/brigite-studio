@@ -37,11 +37,13 @@ export default async function ExercisePage({
   await requireCoach();
   const { exerciseId } = await params;
 
-  const exercise = findExercise(exerciseId);
+  const [exercise, t] = await Promise.all([
+    findExercise(exerciseId),
+    getTranslations("Studio.library"),
+  ]);
   if (!exercise) notFound();
 
-  const t = await getTranslations("Studio.library");
-  const regression = exercise.regressionOf ? findExercise(exercise.regressionOf) : undefined;
+  const regression = exercise.regressionOf ? await findExercise(exercise.regressionOf) : undefined;
 
   return (
     <div className="space-y-6">

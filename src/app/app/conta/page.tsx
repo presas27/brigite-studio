@@ -40,7 +40,7 @@ export default async function AccountPage({
     getThemeMode(),
   ]);
 
-  const client = user.role === "client" ? findClient(user.id) : undefined;
+  const client = user.role === "client" ? await findClient(user.id) : undefined;
   const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: "long" });
 
   return (

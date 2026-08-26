@@ -16,7 +16,7 @@ export async function reply(formData: FormData): Promise<void> {
   const text = String(formData.get("reply") ?? "").trim();
   if (!checkinId || !text) return;
 
-  replyToCheckin(checkinId, text);
+  await replyToCheckin(checkinId, text);
   revalidatePath("/app/coach/checkins");
   revalidatePath("/app/coach");
 }

@@ -28,6 +28,11 @@ export default async function ClientLayout({
 
   const t = await getTranslations("Studio.clients");
 
+  const [checkins, unread] = await Promise.all([
+    listCheckins(client.id),
+    unreadCount(client.id),
+  ]);
+
   const base = `/app/coach/alunos/${client.id}`;
   const tabs: ClientTab[] = [
     { href: base, label: t("tab.overview") },
@@ -36,13 +41,13 @@ export default async function ClientLayout({
     {
       href: `${base}/checkins`,
       label: t("tab.checkins"),
-      badge: listCheckins(client.id).filter((checkin) => checkin.repliedAt == null).length,
+      badge: checkins.filter((checkin) => checkin.repliedAt == null).length,
     },
     { href: `${base}/progresso`, label: t("tab.progresso") },
     {
       href: `${base}/mensagens`,
       label: t("tab.messages"),
-      badge: unreadCount(client.id, viewer.id),
+      badge: unread,
     },
   ];
 
