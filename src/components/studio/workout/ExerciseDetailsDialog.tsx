@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { removeItemAction, updateItemAction } from "@/app/app/coach/treinos/actions";
 import { Field } from "@/components/studio/Field";
@@ -30,6 +31,8 @@ export function ExerciseDetailsDialog({
   const t = useTranslations("Studio.workouts");
   const common = useTranslations("Studio.common");
   const library = useTranslations("Studio.library");
+
+  const removeForm = useRef<HTMLFormElement>(null);
 
   const timed = item.tracking === "time" || item.tracking === "hold";
 
@@ -129,18 +132,35 @@ export function ExerciseDetailsDialog({
         </Field>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-cream/10 pt-4">
+          {/*
+           * Not a submit button, and that is the whole point.
+           *
+           * Implicit submission activates a form's *first* submit button, so
+           * with this inside the editing form, typing a rep count and pressing
+           * Enter deleted the exercise instead of saving it. It now drives a
+           * form of its own, which nothing can reach by accident.
+           */}
           <button
-            type="submit"
-            formAction={async (formData) => {
-              await removeItemAction(formData);
-              onCloseAction();
-            }}
+            type="button"
+            onClick={() => removeForm.current?.requestSubmit()}
             className={cn(buttonDanger, "text-xs")}
           >
             {t("removeItem")}
           </button>
           <SubmitButton pendingLabel={common("saving")}>{common("save")}</SubmitButton>
         </div>
+      </form>
+
+      <form
+        ref={removeForm}
+        action={async (formData) => {
+          await removeItemAction(formData);
+          onCloseAction();
+        }}
+        className="hidden"
+      >
+        <input type="hidden" name="workoutId" value={workoutId} />
+        <input type="hidden" name="itemId" value={item.id} />
       </form>
     </Modal>
   );
