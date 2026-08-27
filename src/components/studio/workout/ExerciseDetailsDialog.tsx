@@ -1,19 +1,15 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { removeItemAction, updateItemAction } from "@/app/app/coach/treinos/actions";
 import { Field } from "@/components/studio/Field";
 import { Modal } from "@/components/studio/Modal";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { buttonDanger } from "@/components/studio/theme";
+import { formatRestDuration } from "@/lib/studio/duration";
 import type { WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { smallField } from "./parts";
 
-/**
- * Sets, reps, tempo, RPE and notes for one exercise — everything `ExerciseRow`
- * doesn't show inline. This is the same dialog the old card grid opened; only
- * its home moved, from a card's own `useState` to a prop the row controls.
- */
 export function ExerciseDetailsDialog({
   workoutId,
   item,
@@ -33,8 +29,9 @@ export function ExerciseDetailsDialog({
   const library = useTranslations("Studio.library");
 
   const removeForm = useRef<HTMLFormElement>(null);
-
-  const timed = item.tracking === "time" || item.tracking === "hold";
+  const [mode, setMode] = useState<"reps" | "duration">(
+    item.seconds != null && item.reps.trim() === "" ? "duration" : "reps",
+  );
 
   return (
     <Modal
@@ -52,11 +49,9 @@ export function ExerciseDetailsDialog({
       >
         <input type="hidden" name="workoutId" value={workoutId} />
         <input type="hidden" name="itemId" value={item.id} />
-        {timed && <input type="hidden" name="reps" value={item.reps} />}
+        <input type="hidden" name="measureMode" value={mode} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {/* In a circuit the round count already carries the repetition, so a
-              per-exercise set count here would quietly multiply the volume. */}
           {!circuit && (
             <Field label={common("sets")} htmlFor={`item-${item.id}-sets`}>
               <input
@@ -69,28 +64,49 @@ export function ExerciseDetailsDialog({
               />
             </Field>
           )}
-          {timed ? (
-            <Field label={common("seconds")} htmlFor={`item-${item.id}-seconds`}>
+          <Field label={t("repsDurationLabel")} htmlFor={`item-${item.id}-measure`}>
+            {mode === "duration" ? (
               <input
-                id={`item-${item.id}-seconds`}
-                name="seconds"
-                type="number"
-                min={0}
-                defaultValue={item.seconds ?? ""}
+                key="duration"
+                id={`item-${item.id}-measure`}
+                name="durationText"
+                defaultValue={item.seconds != null ? formatRestDuration(item.seconds) : ""}
+                placeholder="30s"
                 className={smallField}
               />
-            </Field>
-          ) : (
-            <Field label={common("reps")} htmlFor={`item-${item.id}-reps`}>
+            ) : (
               <input
-                id={`item-${item.id}-reps`}
+                key="reps"
+                id={`item-${item.id}-measure`}
                 name="reps"
                 defaultValue={item.reps}
                 placeholder="8-10"
                 className={smallField}
               />
-            </Field>
-          )}
+            )}
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-[0.75rem] bg-cream/5 p-1 ring-1 ring-cream/10">
+              <button
+                type="button"
+                onClick={() => setMode("reps")}
+                className={cn(
+                  "rounded-[0.55rem] px-2 py-1.5 font-sans text-xs font-semibold transition-colors",
+                  mode === "reps" ? "bg-accent-ink text-ink" : "text-cream/55 hover:text-cream",
+                )}
+              >
+                {common("reps")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("duration")}
+                className={cn(
+                  "rounded-[0.55rem] px-2 py-1.5 font-sans text-xs font-semibold transition-colors",
+                  mode === "duration" ? "bg-accent-ink text-ink" : "text-cream/55 hover:text-cream",
+                )}
+              >
+                {t("measureDuration")}
+              </button>
+            </div>
+          </Field>
           <Field label={common("rest")} htmlFor={`item-${item.id}-rest`}>
             <input
               id={`item-${item.id}-rest`}
@@ -132,14 +148,6 @@ export function ExerciseDetailsDialog({
         </Field>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-cream/10 pt-4">
-          {/*
-           * Not a submit button, and that is the whole point.
-           *
-           * Implicit submission activates a form's *first* submit button, so
-           * with this inside the editing form, typing a rep count and pressing
-           * Enter deleted the exercise instead of saving it. It now drives a
-           * form of its own, which nothing can reach by accident.
-           */}
           <button
             type="button"
             onClick={() => removeForm.current?.requestSubmit()}

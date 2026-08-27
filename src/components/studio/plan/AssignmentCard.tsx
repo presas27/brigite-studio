@@ -1,5 +1,6 @@
 import { capitalize, cn } from "@/lib/utils";
 import type { Assignment } from "@/lib/studio/types";
+import { isRestItem } from "@/lib/studio/types";
 import { SubmitButton } from "../SubmitButton";
 import { chip, chipAccent, muted } from "../theme";
 import type { Translate } from "./types";
@@ -35,7 +36,10 @@ export function AssignmentCard({
   markSkippedAction?: AssignmentAction;
   moveAction: AssignmentAction;
 }) {
-  const itemCount = assignment.snapshot.blocks.reduce((n, block) => n + block.items.length, 0);
+  const itemCount = assignment.snapshot.blocks.reduce(
+    (n, block) => n + block.items.filter((item) => !isRestItem(item)).length,
+    0,
+  );
   const statusClass =
     assignment.status === "done"
       ? chipAccent
@@ -43,12 +47,11 @@ export function AssignmentCard({
         ? cn(chip, "text-silk ring-silk/30")
         : chip;
 
-  // Focus, size, effort and extra rest are four small facts about one workout,
-  // so they read as one line. Given a line each — or a chip each — they compete
-  // with the name and the week stops being scannable.
   const facts = [
     assignment.snapshot.focus && capitalize(assignment.snapshot.focus),
     tWorkouts("items", { count: itemCount }),
+    assignment.snapshot.estimatedMinutes &&
+      tWorkouts("durationMinutes", { count: assignment.snapshot.estimatedMinutes }),
     assignment.effort != null && t("effort", { value: assignment.effort }),
     assignment.extraRestSeconds > 0 &&
       t("extraRest", { minutes: Math.max(1, Math.round(assignment.extraRestSeconds / 60)) }),

@@ -7,6 +7,7 @@ import { Field } from "@/components/studio/Field";
 import { Modal } from "@/components/studio/Modal";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { buttonPrimary, buttonQuiet, field, muted, surfaceLink } from "@/components/studio/theme";
+import { EstimatedDurationField } from "@/components/studio/workout/EstimatedDurationField";
 import type { WorkoutType } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 
@@ -193,15 +194,18 @@ export function AddWorkoutToPhaseModal({
                   className={field}
                 />
               </Field>
-              <Field label={tWorkouts("typeLabel")} htmlFor="phase-workout-type">
-                <select id="phase-workout-type" name="workoutType" defaultValue="regular" className={field}>
-                  {WORKOUT_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {tWorkouts(`type.${type}`)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label={tWorkouts("typeLabel")} htmlFor="phase-workout-type">
+                  <select id="phase-workout-type" name="workoutType" defaultValue="regular" className={field}>
+                    {WORKOUT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {tWorkouts(`type.${type}`)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <EstimatedDurationField id="phase-workout-duration" />
+              </div>
               <div className="flex justify-end">
                 <SubmitButton>{common("continue")}</SubmitButton>
               </div>

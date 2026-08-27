@@ -3,9 +3,10 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { buttonQuiet } from "@/components/studio/theme";
-import type { WorkoutItem } from "@/lib/studio/types";
+import { isRestItem, type WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ExerciseDetailsDialog } from "./ExerciseDetailsDialog";
+import { RestDurationDialog } from "./RestDurationDialog";
 import { prescription } from "./parts";
 
 type Props = {
@@ -28,11 +29,8 @@ type Props = {
 /**
  * One exercise as a compact row: a checkbox to pick it for grouping, its
  * picture, name and prescription, then a details control and the drag/reorder
- * handle. The picture stays — it's how Sara recognises her own filmed
- * exercises, grid or row.
- *
- * The whole row is the drag surface, same wiring as the old card grid: a
- * native HTML5 drag plus a keyboard-operable grip for arrow-key reordering.
+ * handle. Rest rows share the same order and grip, but they are not selectable
+ * for grouping.
  */
 export function ExerciseRow({
   workoutId,
@@ -51,6 +49,7 @@ export function ExerciseRow({
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const [open, setOpen] = useState(false);
+  const rest = isRestItem(item);
 
   return (
     <>
@@ -73,33 +72,44 @@ export function ExerciseRow({
           onDropOnAction();
         }}
         className={cn(
-          "flex items-center gap-3 rounded-[1rem] bg-cream/[0.04] p-2 ring-1 transition",
+          "flex items-center gap-3 rounded-[1rem] p-2 ring-1 transition",
+          rest ? "bg-cream/[0.02]" : "bg-cream/[0.04]",
           dragging ? "opacity-40" : "opacity-100",
           over ? "ring-2 ring-accent-ink" : "ring-cream/10 hover:ring-cream/25",
         )}
       >
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={(event) => onSelectAction(event.target.checked)}
-          aria-label={`${t("selectExercise")} ${item.exerciseName}`}
-          className="h-4 w-4 shrink-0 accent-caramel"
-        />
+        {rest ? (
+          <span className="w-4 shrink-0" aria-hidden />
+        ) : (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(event) => onSelectAction(event.target.checked)}
+            aria-label={`${t("selectExercise")} ${item.exerciseName}`}
+            className="h-4 w-4 shrink-0 accent-caramel"
+          />
+        )}
 
         <span className="w-4 shrink-0 text-center font-sans tabular-nums text-[0.7rem] text-cream/35">
           {position}
         </span>
 
-        <ExerciseThumb videoUrl={item.videoUrl} className="aspect-[3/2] w-16 shrink-0" />
+        {rest ? (
+          <span className="flex aspect-[3/2] w-16 shrink-0 items-center justify-center rounded-[0.65rem] bg-cream/[0.04] text-cream/35 ring-1 ring-cream/10">
+            <Icon name="clock" className="h-5 w-5" />
+          </span>
+        ) : (
+          <ExerciseThumb videoUrl={item.videoUrl} className="aspect-[3/2] w-16 shrink-0" />
+        )}
 
-        <span className="min-w-0 flex-1">
+        <button type="button" onClick={() => setOpen(true)} className="min-w-0 flex-1 text-left">
           <span className="block truncate font-sans text-sm font-semibold text-cream">
-            {item.exerciseName}
+            {rest ? t("restTitle") : item.exerciseName}
           </span>
           <span className="mt-0.5 block truncate font-sans text-xs text-cream/55">
             {prescription(item, circuit)}
           </span>
-        </span>
+        </button>
 
         <button
           type="button"
@@ -130,13 +140,22 @@ export function ExerciseRow({
         </button>
       </div>
 
-      <ExerciseDetailsDialog
-        workoutId={workoutId}
-        item={item}
-        circuit={circuit}
-        open={open}
-        onCloseAction={() => setOpen(false)}
-      />
+      {rest ? (
+        <RestDurationDialog
+          workoutId={workoutId}
+          item={item}
+          open={open}
+          onCloseAction={() => setOpen(false)}
+        />
+      ) : (
+        <ExerciseDetailsDialog
+          workoutId={workoutId}
+          item={item}
+          circuit={circuit}
+          open={open}
+          onCloseAction={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }

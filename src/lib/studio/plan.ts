@@ -48,6 +48,22 @@ export async function assignWorkout(input: {
   return assignmentId ?? undefined;
 }
 
+export async function rescheduleWorkout(input: {
+  clientId: string;
+  workoutId: string;
+  mode: "weekly" | "custom" | "none";
+  weekday?: number | null;
+  dates?: string[];
+}): Promise<void> {
+  await sm(api.plan.rescheduleWorkout, {
+    clientId: input.clientId as Id<"users">,
+    workoutId: input.workoutId as Id<"workouts">,
+    mode: input.mode,
+    weekday: input.weekday,
+    dates: input.dates,
+  });
+}
+
 export async function findAssignment(assignmentId: string): Promise<Assignment | undefined> {
   const assignment = await sq(api.plan.findAssignment, {
     assignmentId: assignmentId as Id<"assignments">,

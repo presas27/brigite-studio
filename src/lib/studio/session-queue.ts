@@ -1,4 +1,4 @@
-import type { BlockKind, Tracking, WorkoutItem, WorkoutSnapshot } from "./types";
+import { isRestItem, type BlockKind, type Tracking, type WorkoutItem, type WorkoutSnapshot } from "./types";
 
 /**
  * One step of a session: a single set of a single exercise, in the order it is
@@ -61,8 +61,32 @@ export function buildSessionQueue(snapshot: WorkoutSnapshot): SessionStep[] {
 
     if (!isInterleaved(block.kind)) {
       for (const item of items) {
+        if (isRestItem(item)) {
+          steps.push(
+            makeStep({
+              block: { id: block.id, kind: block.kind, label },
+              item,
+              setIndex: 0,
+              setCount: 1,
+              round: null,
+              roundCount: null,
+              restSeconds: 0,
+            }),
+          );
+          continue;
+        }
         for (let setIndex = 0; setIndex < Math.max(1, item.sets); setIndex += 1) {
-          steps.push(makeStep({ block: { id: block.id, kind: block.kind, label }, item, setIndex, setCount: Math.max(1, item.sets), round: null, roundCount: null, restSeconds: item.restSeconds }));
+          steps.push(
+            makeStep({
+              block: { id: block.id, kind: block.kind, label },
+              item,
+              setIndex,
+              setCount: Math.max(1, item.sets),
+              round: null,
+              roundCount: null,
+              restSeconds: item.restSeconds,
+            }),
+          );
         }
       }
       continue;

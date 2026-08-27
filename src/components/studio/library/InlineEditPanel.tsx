@@ -29,6 +29,7 @@ export function InlineEditPanel({
   hint,
   errorText,
   interactiveRead = true,
+  showEdit = true,
   className,
 }: {
   label: string;
@@ -47,6 +48,8 @@ export function InlineEditPanel({
    * button.
    */
   interactiveRead?: boolean;
+  /** Hide the header Edit control when the read surface itself opens the editor. */
+  showEdit?: boolean;
   className?: string;
 }) {
   const common = useTranslations("Studio.common");
@@ -89,17 +92,15 @@ export function InlineEditPanel({
       <div className={cn(surface, "p-5", className)}>
         <div className="flex items-baseline justify-between gap-3">
           <p className={eyebrow}>{label}</p>
-          {/* Always a control of its own, even when the whole read area opens
-              the editor too: a demo panel holding a player cannot be wrapped in
-              a button — nested interactive elements are invalid, and clicking
-              play would start an edit instead. */}
-          <button
-            type="button"
-            onClick={open}
-            className="cursor-pointer font-sans text-xs font-medium text-cream/45 underline decoration-cream/20 underline-offset-4 transition-colors hover:text-cream"
-          >
-            {common("edit")}
-          </button>
+          {showEdit && (
+            <button
+              type="button"
+              onClick={open}
+              className="cursor-pointer font-sans text-xs font-medium text-cream/45 underline decoration-cream/20 underline-offset-4 transition-colors hover:text-cream"
+            >
+              {common("edit")}
+            </button>
+          )}
         </div>
         {interactiveRead ? (
           <button
@@ -108,9 +109,11 @@ export function InlineEditPanel({
             className="group mt-3 block w-full cursor-pointer rounded-[0.85rem] text-left outline-none focus-visible:ring-2 focus-visible:ring-accent-ink/70"
           >
             {read}
-            <span className="mt-3 block font-sans text-xs text-cream/30 transition-colors group-hover:text-cream/60">
-              {library("cuesEditHint")}
-            </span>
+            {showEdit && (
+              <span className="mt-3 block font-sans text-xs text-cream/30 transition-colors group-hover:text-cream/60">
+                {library("cuesEditHint")}
+              </span>
+            )}
           </button>
         ) : (
           <div className="mt-3">{read}</div>

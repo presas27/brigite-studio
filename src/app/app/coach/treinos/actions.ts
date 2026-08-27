@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireCoach } from "@/lib/studio/auth";
+import { parseDurationInput, parseMinutesInput } from "@/lib/studio/duration";
 import {
   addBlock,
   addItem,
@@ -94,6 +95,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
     notes: textField(formData, "notes"),
     workoutType: workoutTypeField(formData),
     coachId: coach.id,
+    estimatedMinutes: parseMinutesInput(textField(formData, "estimatedMinutes")),
   });
   refresh();
   redirect(await workoutPath(id));
@@ -109,6 +111,7 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
     name: name || undefined,
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
+    estimatedMinutes: parseMinutesInput(textField(formData, "estimatedMinutes")),
   });
   refresh();
 }
@@ -201,10 +204,17 @@ export async function updateItemAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
 
+  const mode = textField(formData, "measureMode");
+  const duration = parseDurationInput(textField(formData, "durationText"));
+  const reps =
+    mode === "duration" ? "" : textField(formData, "reps");
+  const seconds =
+    mode === "duration" ? duration : mode === "reps" ? null : nullableIntField(formData, "seconds");
+
   await updateItem(itemId, {
     sets: intField(formData, "sets"),
-    reps: textField(formData, "reps"),
-    seconds: nullableIntField(formData, "seconds"),
+    reps,
+    seconds,
     tempo: textField(formData, "tempo"),
     restSeconds: intField(formData, "restSeconds"),
     rpe: textField(formData, "rpe"),
@@ -299,6 +309,14 @@ export async function addLooseExerciseAction(
   await requireCoach();
   if (!workoutId || !exerciseId) return;
   await addItem(await looseBlockId(workoutId), { exerciseId });
+  refresh();
+}
+
+/** Insert a rest row at the end of the ungrouped list. */
+export async function addRestAction(workoutId: string): Promise<void> {
+  await requireCoach();
+  if (!workoutId) return;
+  await addItem(await looseBlockId(workoutId), { kind: "rest", seconds: 60 });
   refresh();
 }
 

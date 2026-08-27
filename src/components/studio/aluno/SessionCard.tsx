@@ -46,6 +46,9 @@ export function SessionCard({
         <p className={cn(eyebrow, "border-t border-cream/10 pt-3")}>
           {t("sessions.items", { count: session.itemCount })} ·{" "}
           {t("sessions.blocks", { count: session.blockCount })}
+          {session.estimatedMinutes
+            ? ` · ${t("sessions.duration", { count: session.estimatedMinutes })}`
+            : ""}
         </p>
       </Link>
     </li>

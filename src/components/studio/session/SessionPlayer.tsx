@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { buildSessionQueue, type SessionStep } from "@/lib/studio/session-queue";
 import type { Assignment, AssignmentStatus, SetLog } from "@/lib/studio/types";
+import { isRestItem } from "@/lib/studio/types";
 import { EffortDial } from "./EffortDial";
 import { ExerciseStage } from "./ExerciseStage";
 import { ExitSheet } from "./ExitSheet";
@@ -420,21 +421,41 @@ export function SessionPlayer({
             phase === "exercise" ? "md:justify-center" : "justify-center",
           )}
         >
-          {phase === "exercise" && step && (
+          {phase === "exercise" && step && isRestItem(step.item) && (
+            <RestScreen
+              key={step.key}
+              seconds={step.item.seconds ?? 60}
+              next={steps[index + 1] ?? null}
+              nextIsNewExercise
+              onDone={() => {
+                if (index >= steps.length - 1) setPhase("effort");
+                else goTo(index + 1);
+              }}
+              onExtend={addExtraRest}
+              actions={
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (index >= steps.length - 1) setPhase("effort");
+                    else goTo(index + 1);
+                  }}
+                  className={buttonGhost}
+                >
+                  {t("skipRest")}
+                </button>
+              }
+            />
+          )}
+
+          {phase === "exercise" && step && !isRestItem(step.item) && (
             <ExerciseStage
               step={step}
               enterAs={enterAs}
               value={entries[step.key] ?? EMPTY_SET}
-              // By set index, not by position: a previous session that skipped
-              // a set leaves a gap, and lining rows up by position would show
-              // her the wrong set's numbers.
               previous={previousByExercise[step.exerciseId]?.find(
                 (log) => log.setIndex === step.setIndex,
               )}
               actions={stepActions}
-              // One reading of progress, not three: a hairline and the count.
-              // The segmented map lives in the header on a wide screen and in
-              // the session list everywhere else.
               progress={
                 <div className="flex items-center gap-3">
                   <StepProgress

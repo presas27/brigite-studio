@@ -1,7 +1,7 @@
 import { findCheckin, listCheckins, measurements, messagesFor } from "./coaching";
 import { dayKey, shiftDay, weekKey } from "./dates";
 import { assignmentsBetween, assignmentsOn } from "./plan";
-import type { AssignmentStatus, ScheduledAssignment } from "./types";
+import { isRestItem, type AssignmentStatus, type ScheduledAssignment } from "./types";
 
 /**
  * The aluna's side of the console — the mirror of `coachAlerts` /
@@ -185,6 +185,7 @@ export type ClientSession = {
   /** Total exercises across every block — the card's one honest measure of size. */
   itemCount: number;
   blockCount: number;
+  estimatedMinutes: number | null;
   startedAt: number | null;
 };
 
@@ -196,8 +197,12 @@ function toSession(assignment: ScheduledAssignment): ClientSession {
     status: assignment.status,
     name: assignment.snapshot.name,
     focus: assignment.snapshot.focus,
-    itemCount: blocks.reduce((total, block) => total + block.items.length, 0),
+    itemCount: blocks.reduce(
+      (total, block) => total + block.items.filter((item) => !isRestItem(item)).length,
+      0,
+    ),
     blockCount: blocks.length,
+    estimatedMinutes: assignment.snapshot.estimatedMinutes ?? null,
     startedAt: assignment.startedAt,
   };
 }
@@ -260,6 +265,7 @@ export type OverviewSession = {
   name: string;
   focus: string;
   itemCount: number;
+  estimatedMinutes: number | null;
   videoUrl: string | null;
   startedAt: number | null;
 };
@@ -335,7 +341,11 @@ function toOverviewSession(assignment: ScheduledAssignment): OverviewSession {
     date: assignment.date,
     name: assignment.snapshot.name,
     focus: assignment.snapshot.focus.trim(),
-    itemCount: assignment.snapshot.blocks.reduce((total, block) => total + block.items.length, 0),
+    itemCount: assignment.snapshot.blocks.reduce(
+      (total, block) => total + block.items.filter((item) => !isRestItem(item)).length,
+      0,
+    ),
+    estimatedMinutes: assignment.snapshot.estimatedMinutes ?? null,
     videoUrl: firstVideoUrl(assignment),
     startedAt: assignment.startedAt,
   };

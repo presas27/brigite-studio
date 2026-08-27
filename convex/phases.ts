@@ -74,6 +74,9 @@ const workoutSummaryValidator = v.object({
   archived: v.boolean(),
   createdAt: v.number(),
   updatedAt: v.number(),
+  estimatedMinutes: v.union(v.null(), v.number()),
+  scheduleMode: v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
+  scheduleWeekday: v.union(v.null(), v.number()),
   itemCount: v.number(),
 });
 
@@ -310,6 +313,7 @@ export const createWorkout = mutation({
     workoutType: v.optional(
       v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval")),
     ),
+    estimatedMinutes: v.optional(v.union(v.null(), v.number())),
   },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
@@ -328,6 +332,7 @@ export const createWorkout = mutation({
       phaseId: phase._id,
       sourceWorkoutId: null,
       position: await nextWorkoutPosition(ctx, phase._id),
+      estimatedMinutes: args.estimatedMinutes ?? null,
     });
     return workoutId as string;
   },

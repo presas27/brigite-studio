@@ -171,6 +171,30 @@ export function workoutMeta(doc: Doc<"workouts">): Omit<Workout, "blocks"> {
     archived: doc.archived,
     createdAt: doc._creationTime,
     updatedAt: doc.updatedAt,
+    estimatedMinutes: doc.estimatedMinutes ?? null,
+    scheduleMode: doc.scheduleMode ?? null,
+    scheduleWeekday: doc.scheduleWeekday ?? null,
+  };
+}
+
+function mapRestItem(doc: Doc<"workoutItems">): WorkoutItem {
+  return {
+    id: doc._id,
+    position: doc.position,
+    kind: "rest",
+    exerciseId: "",
+    exerciseName: "Rest",
+    tracking: "time",
+    videoUrl: null,
+    cues: "",
+    cuesEn: "",
+    sets: 1,
+    reps: "",
+    seconds: doc.seconds ?? 60,
+    tempo: "",
+    restSeconds: 0,
+    rpe: "",
+    notes: doc.notes,
   };
 }
 
@@ -178,7 +202,8 @@ function mapItem(doc: Doc<"workoutItems">, exercise: Doc<"exercises">): WorkoutI
   return {
     id: doc._id,
     position: doc.position,
-    exerciseId: doc.exerciseId,
+    kind: "exercise",
+    exerciseId: doc.exerciseId ?? "",
     exerciseName: exercise.name,
     tracking: exercise.tracking,
     videoUrl: exercise.videoUrl,
@@ -223,6 +248,10 @@ export async function blocksFor(ctx: Ctx, workoutId: Id<"workouts">): Promise<Wo
 
     const mapped: WorkoutItem[] = [];
     for (const item of items) {
+      if (item.kind === "rest" || item.exerciseId === null) {
+        mapped.push(mapRestItem(item));
+        continue;
+      }
       let exercise = exercises.get(item.exerciseId);
       if (exercise === undefined) {
         exercise = await ctx.db.get("exercises", item.exerciseId);
@@ -273,7 +302,7 @@ export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<Wo
       .query("workoutItems")
       .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
       .collect();
-    itemCount += items.length;
+    itemCount += items.filter((item) => item.kind !== "rest").length;
   }
 
   return { ...workoutMeta(doc), itemCount };
@@ -301,6 +330,7 @@ export type WorkoutInput = {
   sourceWorkoutId: string | null;
   /** Order inside a phase. Meaningless for library templates. */
   position: number;
+  estimatedMinutes?: number | null;
 };
 
 export async function insertWorkout(
@@ -308,12 +338,19 @@ export async function insertWorkout(
   input: WorkoutInput,
 ): Promise<Id<"workouts">> {
   return ctx.db.insert("workouts", {
-    ...input,
     name: input.name.trim(),
+    focus: input.focus,
+    notes: input.notes,
+    instructions: input.instructions,
+    workoutType: input.workoutType,
+    coachId: input.coachId,
+    clientId: input.clientId,
+    phaseId: input.phaseId,
+    sourceWorkoutId: input.sourceWorkoutId,
+    position: input.position,
     archived: false,
-    // Creation counts as the first edit, as it did when `created_at` and
-    // `updated_at` were written with the same timestamp.
     updatedAt: Date.now(),
+    estimatedMinutes: input.estimatedMinutes ?? null,
   });
 }
 
@@ -358,11 +395,10 @@ export async function copyWorkout(
     coachId: target.coachId,
     clientId: target.clientId,
     phaseId: target.phaseId,
-    // `??` would be wrong here: an explicit null means "record no provenance",
-    // and only an absent field means "default to the source".
     sourceWorkoutId:
       target.sourceWorkoutId === undefined ? sourceWorkoutId : target.sourceWorkoutId,
     position: target.position,
+    estimatedMinutes: source.estimatedMinutes ?? null,
   });
 
   const blocks = await ctx.db
@@ -389,6 +425,7 @@ export async function copyWorkout(
       await ctx.db.insert("workoutItems", {
         blockId,
         position: item.position,
+        kind: item.kind,
         exerciseId: item.exerciseId,
         sets: item.sets,
         reps: item.reps,

@@ -2,12 +2,13 @@
 
 import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { groupItemsAction, reorderItemsAction, updateInstructionsAction } from "@/app/app/coach/treinos/actions";
+import { addRestAction, groupItemsAction, reorderItemsAction, updateInstructionsAction } from "@/app/app/coach/treinos/actions";
+import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
 import { buttonGhost, buttonQuiet, eyebrow, field, heading, muted, surface } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import { ViewToggle } from "@/components/studio/ViewToggle";
-import type { Exercise, Workout, WorkoutBlock } from "@/lib/studio/types";
+import { isRestItem, type Exercise, type Workout, type WorkoutBlock } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ExerciseList } from "./ExerciseList";
 import { ExercisePicker } from "./ExercisePicker";
@@ -131,6 +132,8 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
   }
 
   function toggleSelected(itemId: string, checked: boolean) {
+    const item = draft.flatMap((block) => block.items).find((row) => row.id === itemId);
+    if (item && isRestItem(item)) return;
     setSelectedIds((current) => {
       const next = new Set(current);
       if (checked) next.add(itemId);
@@ -141,7 +144,10 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
 
   /** Combine the current selection and clear it — the selection never survives past the click. */
   function groupSelection(kind: "superset" | "circuit") {
-    const ids = orderedItemIds.filter((id) => selectedIds.has(id));
+    const restIds = new Set(
+      draft.flatMap((block) => block.items).filter(isRestItem).map((item) => item.id),
+    );
+    const ids = orderedItemIds.filter((id) => selectedIds.has(id) && !restIds.has(id));
     if (ids.length < 2) return;
     startTransition(async () => {
       setSelectedIds(new Set());
@@ -173,6 +179,14 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
           <h2 className={cn(heading, "text-lg")}>{t("exercisesTitle")}</h2>
           <div className="flex items-center gap-2">
             <ViewToggle view={view} onChangeAction={setView} />
+            <button
+              type="button"
+              onClick={() => startTransition(() => addRestAction(workout.id))}
+              className={cn(buttonGhost, "gap-1.5 px-4 py-2 text-xs")}
+            >
+              <Icon name="plus" className="h-4 w-4" />
+              {t("addRest")}
+            </button>
             <ExercisePicker workoutId={workout.id} exercises={exercises} compact />
           </div>
         </div>

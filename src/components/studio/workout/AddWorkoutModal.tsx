@@ -4,6 +4,7 @@ import { AddModal } from "@/components/studio/AddModal";
 import { Field } from "@/components/studio/Field";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { field } from "@/components/studio/theme";
+import { EstimatedDurationField } from "./EstimatedDurationField";
 
 /**
  * New workout. Three fields and then you are in the builder: the action
@@ -45,13 +46,16 @@ export async function AddWorkoutModal({ compact = false }: { compact?: boolean }
             className={field}
           />
         </Field>
-        <Field label={t("typeLabel")} htmlFor="new-workout-type">
-          <select id="new-workout-type" name="workoutType" defaultValue="regular" className={field}>
-            <option value="regular">{t("type.regular")}</option>
-            <option value="circuit">{t("type.circuit")}</option>
-            <option value="interval">{t("type.interval")}</option>
-          </select>
-        </Field>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={t("typeLabel")} htmlFor="new-workout-type">
+            <select id="new-workout-type" name="workoutType" defaultValue="regular" className={field}>
+              <option value="regular">{t("type.regular")}</option>
+              <option value="circuit">{t("type.circuit")}</option>
+              <option value="interval">{t("type.interval")}</option>
+            </select>
+          </Field>
+          <EstimatedDurationField id="new-workout-duration" />
+        </div>
         <div className="flex justify-end">
           <SubmitButton pendingLabel={common("creating")}>{common("create")}</SubmitButton>
         </div>

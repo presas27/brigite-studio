@@ -9,6 +9,7 @@ import { Modal } from "@/components/studio/Modal";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { field } from "@/components/studio/theme";
 import type { Workout } from "@/lib/studio/types";
+import { EstimatedDurationField } from "./EstimatedDurationField";
 
 /**
  * Name, focus and notes for the workout itself. A dialog rather than a panel on
@@ -18,7 +19,7 @@ import type { Workout } from "@/lib/studio/types";
 export function WorkoutSettings({
   workout,
 }: {
-  workout: Pick<Workout, "id" | "name" | "focus" | "notes">;
+  workout: Pick<Workout, "id" | "name" | "focus" | "notes" | "estimatedMinutes">;
 }) {
   const t = useTranslations("Studio.workouts");
   const common = useTranslations("Studio.common");
@@ -72,6 +73,7 @@ export function WorkoutSettings({
               className={field}
             />
           </Field>
+          <EstimatedDurationField id="workout-duration" defaultMinutes={workout.estimatedMinutes} />
           <div className="flex justify-end">
             <SubmitButton pendingLabel={common("saving")}>{common("save")}</SubmitButton>
           </div>

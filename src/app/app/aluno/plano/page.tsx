@@ -1,9 +1,12 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { PlanCalendar } from "@/components/studio/calendar/PlanCalendar";
 import type { SessionsByDay } from "@/components/studio/calendar/types";
+import { muted, surfaceLink } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
 import { dayKey, monthGrid, shiftDay, shiftMonth, weekKey } from "@/lib/studio/dates";
-import { assignmentsBetween } from "@/lib/studio/plan";
+import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BASE = "/app/aluno/plano";
@@ -22,8 +25,12 @@ export default async function AlunoPlanoPage({
   searchParams: Promise<{ vista?: string; dia?: string; semana?: string }>;
 }) {
   const client = await requireClient();
-  const [t, locale] = await Promise.all([getTranslations("Studio.aluno"), getLocale()]);
-
+  const [t, tPlan, tWorkouts, locale] = await Promise.all([
+    getTranslations("Studio.aluno"),
+    getTranslations("Studio.plan"),
+    getTranslations("Studio.workouts"),
+    getLocale(),
+  ]);
   const { vista, dia, semana } = await searchParams;
   const view = vista === "semana" ? "week" : "month";
 
@@ -75,22 +82,55 @@ export default async function AlunoPlanoPage({
     week: `${BASE}?vista=semana&dia=${weekAnchor}`,
   };
 
+  const unscheduled = await unscheduledAssignments(client.id);
+
   return (
-    <PlanCalendar
-      // Remounting on a period change resets the selected day and replays the
-      // grid's entrance, which is what makes paging read as a page turn.
-      key={`${view}-${days[0]}`}
-      view={view}
-      subject="workout"
-      eyebrowLabel={t("planTitle")}
-      dayEmptyTitle={t("planDayEmpty")}
-      dayEmptyHint={t("planDayEmptyHint")}
-      days={days}
-      month={view === "month" ? month : monday.slice(0, 7)}
-      today={today}
-      sessions={sessions}
-      locale={locale}
-      hrefs={hrefs}
-    />
+    <div className="space-y-6">
+      {unscheduled.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <p className="font-sans text-sm font-semibold text-cream">{tPlan("unscheduledTitle")}</p>
+            <p className={cn(muted, "mt-1")}>{tPlan("unscheduledHint")}</p>
+          </div>
+          <ul className="space-y-2">
+            {unscheduled.map((assignment) => (
+              <li key={assignment.id}>
+                <Link
+                  href={`/app/aluno/treino/${assignment.id}`}
+                  className={cn(surfaceLink, "flex items-center justify-between gap-3 p-4")}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-sans text-sm font-semibold text-cream">
+                      {assignment.snapshot.name}
+                    </span>
+                    {assignment.snapshot.estimatedMinutes ? (
+                      <span className={cn(muted, "mt-0.5 block")}>
+                        {tWorkouts("durationMinutes", {
+                          count: assignment.snapshot.estimatedMinutes,
+                        })}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <PlanCalendar
+        key={`${view}-${days[0]}`}
+        view={view}
+        subject="workout"
+        eyebrowLabel={t("planTitle")}
+        dayEmptyTitle={t("planDayEmpty")}
+        dayEmptyHint={t("planDayEmptyHint")}
+        days={days}
+        month={view === "month" ? month : monday.slice(0, 7)}
+        today={today}
+        sessions={sessions}
+        locale={locale}
+        hrefs={hrefs}
+      />
+    </div>
   );
 }

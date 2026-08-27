@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
-import type { WorkoutItem } from "@/lib/studio/types";
+import { isRestItem, type WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ExerciseDetailsDialog } from "./ExerciseDetailsDialog";
+import { RestDurationDialog } from "./RestDurationDialog";
 import { prescription } from "./parts";
 
 type Props = {
@@ -26,21 +27,6 @@ type Props = {
   onNudgeAction: (delta: -1 | 1) => void;
 };
 
-/**
- * One exercise as a picture card, laid out across a grid: the view a coach
- * builds in when she is reading the *shape* of a session rather than its
- * numbers — four cards to a row says more about a workout at a glance than
- * four stacked rows do.
- *
- * Everything but the picture, the name and the prescription is one click away
- * in `ExerciseDetailsDialog`, shared with the row view, so a twelve-exercise
- * workout stays a page you can read rather than a wall of inputs.
- *
- * The whole card is the drag surface. The checkbox and the grip are overlays
- * rather than part of the flow: the picture is what the coach is looking at,
- * and the controls should not push it around. The grip is also the keyboard
- * control — arrow keys move the card without a pointer.
- */
 export function ExerciseCard({
   workoutId,
   item,
@@ -58,6 +44,7 @@ export function ExerciseCard({
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const [open, setOpen] = useState(false);
+  const rest = isRestItem(item);
 
   return (
     <>
@@ -80,7 +67,8 @@ export function ExerciseCard({
           onDropOnAction();
         }}
         className={cn(
-          "group relative rounded-[1rem] bg-cream/[0.04] p-2 ring-1 transition",
+          "group relative rounded-[1rem] p-2 ring-1 transition",
+          rest ? "bg-cream/[0.02]" : "bg-cream/[0.04]",
           dragging ? "opacity-40" : "opacity-100",
           over || selected ? "ring-2 ring-accent-ink" : "ring-cream/10 hover:ring-cream/25",
         )}
@@ -90,12 +78,18 @@ export function ExerciseCard({
           onClick={() => setOpen(true)}
           className="block w-full cursor-grab text-left active:cursor-grabbing"
         >
-          <ExerciseThumb videoUrl={item.videoUrl} className="aspect-[3/2] w-full" />
+          {rest ? (
+            <span className="flex aspect-[3/2] w-full items-center justify-center rounded-[0.65rem] bg-cream/[0.04] text-cream/35 ring-1 ring-cream/10">
+              <Icon name="clock" className="h-8 w-8" />
+            </span>
+          ) : (
+            <ExerciseThumb videoUrl={item.videoUrl} className="aspect-[3/2] w-full" />
+          )}
           <span className="mt-2.5 flex items-start gap-2 px-1">
             <span className="mt-px font-sans tabular-nums text-[0.7rem] text-cream/35">{position}</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-sans text-sm font-semibold text-cream">
-                {item.exerciseName}
+                {rest ? t("restTitle") : item.exerciseName}
               </span>
               <span className="mt-0.5 block truncate font-sans text-xs text-cream/55">
                 {prescription(item, circuit)}
@@ -104,18 +98,18 @@ export function ExerciseCard({
           </span>
         </button>
 
-        {/* Stays visible once ticked — a selection you cannot see is a
-            selection the grouping bar will surprise you with. */}
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={(event) => onSelectAction(event.target.checked)}
-          aria-label={`${t("selectExercise")} ${item.exerciseName}`}
-          className={cn(
-            "absolute top-3 left-3 h-4 w-4 accent-caramel transition-opacity",
-            selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-          )}
-        />
+        {!rest && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(event) => onSelectAction(event.target.checked)}
+            aria-label={`${t("selectExercise")} ${item.exerciseName}`}
+            className={cn(
+              "absolute top-3 left-3 h-4 w-4 accent-caramel transition-opacity",
+              selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+            )}
+          />
+        )}
 
         <button
           type="button"
@@ -136,13 +130,22 @@ export function ExerciseCard({
         </button>
       </div>
 
-      <ExerciseDetailsDialog
-        workoutId={workoutId}
-        item={item}
-        circuit={circuit}
-        open={open}
-        onCloseAction={() => setOpen(false)}
-      />
+      {rest ? (
+        <RestDurationDialog
+          workoutId={workoutId}
+          item={item}
+          open={open}
+          onCloseAction={() => setOpen(false)}
+        />
+      ) : (
+        <ExerciseDetailsDialog
+          workoutId={workoutId}
+          item={item}
+          circuit={circuit}
+          open={open}
+          onCloseAction={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }

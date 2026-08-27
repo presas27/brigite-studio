@@ -143,6 +143,7 @@ export async function createWorkout(input: {
   phaseId?: string | null;
   sourceWorkoutId?: string | null;
   position?: number;
+  estimatedMinutes?: number | null;
 }): Promise<string> {
   return sm(api.library.createWorkout, {
     ...input,
@@ -160,6 +161,9 @@ export async function updateWorkout(
     notes?: string;
     instructions?: string;
     workoutType?: WorkoutType;
+    estimatedMinutes?: number | null;
+    scheduleMode?: "weekly" | "custom" | "none" | null;
+    scheduleWeekday?: number | null;
   },
 ): Promise<void> {
   await sm(api.library.updateWorkout, { workoutId: workoutId as Id<"workouts">, patch });
@@ -190,11 +194,11 @@ export async function removeBlock(blockId: string): Promise<void> {
   await sm(api.library.removeBlock, { blockId: blockId as Id<"workoutBlocks"> });
 }
 
-/** Append an exercise to a block. Returns the new item id. */
 export async function addItem(
   blockId: string,
   input: {
-    exerciseId: string;
+    exerciseId?: string;
+    kind?: "exercise" | "rest";
     sets?: number;
     reps?: string;
     seconds?: number | null;
@@ -207,7 +211,7 @@ export async function addItem(
   return sm(api.library.addItem, {
     ...input,
     blockId: blockId as Id<"workoutBlocks">,
-    exerciseId: input.exerciseId as Id<"exercises">,
+    exerciseId: input.exerciseId as Id<"exercises"> | undefined,
   });
 }
 

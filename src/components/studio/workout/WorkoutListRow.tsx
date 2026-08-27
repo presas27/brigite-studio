@@ -21,8 +21,11 @@ export function WorkoutListRow({ workout, locale }: { workout: WorkoutSummary; l
       <Link href={`/app/coach/treinos/${workout.id}`} className="min-w-0 grow pr-8">
         <p className="font-sans text-base font-bold text-cream">{workout.name}</p>
         <p className={muted}>
-          {workout.focus ? capitalize(workout.focus) : common("none")} · {t("items", { count: workout.itemCount })} ·{" "}
-          {t("editedOn", { date: new Date(workout.updatedAt).toLocaleDateString(locale) })}
+          {workout.focus ? capitalize(workout.focus) : common("none")} · {t("items", { count: workout.itemCount })}
+          {workout.estimatedMinutes
+            ? ` · ${t("durationMinutes", { count: workout.estimatedMinutes })}`
+            : ""}{" "}
+          · {t("editedOn", { date: new Date(workout.updatedAt).toLocaleDateString(locale) })}
         </p>
       </Link>
 

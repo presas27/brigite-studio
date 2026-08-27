@@ -48,6 +48,8 @@ const tracking = v.union(
 const snapshotItem = v.object({
   id: v.string(),
   position: v.number(),
+  /** `"rest"` marks a rest row. Absent on snapshots frozen before rest items. */
+  kind: v.optional(v.union(v.literal("exercise"), v.literal("rest"))),
   exerciseId: v.string(),
   exerciseName: v.string(),
   tracking,
@@ -228,6 +230,14 @@ export default defineSchema({
     archived: v.boolean(),
     /** Last edit, not creation — the card shows when a workout was touched. */
     updatedAt: v.number(),
+    /** Coach's estimate of how long the session takes. */
+    estimatedMinutes: v.optional(v.union(v.null(), v.number())),
+    /** How this phase workout is placed on the calendar. */
+    scheduleMode: v.optional(
+      v.union(v.literal("weekly"), v.literal("custom"), v.literal("none")),
+    ),
+    /** Monday=0 … Sunday=6. Only meaningful when `scheduleMode` is `weekly`. */
+    scheduleWeekday: v.optional(v.union(v.null(), v.number())),
   })
     .index("by_archived_and_updated", ["archived", "updatedAt"])
     .index("by_phase_and_position", ["phaseId", "position"])
@@ -250,7 +260,9 @@ export default defineSchema({
   workoutItems: defineTable({
     blockId: v.id("workoutBlocks"),
     position: v.number(),
-    exerciseId: v.id("exercises"),
+    /** `"rest"` is a rest row, not a library exercise. Absent = exercise. */
+    kind: v.optional(v.union(v.literal("exercise"), v.literal("rest"))),
+    exerciseId: v.union(v.null(), v.id("exercises")),
     sets: v.number(),
     /** Free text so ranges ("8-10") and ladders ("5/3/1") both work. */
     reps: v.string(),
@@ -277,6 +289,7 @@ export default defineSchema({
       notes: v.string(),
       /** The preamble the client reads before starting, frozen with the rest. */
       instructions: v.string(),
+      estimatedMinutes: v.optional(v.union(v.null(), v.number())),
       blocks: v.array(snapshotBlock),
     }),
     note: v.string(),

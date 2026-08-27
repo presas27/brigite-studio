@@ -31,7 +31,11 @@ export function WorkoutCard({ workout, locale }: { workout: WorkoutSummary; loca
         <p className="line-clamp-2 font-sans text-sm font-bold text-cream">{workout.name}</p>
         <p className={cn(muted, "truncate")}>{workout.focus ? capitalize(workout.focus) : common("none")}</p>
         <p className={muted}>
-          {t("items", { count: workout.itemCount })} ·{" "}
+          {t("items", { count: workout.itemCount })}
+          {workout.estimatedMinutes
+            ? ` · ${t("durationMinutes", { count: workout.estimatedMinutes })}`
+            : ""}
+          {" · "}
           {t("editedOn", { date: new Date(workout.updatedAt).toLocaleDateString(locale) })}
         </p>
       </Link>

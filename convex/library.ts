@@ -72,6 +72,7 @@ const exerciseShape = v.object({
 const itemShape = v.object({
   id: v.string(),
   position: v.number(),
+  kind: v.optional(v.union(v.literal("exercise"), v.literal("rest"))),
   exerciseId: v.string(),
   exerciseName: v.string(),
   tracking,
@@ -112,6 +113,9 @@ const workoutFields = {
   archived: v.boolean(),
   createdAt: v.number(),
   updatedAt: v.number(),
+  estimatedMinutes: v.union(v.null(), v.number()),
+  scheduleMode: v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
+  scheduleWeekday: v.union(v.null(), v.number()),
 };
 
 const workoutShape = v.object({ ...workoutFields, blocks: v.array(blockShape) });
@@ -487,6 +491,7 @@ export const createWorkout = mutation({
     phaseId: v.optional(v.union(v.null(), v.id("trainingPhases"))),
     sourceWorkoutId: v.optional(v.union(v.null(), v.string())),
     position: v.optional(v.number()),
+    estimatedMinutes: v.optional(v.union(v.null(), v.number())),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -502,6 +507,7 @@ export const createWorkout = mutation({
       phaseId: args.phaseId ?? null,
       sourceWorkoutId: args.sourceWorkoutId ?? null,
       position: args.position === undefined ? 0 : whole(args.position, 0),
+      estimatedMinutes: args.estimatedMinutes ?? null,
     });
   },
 });
@@ -515,6 +521,11 @@ export const updateWorkout = mutation({
       notes: v.optional(v.string()),
       instructions: v.optional(v.string()),
       workoutType: v.optional(workoutType),
+      estimatedMinutes: v.optional(v.union(v.null(), v.number())),
+      scheduleMode: v.optional(
+        v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
+      ),
+      scheduleWeekday: v.optional(v.union(v.null(), v.number())),
     }),
   },
   returns: v.null(),
@@ -526,8 +537,11 @@ export const updateWorkout = mutation({
     if (args.patch.notes !== undefined) patch.notes = args.patch.notes;
     if (args.patch.instructions !== undefined) patch.instructions = args.patch.instructions;
     if (args.patch.workoutType !== undefined) patch.workoutType = args.patch.workoutType;
-    // An empty patch is not an edit: the card's "last touched" must not move
-    // because a form was submitted unchanged.
+    if (args.patch.estimatedMinutes !== undefined)
+      patch.estimatedMinutes = args.patch.estimatedMinutes;
+    if (args.patch.scheduleMode !== undefined) patch.scheduleMode = args.patch.scheduleMode ?? undefined;
+    if (args.patch.scheduleWeekday !== undefined)
+      patch.scheduleWeekday = args.patch.scheduleWeekday;
     if (Object.keys(patch).length === 0) return null;
 
     const doc = await ctx.db.get("workouts", args.workoutId);
@@ -621,7 +635,8 @@ export const removeBlock = mutation({
 export const addItem = mutation({
   args: {
     blockId: v.id("workoutBlocks"),
-    exerciseId: v.id("exercises"),
+    exerciseId: v.optional(v.id("exercises")),
+    kind: v.optional(v.union(v.literal("exercise"), v.literal("rest"))),
     sets: v.optional(v.number()),
     reps: v.optional(v.string()),
     seconds: v.optional(v.union(v.null(), v.number())),
@@ -633,16 +648,19 @@ export const addItem = mutation({
   returns: v.string(),
   handler: async (ctx, args) => {
     await requireCoach(ctx);
+    const rest = args.kind === "rest";
+    if (!rest && !args.exerciseId) throw new Error("exerciseId required");
     const position = (await lastItemPosition(ctx, args.blockId)) + 1;
     const itemId = await ctx.db.insert("workoutItems", {
       blockId: args.blockId,
       position,
-      exerciseId: args.exerciseId,
-      sets: whole(args.sets ?? 3, 1),
+      kind: rest ? "rest" : "exercise",
+      exerciseId: rest ? null : args.exerciseId!,
+      sets: whole(args.sets ?? (rest ? 1 : 3), 1),
       reps: args.reps ?? "",
-      seconds: args.seconds == null ? null : whole(args.seconds, 0),
+      seconds: rest ? whole(args.seconds ?? 60, 0) : args.seconds == null ? null : whole(args.seconds, 0),
       tempo: args.tempo ?? "",
-      restSeconds: whole(args.restSeconds ?? 60, 0),
+      restSeconds: whole(args.restSeconds ?? (rest ? 0 : 60), 0),
       rpe: args.rpe ?? "",
       notes: args.notes ?? "",
     });

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Icon } from "@/components/studio/coach/icons";
-import { SubmitButton } from "@/components/studio/SubmitButton";
-import { buttonQuiet, chip, field, muted, surface } from "@/components/studio/theme";
+import { buttonQuiet, chip, muted, surface } from "@/components/studio/theme";
 import type { WorkoutSummary } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
+import { WorkoutScheduleMenu } from "./WorkoutScheduleMenu";
 
 /**
  * The workouts inside one training phase, in the coach's order. Each row
@@ -16,13 +16,13 @@ export async function PhaseWorkoutList({
   basePath,
   removeAction,
   scheduleAction,
-  defaultDate,
+  canRepeatWeekly,
 }: {
   workouts: WorkoutSummary[];
   basePath: string;
   removeAction: (formData: FormData) => void | Promise<void>;
   scheduleAction: (formData: FormData) => void | Promise<void>;
-  defaultDate: string;
+  canRepeatWeekly: boolean;
 }) {
   if (workouts.length === 0) return null;
 
@@ -38,10 +38,15 @@ export async function PhaseWorkoutList({
         const meta = [
           tWorkouts(`type.${workout.workoutType}`),
           tWorkouts("items", { count: workout.itemCount }),
+          workout.estimatedMinutes
+            ? tWorkouts("durationMinutes", { count: workout.estimatedMinutes })
+            : null,
           workout.focus || null,
         ]
           .filter(Boolean)
           .join(" · ");
+
+        const unscheduled = workout.scheduleMode !== "weekly" && workout.scheduleMode !== "custom";
 
         return (
           <div
@@ -58,22 +63,22 @@ export async function PhaseWorkoutList({
                     <Icon name="library" className="h-3.5 w-3.5" />
                   </span>
                 )}
+                {unscheduled && <span className={chip}>{t("unscheduled")}</span>}
+                {workout.scheduleMode === "weekly" && workout.scheduleWeekday != null && (
+                  <span className={chip}>
+                    {t("everyWeekday", { day: tPhases(`weekday.${workout.scheduleWeekday}`) })}
+                  </span>
+                )}
               </div>
               <p className={cn(muted, "mt-0.5 truncate")}>{meta}</p>
             </Link>
 
             <div className="flex shrink-0 items-center gap-2">
-              <form action={scheduleAction} className="flex items-center gap-2">
-                <input type="hidden" name="workoutId" value={workout.id} />
-                <input
-                  type="date"
-                  name="date"
-                  defaultValue={defaultDate}
-                  aria-label={tPhases("scheduleLabel")}
-                  className={cn(field, "w-auto py-2")}
-                />
-                <SubmitButton variant="ghost">{t("schedule")}</SubmitButton>
-              </form>
+              <WorkoutScheduleMenu
+                workout={workout}
+                scheduleAction={scheduleAction}
+                canRepeatWeekly={canRepeatWeekly}
+              />
               <form action={removeAction}>
                 <input type="hidden" name="workoutId" value={workout.id} />
                 <button

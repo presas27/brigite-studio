@@ -259,6 +259,7 @@ export const assignWorkout = mutation({
         focus: workout.focus,
         notes: workout.notes,
         instructions: workout.instructions,
+        estimatedMinutes: workout.estimatedMinutes,
         blocks: workout.blocks,
       },
       note: args.note ?? "",
@@ -267,6 +268,104 @@ export const assignWorkout = mutation({
       effort: null,
       extraRestSeconds: 0,
     });
+  },
+});
+
+/**
+ * Replace a phase workout's calendar placement: weekly repeats, specific dates,
+ * or no day at all. Finished sessions stay; unfinished ones are rewritten to
+ * match the new method.
+ */
+export const rescheduleWorkout = mutation({
+  args: {
+    clientId: v.id("users"),
+    workoutId: v.id("workouts"),
+    mode: v.union(v.literal("weekly"), v.literal("custom"), v.literal("none")),
+    weekday: v.optional(v.union(v.null(), v.number())),
+    dates: v.optional(v.array(v.string())),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireCoach(ctx);
+    await requireClientAccess(ctx, args.clientId);
+
+    const workout = await workoutWithBlocks(ctx, args.workoutId);
+    if (!workout) return null;
+
+    await ctx.db.patch("workouts", args.workoutId, {
+      scheduleMode: args.mode,
+      scheduleWeekday: args.mode === "weekly" ? (args.weekday ?? null) : null,
+      updatedAt: Date.now(),
+    });
+
+    const existing = await ctx.db
+      .query("assignments")
+      .withIndex("by_workout", (q) => q.eq("workoutId", args.workoutId))
+      .collect();
+
+    const desired = args.mode === "none" ? [] : [...new Set(args.dates ?? [])];
+    const occupied = new Set<string>();
+
+    for (const doc of existing) {
+      const locked = doc.status !== "scheduled" || doc.startedAt != null;
+      if (locked) {
+        if (doc.date) occupied.add(doc.date);
+        continue;
+      }
+      if (args.mode !== "none" && doc.date && desired.includes(doc.date)) {
+        occupied.add(doc.date);
+        continue;
+      }
+      await ctx.db.delete("assignments", doc._id);
+    }
+
+    const snapshot = {
+      name: workout.name,
+      focus: workout.focus,
+      notes: workout.notes,
+      instructions: workout.instructions,
+      estimatedMinutes: workout.estimatedMinutes,
+      blocks: workout.blocks,
+    };
+
+    if (args.mode === "none") {
+      const stillOpen = await ctx.db
+        .query("assignments")
+        .withIndex("by_workout", (q) => q.eq("workoutId", args.workoutId))
+        .collect();
+      if (!stillOpen.some((doc) => doc.date == null && doc.status === "scheduled")) {
+        await ctx.db.insert("assignments", {
+          clientId: args.clientId,
+          workoutId: args.workoutId,
+          date: null,
+          status: "scheduled",
+          snapshot,
+          note: "",
+          startedAt: null,
+          doneAt: null,
+          effort: null,
+          extraRestSeconds: 0,
+        });
+      }
+      return null;
+    }
+
+    for (const date of desired) {
+      if (occupied.has(date)) continue;
+      await ctx.db.insert("assignments", {
+        clientId: args.clientId,
+        workoutId: args.workoutId,
+        date,
+        status: "scheduled",
+        snapshot,
+        note: "",
+        startedAt: null,
+        doneAt: null,
+        effort: null,
+        extraRestSeconds: 0,
+      });
+    }
+    return null;
   },
 });
 

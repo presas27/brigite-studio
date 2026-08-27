@@ -65,3 +65,18 @@ export function monthGrid(key: string): string[] {
   const cells = Math.ceil((offset + daysInMonth) / 7) * 7;
   return Array.from({ length: cells }, (_, i) => shiftDay(start, i));
 }
+
+/**
+ * Every `YYYY-MM-DD` from `start` to `end` (inclusive) that falls on
+ * `weekday`, where Monday is 0 and Sunday is 6.
+ */
+export function datesOnWeekday(start: string, end: string, weekday: number): string[] {
+  const [y, m, d] = start.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  const current = (utc.getUTCDay() + 6) % 7;
+  const delta = (weekday - current + 7) % 7;
+  const first = shiftDay(start, delta);
+  const dates: string[] = [];
+  for (let key = first; key <= end; key = shiftDay(key, 7)) dates.push(key);
+  return dates;
+}

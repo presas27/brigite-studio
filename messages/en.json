@@ -318,6 +318,7 @@
         "count": "{count, plural, =1 {# Session} other {# Sessions}}",
         "items": "{count, plural, =1 {# Exercise} other {# Exercises}}",
         "blocks": "{count, plural, =1 {# Block} other {# Blocks}}",
+        "duration": "{count} min",
         "today": "Today",
         "noResults": "No session matches.",
         "noResultsHint": "Clear the search or pick another focus.",
@@ -532,10 +533,19 @@
       "groupAsSuperset": "Super set",
       "groupAsCircuit": "Circuit",
       "clearSelection": "Clear",
-      "supersetLabel": "Super set {index}",
-      "circuitLabel": "Circuit {index}",
       "ungroup": "Ungroup",
-      "fromLibrary": "Copy of {name}"
+      "fromLibrary": "Copy of {name}",
+      "addRest": "+ Rest",
+      "restTitle": "Rest",
+      "restCustom": "Custom seconds",
+      "removeRest": "Remove rest",
+      "repsDurationLabel": "Reps/Duration",
+      "measureDuration": "Duration",
+      "estimatedDurationLabel": "Estimated duration",
+      "estimatedDurationEmpty": "Not set",
+      "estimatedDurationCustom": "Custom…",
+      "estimatedDurationPlaceholder": "Minutes",
+      "durationMinutes": "{count} min"
     },
     "plan": {
       "title": "Plan",
@@ -556,6 +566,16 @@
       "remove": "Remove from plan",
       "move": "Move",
       "schedule": "Schedule",
+      "scheduleRepeatWeekly": "Repeat weekly",
+      "scheduleRepeatWeeklyHint": "Same day each week for the phase",
+      "scheduleCustomDate": "Custom date",
+      "scheduleCustomDateHint": "Pick one or more specific dates",
+      "scheduleDont": "Don't schedule",
+      "scheduleDontHint": "Client picks the day themselves in the app",
+      "unscheduled": "Unscheduled",
+      "everyWeekday": "Every {day}",
+      "addDate": "+ Add date",
+      "removeDate": "Remove",
       "moveLabel": "New day",
       "unscheduledTitle": "No day set",
       "unscheduledHint": "Workouts waiting for a day. Schedule them whenever it fits.",
@@ -622,7 +642,25 @@
         "removeWorkout": "Remove from phase",
         "scheduleLabel": "Put on a day",
         "workoutsEmpty": "This phase has no workouts yet.",
-        "workoutsEmptyHint": "Add one from the library, or build a new one."
+        "workoutsEmptyHint": "Add one from the library, or build a new one.",
+        "weekday": {
+          "0": "Monday",
+          "1": "Tuesday",
+          "2": "Wednesday",
+          "3": "Thursday",
+          "4": "Friday",
+          "5": "Saturday",
+          "6": "Sunday"
+        },
+        "weekdayShort": {
+          "0": "Mon",
+          "1": "Tue",
+          "2": "Wed",
+          "3": "Thu",
+          "4": "Fri",
+          "5": "Sat",
+          "6": "Sun"
+        }
       }
     },
     "session": {

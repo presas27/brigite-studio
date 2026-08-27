@@ -1,15 +1,17 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireClientAccess } from "@/lib/studio/auth";
+import { datesOnWeekday, dayKey, shiftDay } from "@/lib/studio/dates";
+import { parseMinutesInput } from "@/lib/studio/duration";
 import {
   addLibraryWorkoutToPhase,
   createPhaseWorkout,
   findPhase,
   removePhaseWorkout,
 } from "@/lib/studio/phases";
-import { assignWorkout } from "@/lib/studio/plan";
+import { rescheduleWorkout } from "@/lib/studio/plan";
 import type { WorkoutType } from "@/lib/studio/types";
 
 /**
@@ -72,6 +74,7 @@ export async function buildWorkoutAction(
     focus: String(formData.get("focus") ?? ""),
     notes: String(formData.get("notes") ?? ""),
     workoutType: WORKOUT_TYPES.includes(rawType) ? rawType : "regular",
+    estimatedMinutes: parseMinutesInput(String(formData.get("estimatedMinutes") ?? "")),
   });
 
   refresh();
@@ -92,10 +95,8 @@ export async function removeWorkoutAction(
 }
 
 /**
- * Put one of the phase's workouts on a day. The phase says *what* the client
- * trains and for how long; the calendar still says *when* — this is the one
- * bridge between them, and it freezes a snapshot exactly like any other
- * assignment.
+ * Place a phase workout on the calendar: every week, specific days, or not at
+ * all. The method is stored on the workout so the coach can reopen it later.
  */
 export async function scheduleWorkoutAction(
   clientId: string,
@@ -107,10 +108,56 @@ export async function scheduleWorkoutAction(
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
 
-  await assignWorkout({
-    clientId,
-    workoutId,
-    date: String(formData.get("date") ?? "").trim() || null,
-  });
+  const modeRaw = String(formData.get("mode") ?? "").trim();
+  const mode =
+    modeRaw === "weekly" || modeRaw === "custom" || modeRaw === "none" ? modeRaw : "custom";
+
+  if (mode === "none") {
+    await rescheduleWorkout({ clientId, workoutId, mode: "none" });
+    refresh();
+    return;
+  }
+
+  if (mode === "weekly") {
+    const weekday = Number(formData.get("weekday"));
+    if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return;
+    const phase = await findPhase(phaseId);
+    if (!phase) return;
+    const range = phaseRange(phase);
+    if (!range) return;
+    await rescheduleWorkout({
+      clientId,
+      workoutId,
+      mode: "weekly",
+      weekday,
+      dates: datesOnWeekday(range.start, range.end, weekday),
+    });
+    refresh();
+    return;
+  }
+
+  const dates = formData
+    .getAll("date")
+    .map((value) => String(value).trim())
+    .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value));
+  if (dates.length === 0) return;
+
+  await rescheduleWorkout({ clientId, workoutId, mode: "custom", dates });
   refresh();
+}
+
+function phaseRange(phase: {
+  durationType: "calendar" | "weeks";
+  startDate: string | null;
+  endDate: string | null;
+  weeks: number | null;
+}): { start: string; end: string } | null {
+  if (phase.durationType === "calendar" && phase.startDate && phase.endDate) {
+    return { start: phase.startDate, end: phase.endDate };
+  }
+  if (phase.weeks && phase.weeks > 0) {
+    const start = phase.startDate ?? dayKey();
+    return { start, end: shiftDay(start, phase.weeks * 7 - 1) };
+  }
+  return null;
 }

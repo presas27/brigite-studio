@@ -131,6 +131,7 @@ export async function createPhaseWorkout(
     focus?: string;
     notes?: string;
     workoutType?: WorkoutType;
+    estimatedMinutes?: number | null;
   },
 ): Promise<string | undefined> {
   return (
@@ -140,6 +141,9 @@ export async function createPhaseWorkout(
       ...(input.focus === undefined ? {} : { focus: input.focus }),
       ...(input.notes === undefined ? {} : { notes: input.notes }),
       ...(input.workoutType === undefined ? {} : { workoutType: input.workoutType }),
+      ...(input.estimatedMinutes === undefined
+        ? {}
+        : { estimatedMinutes: input.estimatedMinutes }),
     })) ?? undefined
   );
 }

@@ -81,9 +81,14 @@ export type ExerciseSeed = {
 
 export type BlockKind = "normal" | "superset" | "circuit" | "interval";
 
+/** A rest row in a workout, as opposed to a library exercise. */
+export type WorkoutItemKind = "exercise" | "rest";
+
 export type WorkoutItem = {
   id: string;
   position: number;
+  /** Absent on snapshots frozen before rest rows existed. */
+  kind?: WorkoutItemKind;
   exerciseId: string;
   exerciseName: string;
   tracking: Tracking;
@@ -99,6 +104,10 @@ export type WorkoutItem = {
   rpe: string;
   notes: string;
 };
+
+export function isRestItem(item: { kind?: string | null }): item is { kind: "rest" } {
+  return item.kind === "rest";
+}
 
 export type WorkoutBlock = {
   id: string;
@@ -140,6 +149,12 @@ export type Workout = {
   archived: boolean;
   createdAt: number;
   updatedAt: number;
+  /** Coach's estimate of session length. */
+  estimatedMinutes: number | null;
+  /** How this phase workout is placed on the calendar. */
+  scheduleMode: "weekly" | "custom" | "none" | null;
+  /** Monday=0 … Sunday=6. Only set when repeating weekly. */
+  scheduleWeekday: number | null;
   blocks: WorkoutBlock[];
 };
 
@@ -207,6 +222,7 @@ export type WorkoutSnapshot = {
   notes: string;
   /** The preamble the client reads before starting, frozen with the rest. */
   instructions: string;
+  estimatedMinutes?: number | null;
   blocks: WorkoutBlock[];
 };
 

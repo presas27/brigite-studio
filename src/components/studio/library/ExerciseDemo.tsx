@@ -33,7 +33,8 @@ export function ExerciseDemo({
       action={saveVideoUrlAction.bind(null, exerciseId)}
       hint={t("videoHintYoutube")}
       errorText={{ url: errors("url") }}
-      interactiveRead={!!id}
+      interactiveRead={!videoUrl}
+      showEdit={!!videoUrl}
       read={
         <Plate>
           {id ? (

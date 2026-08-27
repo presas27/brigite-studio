@@ -7,7 +7,6 @@ import { AddWorkoutToPhaseModal } from "@/components/studio/plan/AddWorkoutToPha
 import { PhaseSettings } from "@/components/studio/plan/PhaseSettings";
 import { PhaseWorkoutList } from "@/components/studio/plan/PhaseWorkoutList";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { dayKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
 import { findPhase, listPhases, phaseWorkouts } from "@/lib/studio/phases";
 import {
@@ -102,7 +101,9 @@ export default async function PhasePage({
           basePath={basePath}
           removeAction={removeWorkoutAction.bind(null, clientId, phaseId)}
           scheduleAction={scheduleWorkoutAction.bind(null, clientId, phaseId)}
-          defaultDate={dayKey()}
+          canRepeatWeekly={
+            Boolean(phase.startDate && phase.endDate) || Boolean(phase.weeks && phase.weeks > 0)
+          }
         />
       )}
     </div>
