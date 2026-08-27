@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClientAccess } from "@/lib/studio/auth";
 import {
   clearSet,
@@ -52,10 +52,10 @@ export async function logSet(input: {
     seconds: input.seconds,
     rpe: input.rpe,
   });
-  // No revalidatePath: this fires on every logged set, sometimes every
-  // debounce tick while typing. The logger already reflects the write in its
-  // own state — refetching the whole route on this cadence would be wasted
-  // work for no visible change.
+  // No `refresh()`: this fires on every logged set, sometimes every debounce
+  // tick while typing. The logger already reflects the write in its own state —
+  // re-rendering the whole route on this cadence would be wasted work for no
+  // visible change, and would fight the input the client is still typing into.
 }
 
 export async function unlogSet(input: {
@@ -70,7 +70,7 @@ export async function unlogSet(input: {
 export async function beginSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await startAssignment(assignment.id);
-  revalidatePath(`/app/aluno/treino/${assignment.id}`);
+  refresh();
 }
 
 /**
@@ -89,14 +89,13 @@ export async function finishSession(
     input.effort == null || Number.isNaN(input.effort) ? null : input.effort;
   const extraRestSeconds = Number.isFinite(input.extraRestSeconds) ? input.extraRestSeconds : 0;
   await completeAssignment(assignment.id, { effort, extraRestSeconds });
-  revalidateSession(assignment.id);
-  revalidatePath("/app/aluno/progresso");
+  refresh();
 }
 
 export async function skipSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await setAssignmentStatus(assignment.id, "skipped");
-  revalidateSession(assignment.id);
+  refresh();
 }
 
 /**
@@ -108,11 +107,5 @@ export async function skipSession(assignmentId: string): Promise<void> {
 export async function discardSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await discardAssignment(assignment.id);
-  revalidateSession(assignment.id);
-}
-
-function revalidateSession(assignmentId: string): void {
-  revalidatePath(`/app/aluno/treino/${assignmentId}`);
-  revalidatePath("/app/aluno");
-  revalidatePath("/app/aluno/plano");
+  refresh();
 }

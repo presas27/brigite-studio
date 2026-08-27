@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClient } from "@/lib/studio/auth";
 import { markThreadRead, sendMessage } from "@/lib/studio/coaching";
 import type { ComposerState } from "@/components/studio/chat/Composer";
@@ -15,7 +15,7 @@ export async function send(_prev: ComposerState, formData: FormData): Promise<Co
   if (body.length > MAX_MESSAGE_LENGTH) return { ok: false, error: "tooLong" };
 
   await sendMessage({ clientId: client.id, body });
-  revalidatePath("/app/aluno/mensagens");
+  refresh();
   return { ok: true };
 }
 
@@ -23,5 +23,5 @@ export async function send(_prev: ComposerState, formData: FormData): Promise<Co
 export async function markThreadReadAction(): Promise<void> {
   const client = await requireClient();
   await markThreadRead(client.id);
-  revalidatePath("/app/aluno/mensagens");
+  refresh();
 }

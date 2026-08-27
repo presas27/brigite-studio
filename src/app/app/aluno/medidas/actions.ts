@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClient } from "@/lib/studio/auth";
 import { recordMeasurement } from "@/lib/studio/coaching";
 
@@ -21,6 +21,5 @@ export async function submit(formData: FormData): Promise<void> {
   await recordMeasurement({ clientId: client.id, kind: "weight", value: weightKg });
   await recordMeasurement({ clientId: client.id, kind: "height", value: heightCm });
 
-  revalidatePath("/app/aluno/medidas");
-  revalidatePath("/app/aluno/progresso");
+  refresh();
 }

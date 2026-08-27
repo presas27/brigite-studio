@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCoach } from "@/lib/studio/auth";
 import { archiveExercise, createExercise, updateExercise } from "@/lib/studio/library";
@@ -41,7 +41,7 @@ export async function createExerciseAction(
     videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
   });
 
-  revalidatePath(LIBRARY_PATH);
+  refresh();
   return { status: "ok" };
 }
 
@@ -62,8 +62,7 @@ export async function updateExerciseAction(
     videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
   });
 
-  revalidatePath(LIBRARY_PATH);
-  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  refresh();
   return { status: "ok" };
 }
 
@@ -75,7 +74,7 @@ export async function updateExerciseAction(
 export async function archiveExerciseAction(exerciseId: string): Promise<void> {
   await requireCoach();
   await archiveExercise(exerciseId);
-  revalidatePath(LIBRARY_PATH);
+  refresh();
   redirect(LIBRARY_PATH);
 }
 
@@ -108,8 +107,7 @@ export async function saveCuesAction(
       .join("\n"),
   });
 
-  revalidatePath(LIBRARY_PATH);
-  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  refresh();
   return { status: "ok" };
 }
 
@@ -126,8 +124,7 @@ export async function saveTagsAction(
 
   await updateExercise(exerciseId, { tags });
 
-  revalidatePath(LIBRARY_PATH);
-  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  refresh();
   return { status: "ok" };
 }
 
@@ -141,8 +138,7 @@ export async function saveVideoUrlAction(
 
   if (!videoUrl) {
     await updateExercise(exerciseId, { videoUrl: null });
-    revalidatePath(LIBRARY_PATH);
-    revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+    refresh();
     return { status: "ok" };
   }
 
@@ -159,7 +155,6 @@ export async function saveVideoUrlAction(
   }
 
   await updateExercise(exerciseId, { videoUrl });
-  revalidatePath(LIBRARY_PATH);
-  revalidatePath(`${LIBRARY_PATH}/${exerciseId}`);
+  refresh();
   return { status: "ok" };
 }

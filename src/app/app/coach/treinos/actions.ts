@@ -1,7 +1,7 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { requireCoach } from "@/lib/studio/auth";
 import {
@@ -95,7 +95,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
     workoutType: workoutTypeField(formData),
     coachId: coach.id,
   });
-  revalidatePath(LIST_PATH);
+  refresh();
   redirect(await workoutPath(id));
 }
 
@@ -110,7 +110,7 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
     focus: textField(formData, "focus"),
     notes: textField(formData, "notes"),
   });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /**
@@ -122,7 +122,7 @@ export async function updateInstructionsAction(formData: FormData): Promise<void
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
   await updateWorkout(workoutId, { instructions: textField(formData, "instructions") });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function archiveWorkoutAction(formData: FormData): Promise<void> {
@@ -130,7 +130,7 @@ export async function archiveWorkoutAction(formData: FormData): Promise<void> {
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
   await archiveWorkout(workoutId);
-  revalidatePath(LIST_PATH);
+  refresh();
 }
 
 /** Deep-copies the workout under "<name> (cópia)" and stays on the list. */
@@ -143,7 +143,7 @@ export async function duplicateWorkoutAction(formData: FormData): Promise<void> 
 
   const t = await getTranslations("Studio.workouts");
   await duplicateWorkout(workoutId, `${source.name} ${t("copySuffix")}`);
-  revalidatePath(LIST_PATH);
+  refresh();
 }
 
 export async function addBlockAction(formData: FormData): Promise<void> {
@@ -157,7 +157,7 @@ export async function addBlockAction(formData: FormData): Promise<void> {
     rounds: intField(formData, "rounds"),
     restSeconds: intField(formData, "restSeconds"),
   });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function updateBlockAction(formData: FormData): Promise<void> {
@@ -172,7 +172,7 @@ export async function updateBlockAction(formData: FormData): Promise<void> {
     rounds: intField(formData, "rounds"),
     restSeconds: intField(formData, "restSeconds"),
   });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function removeBlockAction(formData: FormData): Promise<void> {
@@ -181,7 +181,7 @@ export async function removeBlockAction(formData: FormData): Promise<void> {
   const blockId = idField(formData, "blockId");
   if (!workoutId || !blockId) return;
   await removeBlock(blockId);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function addItemAction(formData: FormData): Promise<void> {
@@ -192,7 +192,7 @@ export async function addItemAction(formData: FormData): Promise<void> {
   if (!workoutId || !blockId || !exerciseId) return;
 
   await addItem(blockId, { exerciseId });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function updateItemAction(formData: FormData): Promise<void> {
@@ -210,7 +210,7 @@ export async function updateItemAction(formData: FormData): Promise<void> {
     rpe: textField(formData, "rpe"),
     notes: textField(formData, "notes"),
   });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /**
@@ -229,7 +229,7 @@ export async function reorderItemsAction(
   await requireCoach();
   if (!workoutId || !blockId || !Array.isArray(itemIds)) return;
   await reorderItems(blockId, itemIds.map(String).filter(Boolean));
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /** Switch a block between per-exercise sets and rounds of the whole list. */
@@ -243,7 +243,7 @@ export async function setBlockKindAction(
   // Leaving the circuit resets the round count: "3 rounds of sets of 3" is a
   // prescription nobody means, and it silently doubles the volume.
   await updateBlock(blockId, { kind, ...(kind === "normal" ? { rounds: 1 } : {}) });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /** Add an exercise from the picker. Returns nothing — the grid re-renders. */
@@ -255,7 +255,7 @@ export async function addExerciseAction(
   await requireCoach();
   if (!workoutId || !blockId || !exerciseId) return;
   await addItem(blockId, { exerciseId });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function removeItemAction(formData: FormData): Promise<void> {
@@ -264,7 +264,7 @@ export async function removeItemAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
   await removeItem(itemId);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function moveItemUpAction(formData: FormData): Promise<void> {
@@ -273,7 +273,7 @@ export async function moveItemUpAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
   await moveItem(itemId, -1);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 export async function moveItemDownAction(formData: FormData): Promise<void> {
@@ -282,7 +282,7 @@ export async function moveItemDownAction(formData: FormData): Promise<void> {
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
   await moveItem(itemId, 1);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /* ----------------------------------------------- supersets and circuits */
@@ -299,7 +299,7 @@ export async function addLooseExerciseAction(
   await requireCoach();
   if (!workoutId || !exerciseId) return;
   await addItem(await looseBlockId(workoutId), { exerciseId });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /**
@@ -316,7 +316,7 @@ export async function groupItemsAction(
   await requireCoach();
   if (!workoutId || !Array.isArray(itemIds)) return;
   await groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /** Break a group up, returning its exercises to the ungrouped list. */
@@ -324,7 +324,7 @@ export async function ungroupBlockAction(workoutId: string, blockId: string): Pr
   await requireCoach();
   if (!workoutId || !blockId) return;
   await ungroupBlock(blockId);
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }
 
 /** How many times a circuit's list is repeated. */
@@ -336,5 +336,5 @@ export async function setRoundsAction(
   await requireCoach();
   if (!workoutId || !blockId || !Number.isFinite(rounds)) return;
   await updateBlock(blockId, { rounds });
-  revalidatePath(await workoutPath(workoutId));
+  refresh();
 }

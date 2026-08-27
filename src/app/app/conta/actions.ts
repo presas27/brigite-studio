@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { hasLocale } from "@/i18n/config";
 import { setUserLocale } from "@/i18n/locale";
 import { currentUser } from "@/lib/studio/auth";
@@ -29,6 +29,6 @@ export async function saveAccount(formData: FormData): Promise<void> {
     await setUserLocale(locale);
   }
 
-  revalidatePath("/app/conta");
+  refresh();
   redirect("/app/conta?guardado=1");
 }

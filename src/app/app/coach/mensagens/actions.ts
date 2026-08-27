@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClientAccess, requireCoach } from "@/lib/studio/auth";
 import { markThreadRead, sendMessage } from "@/lib/studio/coaching";
 import type { ComposerState } from "@/components/studio/chat/Composer";
@@ -24,8 +24,7 @@ export async function send(
   if (body.length > MAX_MESSAGE_LENGTH) return { ok: false, error: "tooLong" };
 
   await sendMessage({ clientId, body });
-  revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
-  revalidatePath("/app/coach/mensagens");
+  refresh();
   return { ok: true };
 }
 
@@ -34,6 +33,5 @@ export async function markThreadReadAction(clientId: string): Promise<void> {
   await requireCoach();
   await requireClientAccess(clientId);
   await markThreadRead(clientId);
-  revalidatePath(`/app/coach/alunos/${clientId}/mensagens`);
-  revalidatePath("/app/coach/mensagens");
+  refresh();
 }

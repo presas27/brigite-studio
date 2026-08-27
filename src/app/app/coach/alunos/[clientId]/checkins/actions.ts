@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { replyToCheckin } from "@/lib/studio/coaching";
 
@@ -18,6 +18,6 @@ export async function reply(clientId: string, checkinId: string, formData: FormD
   if (!text) return;
 
   await replyToCheckin(checkinId, text);
-  revalidatePath(checkinsPath(clientId));
+  refresh();
   redirect(`${checkinsPath(clientId)}?respondido=${checkinId}`);
 }

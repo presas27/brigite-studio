@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireCoach } from "@/lib/studio/auth";
 import { replyToCheckin } from "@/lib/studio/coaching";
 
@@ -17,6 +17,5 @@ export async function reply(formData: FormData): Promise<void> {
   if (!checkinId || !text) return;
 
   await replyToCheckin(checkinId, text);
-  revalidatePath("/app/coach/checkins");
-  revalidatePath("/app/coach");
+  refresh();
 }

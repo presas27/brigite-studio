@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClient } from "@/lib/studio/auth";
 import { submitCheckin } from "@/lib/studio/coaching";
 import { weekKey } from "@/lib/studio/dates";
@@ -38,6 +38,5 @@ export async function submit(formData: FormData): Promise<void> {
     blockers: String(formData.get("blockers") ?? "").trim().slice(0, MAX_TEXT),
   });
 
-  revalidatePath("/app/aluno/checkin");
-  revalidatePath("/app/aluno");
+  refresh();
 }

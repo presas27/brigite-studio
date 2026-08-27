@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { createPhase, removePhase, updatePhase } from "@/lib/studio/phases";
 import { assignWorkout, moveAssignment, removeAssignment, repeatWeek, setAssignmentStatus } from "@/lib/studio/plan";
@@ -44,7 +44,7 @@ export async function createPhaseAction(clientId: string, formData: FormData): P
     weeks: Number.isNaN(weeksRaw) ? null : weeksRaw,
   });
 
-  revalidatePath(planPath(clientId));
+  refresh();
   redirect(`${planPath(clientId)}/fase/${phaseId}`);
 }
 
@@ -65,8 +65,7 @@ export async function updatePhaseAction(clientId: string, formData: FormData): P
     weeks: Number.isNaN(weeksRaw) ? null : weeksRaw,
   });
 
-  revalidatePath(planPath(clientId));
-  revalidatePath(`${planPath(clientId)}/fase/${phaseId}`);
+  refresh();
 }
 
 /** Removes the phase and, by cascade, the client's copies of its workouts. */
@@ -75,7 +74,7 @@ export async function deletePhaseAction(clientId: string, formData: FormData): P
   const phaseId = String(formData.get("phaseId") ?? "").trim();
   if (!phaseId) return;
   await removePhase(phaseId);
-  revalidatePath(planPath(clientId));
+  refresh();
   redirect(planPath(clientId));
 }
 
@@ -92,7 +91,7 @@ export async function assign(clientId: string, formData: FormData): Promise<void
   const note = String(formData.get("note") ?? "").trim();
   if (!workoutId) return;
   await assignWorkout({ clientId, workoutId, date: date || null, note: note || undefined });
-  revalidatePath(planPath(clientId));
+  refresh();
 }
 
 /** Drop an assignment off the calendar entirely. */
@@ -101,7 +100,7 @@ export async function remove(clientId: string, formData: FormData): Promise<void
   const assignmentId = String(formData.get("assignmentId") ?? "");
   if (!assignmentId) return;
   await removeAssignment(assignmentId);
-  revalidatePath(planPath(clientId));
+  refresh();
 }
 
 /** Relocate an assignment to a different day. */
@@ -111,7 +110,7 @@ export async function move(clientId: string, formData: FormData): Promise<void> 
   const date = String(formData.get("date") ?? "");
   if (!assignmentId || !date) return;
   await moveAssignment(assignmentId, date);
-  revalidatePath(planPath(clientId));
+  refresh();
 }
 
 /** Flag a session as missed without deleting the record. */
@@ -120,7 +119,7 @@ export async function markSkipped(clientId: string, formData: FormData): Promise
   const assignmentId = String(formData.get("assignmentId") ?? "");
   if (!assignmentId) return;
   await setAssignmentStatus(assignmentId, "skipped");
-  revalidatePath(planPath(clientId));
+  refresh();
 }
 
 /**
@@ -132,6 +131,6 @@ export async function repeat(clientId: string, formData: FormData): Promise<void
   const monday = String(formData.get("monday") ?? "");
   if (!monday) return;
   const count = await repeatWeek(clientId, monday, 1);
-  revalidatePath(planPath(clientId));
+  refresh();
   redirect(`${planPath(clientId)}?semana=${monday}&repetido=${count}`);
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireCoach } from "@/lib/studio/auth";
 import { sendInvite } from "@/lib/studio/email";
 import { requestOrigin } from "@/lib/studio/origin";
@@ -66,7 +66,7 @@ export async function addClient(
     origin: await requestOrigin(),
   });
 
-  revalidatePath("/app/coach/alunos");
+  refresh();
   return { status: "created", name: client.name };
 }
 
@@ -89,8 +89,7 @@ export async function saveClient(formData: FormData): Promise<void> {
     sessionsLeft: Number.isFinite(sessionsLeft) ? sessionsLeft : 0,
   });
 
-  revalidatePath(`/app/coach/alunos/${clientId}`);
-  revalidatePath("/app/coach/alunos");
+  refresh();
 }
 
 /** Private notes save independently of the profile form — one field, one action. */
@@ -101,7 +100,7 @@ export async function saveNotes(formData: FormData): Promise<void> {
   if (!clientId) return;
 
   await updateClient(clientId, { notes: String(formData.get("notes") ?? "") });
-  revalidatePath(`/app/coach/alunos/${clientId}`);
+  refresh();
 }
 
 /** Archive or reactivate a client account. */
@@ -113,8 +112,7 @@ export async function setStatus(formData: FormData): Promise<void> {
   if (!clientId || (status !== "active" && status !== "archived")) return;
 
   await setClientStatus(clientId, status);
-  revalidatePath(`/app/coach/alunos/${clientId}`);
-  revalidatePath("/app/coach/alunos");
+  refresh();
 }
 
 /** Send the invite again. There is no token to mint: the client asks for their own link. */
@@ -132,5 +130,5 @@ export async function resendInvite(formData: FormData): Promise<void> {
     origin: await requestOrigin(),
   });
 
-  revalidatePath(`/app/coach/alunos/${clientId}`);
+  refresh();
 }

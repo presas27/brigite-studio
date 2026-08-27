@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireCoach } from "@/lib/studio/auth";
 import { sendInvite } from "@/lib/studio/email";
 import { findLead, linkLeadToClient, setLeadNotes, setLeadStatus } from "@/lib/studio/leads";
@@ -15,15 +15,13 @@ import type { LeadStatus } from "@/lib/studio/types";
  * never be readable or writable from a client session.
  */
 
-const LEADS_PATH = "/app/coach/leads";
-
 const STATUSES: LeadStatus[] = ["new", "talking", "won", "lost"];
 
 export async function setLeadStatusAction(leadId: string, status: LeadStatus): Promise<void> {
   await requireCoach();
   if (!leadId || !STATUSES.includes(status)) return;
   await setLeadStatus(leadId, status);
-  revalidatePath(LEADS_PATH);
+  refresh();
 }
 
 export async function saveLeadNotesAction(formData: FormData): Promise<void> {
@@ -31,7 +29,7 @@ export async function saveLeadNotesAction(formData: FormData): Promise<void> {
   const leadId = String(formData.get("leadId") ?? "").trim();
   if (!leadId) return;
   await setLeadNotes(leadId, String(formData.get("notes") ?? ""));
-  revalidatePath(LEADS_PATH);
+  refresh();
 }
 
 /**
@@ -51,7 +49,7 @@ export async function convertLeadAction(formData: FormData): Promise<void> {
   const existing = await findUserByEmail(lead.email);
   if (existing) {
     await linkLeadToClient(lead.id, existing.id);
-    revalidatePath(LEADS_PATH);
+    refresh();
     redirect(`/app/coach/alunos/${existing.id}`);
   }
 
@@ -70,7 +68,6 @@ export async function convertLeadAction(formData: FormData): Promise<void> {
   });
 
   await linkLeadToClient(lead.id, client.id);
-  revalidatePath(LEADS_PATH);
-  revalidatePath("/app/coach/alunos");
+  refresh();
   redirect(`/app/coach/alunos/${client.id}`);
 }

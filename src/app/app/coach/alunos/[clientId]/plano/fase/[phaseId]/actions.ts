@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireClientAccess } from "@/lib/studio/auth";
 import {
   addLibraryWorkoutToPhase,
@@ -51,7 +51,7 @@ export async function addFromLibraryAction(
   if (!workoutId) return;
 
   const copyId = await addLibraryWorkoutToPhase(phaseId, workoutId);
-  revalidatePath(phasePath(clientId, phaseId));
+  refresh();
   if (copyId) redirect(`${phasePath(clientId, phaseId)}/treino/${copyId}`);
 }
 
@@ -74,7 +74,7 @@ export async function buildWorkoutAction(
     workoutType: WORKOUT_TYPES.includes(rawType) ? rawType : "regular",
   });
 
-  revalidatePath(phasePath(clientId, phaseId));
+  refresh();
   if (workoutId) redirect(`${phasePath(clientId, phaseId)}/treino/${workoutId}`);
 }
 
@@ -88,7 +88,7 @@ export async function removeWorkoutAction(
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
   await removePhaseWorkout(phaseId, workoutId);
-  revalidatePath(phasePath(clientId, phaseId));
+  refresh();
 }
 
 /**
@@ -112,6 +112,5 @@ export async function scheduleWorkoutAction(
     workoutId,
     date: String(formData.get("date") ?? "").trim() || null,
   });
-  revalidatePath(phasePath(clientId, phaseId));
-  revalidatePath(`/app/coach/alunos/${clientId}/plano`);
+  refresh();
 }
