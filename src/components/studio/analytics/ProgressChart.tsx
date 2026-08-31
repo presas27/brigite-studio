@@ -6,11 +6,13 @@ import type { MockExerciseOption } from "@/lib/studio/analyticsMock";
 import type { MetricSeries } from "@/lib/studio/analytics";
 import { formatSigned } from "@/lib/studio/bodyMetrics";
 import { Empty } from "@/components/studio/Empty";
+import type { ProgressPhotoWeek } from "@/lib/studio/types";
 import { chip, field, heading, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
+import { PhotoLog } from "./PhotoLog";
 import { MetricChart } from "./MetricChart";
 
-type MetricKind = "weight" | "exercise";
+type MetricKind = "weight" | "exercise" | "photos";
 type ExerciseMeasure = "reps" | "effort";
 type ChartType = "line" | "bar";
 
@@ -51,19 +53,27 @@ function Pill<T extends string>({
 
 /**
  * One chart, filtered instead of three fixed cards: pick the metric (weight,
- * or an exercise's reps/effort), then how to draw it (line or bar). Weight is
- * real per-client data (`seriesFromMeasurements`, passed in from the server);
- * exercise reps/effort are still `analyticsMock` until that's wired up too.
+ * an exercise's reps/effort, or the progress photos), then how to draw it
+ * (line or bar). Weight is real per-client data (`seriesFromMeasurements`,
+ * passed in from the server); exercise reps/effort are still `analyticsMock`
+ * until that's wired up too.
+ *
+ * Photos are not a chart, so choosing them replaces the plot rather than
+ * feeding it: same card, same toggle, a different thing inside. The chart-type
+ * pill goes away with it — there is no line or bar to pick.
  */
 export function ProgressChart({
   weightSeries,
   exercises,
+  photoWeeks,
 }: {
   weightSeries: MetricSeries | null;
   exercises: MockExerciseOption[];
+  photoWeeks: ProgressPhotoWeek[];
 }) {
   const t = useTranslations("Studio.evolucao");
   const tProgress = useTranslations("Studio.progress");
+  const tPhotos = useTranslations("Studio.photos");
   const locale = useLocale();
 
   const [metric, setMetric] = useState<MetricKind>("weight");
@@ -99,6 +109,7 @@ export function ProgressChart({
           options={[
             { value: "weight", label: t("weightMetric") },
             { value: "exercise", label: t("exerciseMetric") },
+            { value: "photos", label: tPhotos("metric") },
           ]}
         />
         {metric === "exercise" && exercises.length > 0 && (
@@ -128,18 +139,22 @@ export function ProgressChart({
             />
           </>
         )}
-        <Pill
-          value={chartType}
-          onChangeAction={setChartType}
-          groupLabel={t("chartTypeLabel")}
-          options={[
-            { value: "line", label: t("chartLine") },
-            { value: "bar", label: t("chartBar") },
-          ]}
-        />
+        {metric !== "photos" && (
+          <Pill
+            value={chartType}
+            onChangeAction={setChartType}
+            groupLabel={t("chartTypeLabel")}
+            options={[
+              { value: "line", label: t("chartLine") },
+              { value: "bar", label: t("chartBar") },
+            ]}
+          />
+        )}
       </div>
 
-      {!series || points.length === 0 ? (
+      {metric === "photos" ? (
+        <PhotoLog weeks={photoWeeks} />
+      ) : !series || points.length === 0 ? (
         <Empty title={tProgress("weightEmpty")} hint={tProgress("weightEmptyHint")} />
       ) : (
         <>

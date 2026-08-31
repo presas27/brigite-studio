@@ -334,3 +334,11 @@ export async function groupItems(
 export async function ungroupBlock(blockId: string): Promise<void> {
   await sm(api.library.ungroupBlock, { blockId: blockId as Id<"workoutBlocks"> });
 }
+
+/**
+ * Move a group one slot up or down among the workout's other groups, exercises
+ * and all. The loose block never takes part: it stays last.
+ */
+export async function moveBlock(blockId: string, direction: -1 | 1): Promise<void> {
+  await sm(api.library.moveBlock, { blockId: blockId as Id<"workoutBlocks">, direction });
+}

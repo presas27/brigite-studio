@@ -900,3 +900,45 @@ export const ungroupBlock = mutation({
     return null;
   },
 });
+
+/**
+ * Move a group one slot up or down among the workout's other groups, exercises
+ * and all: a superset or circuit is one thing on the screen, so it reorders as
+ * one thing.
+ *
+ * Only groups take part. The loose block is the tail of the list by
+ * construction — `groupItems` pushes it past every new group — so it is
+ * filtered out before the neighbour is chosen rather than swapped into the
+ * middle, which would strand the ungrouped exercises above a circuit.
+ */
+export const moveBlock = mutation({
+  args: {
+    blockId: v.id("workoutBlocks"),
+    // Two literals rather than `v.number()`, as in `moveItem`: a client that
+    // could send 7 would be renumbering the workout by arithmetic.
+    direction: v.union(v.literal(-1), v.literal(1)),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireCoach(ctx);
+    const block = await ctx.db.get("workoutBlocks", args.blockId);
+    if (!block || block.kind === "normal") return null;
+
+    // Already ordered by the index, so the groups are in screen order.
+    const blocks = await ctx.db
+      .query("workoutBlocks")
+      .withIndex("by_workout_and_position", (q) => q.eq("workoutId", block.workoutId))
+      .collect();
+    const groups = blocks.filter((candidate) => candidate.kind !== "normal");
+
+    const index = groups.findIndex((candidate) => candidate._id === block._id);
+    const target = index + args.direction;
+    if (index < 0 || target < 0 || target >= groups.length) return null;
+
+    const neighbour = groups[target];
+    await ctx.db.patch("workoutBlocks", neighbour._id, { position: block.position });
+    await ctx.db.patch("workoutBlocks", block._id, { position: neighbour.position });
+    await touchWorkout(ctx, block.workoutId);
+    return null;
+  },
+});

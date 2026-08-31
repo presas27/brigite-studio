@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/studio/PageHeader";
+import { PrintMenu } from "@/components/studio/print/PrintMenu";
 import { WorkoutBuilder } from "@/components/studio/workout/WorkoutBuilder";
 import { WorkoutSettings } from "@/components/studio/workout/WorkoutSettings";
 import { requireClientAccess } from "@/lib/studio/auth";
@@ -23,7 +24,7 @@ export default async function PhaseWorkoutPage({
   params: Promise<{ clientId: string; phaseId: string; workoutId: string }>;
 }) {
   const { clientId, phaseId, workoutId } = await params;
-  const [{ viewer }, workout, exercises, t, tPhases] = await Promise.all([
+  const [{ viewer, client }, workout, exercises, t, tPhases] = await Promise.all([
     requireClientAccess(clientId),
     findWorkout(workoutId),
     listExercises(),
@@ -41,7 +42,12 @@ export default async function PhaseWorkoutPage({
         backHref={phasePath}
         title={`${workout.name} · ${t(`type.${workout.workoutType}`)}`}
         lead={tPhases("clientCopyHint")}
-        action={<WorkoutSettings workout={workout} />}
+        action={
+          <>
+            <PrintMenu basePath={`${phasePath}/treino/${workoutId}/imprimir`} clientName={client.name} />
+            <WorkoutSettings workout={workout} />
+          </>
+        }
       />
       <WorkoutBuilder workout={workout} exercises={exercises} />
     </div>

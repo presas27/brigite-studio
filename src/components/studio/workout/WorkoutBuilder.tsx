@@ -2,7 +2,13 @@
 
 import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { addRestAction, groupItemsAction, reorderItemsAction, updateInstructionsAction } from "@/app/app/coach/treinos/actions";
+import {
+  addRestAction,
+  groupItemsAction,
+  moveGroupAction,
+  reorderItemsAction,
+  updateInstructionsAction,
+} from "@/app/app/coach/treinos/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
 import { buttonGhost, buttonQuiet, eyebrow, field, heading, muted, surface } from "@/components/studio/theme";
@@ -64,21 +70,6 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
   const looseTargetId = looseRows[0]?.blockId ?? draft.find((b) => b.kind === "normal")?.id ?? null;
   const total = draft.reduce((sum, block) => sum + block.items.length, 0);
 
-  // Group labels are derived at render, never stored: "Super set 1", "Super
-  // set 2", "Circuit 1"… counted independently, in the order groups appear.
-  // Deleting a group therefore renumbers the rest instead of leaving a gap.
-  const groupsWithLabels = useMemo(() => {
-    const seen = { superset: 0, circuit: 0 };
-    return groups.map((block) => {
-      if (block.kind === "superset") {
-        seen.superset += 1;
-        return { block, label: t("supersetLabel", { index: seen.superset }) };
-      }
-      seen.circuit += 1;
-      return { block, label: t("circuitLabel", { index: seen.circuit }) };
-    });
-  }, [groups, t]);
-
   // The order a grouping action posts ids in: groups first, then the loose
   // list, each in on-screen order — not the order the coach happened to click.
   const orderedItemIds = useMemo(() => {
@@ -129,6 +120,30 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
     if (index < 0 || target < 0 || target >= block.items.length) return;
     [block.items[index], block.items[target]] = [block.items[target], block.items[index]];
     commit(next, blockId);
+  }
+
+  /**
+   * Move a whole group one slot among the groups — the card and every exercise
+   * in it, as one move. Two positions are swapped rather than the list
+   * renumbered, because position is the only thing on-screen order is derived
+   * from; the loose block keeps its own and therefore stays last.
+   */
+  function moveGroup(blockId: string, delta: -1 | 1) {
+    const index = groups.findIndex((block) => block.id === blockId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= groups.length) return;
+
+    const from = groups[index];
+    const to = groups[target];
+    const next = draft.map((block) => {
+      if (block.id === from.id) return { ...block, position: to.position };
+      if (block.id === to.id) return { ...block, position: from.position };
+      return block;
+    });
+    startTransition(async () => {
+      applyDraft(next);
+      await moveGroupAction(workout.id, blockId, delta);
+    });
   }
 
   function toggleSelected(itemId: string, checked: boolean) {
@@ -194,14 +209,16 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
         {total === 0 && <Empty title={t("noExercises")} hint={t("noExercisesHint")} />}
 
         <div className="space-y-3">
-          {groupsWithLabels.map(({ block, label }) => (
+          {groups.map((block, index) => (
             <GroupCard
               key={block.id}
               workoutId={workout.id}
               block={block}
-              label={label}
               rounds={block.rounds}
               exercises={exercises}
+              canMoveUp={index > 0}
+              canMoveDown={index < groups.length - 1}
+              onMoveAction={(delta) => moveGroup(block.id, delta)}
               selection={{ selected: selectedIds, onToggleAction: toggleSelected }}
               view={view}
               draggingId={dragging?.itemId ?? null}

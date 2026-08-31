@@ -1,6 +1,7 @@
 import { useRef, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { setRoundsAction, ungroupBlockAction } from "@/app/app/coach/treinos/actions";
+import { Icon } from "@/components/studio/coach/icons";
 import { buttonQuiet, surface } from "@/components/studio/theme";
 import type { View } from "@/components/studio/ViewToggle";
 import type { Exercise, WorkoutBlock } from "@/lib/studio/types";
@@ -28,8 +29,11 @@ type Selection = {
 type Props = DragProps & {
   workoutId: string;
   block: WorkoutBlock;
-  /** Derived display label — "Super set 1", "Circuit 2"… Never `block.label`. */
-  label: string;
+  /** Whether another group sits above / below this one, for the move controls. */
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  /** Move the whole group one slot, exercises and all. */
+  onMoveAction: (delta: -1 | 1) => void;
   rounds: number;
   exercises: Exercise[];
   selection: Selection;
@@ -37,14 +41,18 @@ type Props = DragProps & {
 };
 
 /**
- * One superset or circuit: a header (name, round count for a circuit, and
- * ungroup), then its exercises in whichever view the builder is in, then a
+ * One superset or circuit: a header (move controls, round count for a circuit,
+ * and ungroup), then its exercises in whichever view the builder is in, then a
  * picker to add straight into the group.
+ *
+ * The group carries no name. A numbered "Circuit 2" over a bordered card said
+ * nothing the border had not already said, and it had to be counted at render
+ * and renumbered on every regroup to stay honest. The kind survives as the
+ * section's accessible name, for a reader that cannot see the border.
  */
 export function GroupCard({
   workoutId,
   block,
-  label,
   rounds,
   exercises,
   selection,
@@ -57,6 +65,9 @@ export function GroupCard({
   onDropOnItemAction,
   onDropAtEndAction,
   onNudgeAction,
+  canMoveUp,
+  canMoveDown,
+  onMoveAction,
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const roundsRef = useRef<HTMLInputElement>(null);
@@ -82,9 +93,35 @@ export function GroupCard({
   }
 
   return (
-    <section className={cn(surface, "space-y-3 p-3 sm:p-4")}>
+    <section
+      aria-label={circuit ? t("blockKind.circuit") : t("blockKind.superset")}
+      className={cn(surface, "space-y-3 p-3 sm:p-4")}
+    >
       <div className="flex flex-wrap items-center gap-3">
-        <h3 className="font-sans text-sm font-semibold text-accent-ink">{label}</h3>
+        {(canMoveUp || canMoveDown) && (
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => onMoveAction(-1)}
+              disabled={!canMoveUp}
+              aria-label={t("moveGroupUp")}
+              title={t("moveGroupUp")}
+              className={cn(buttonQuiet, "px-1.5")}
+            >
+              <Icon name="chevron" className="h-4 w-4 -rotate-90" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveAction(1)}
+              disabled={!canMoveDown}
+              aria-label={t("moveGroupDown")}
+              title={t("moveGroupDown")}
+              className={cn(buttonQuiet, "px-1.5")}
+            >
+              <Icon name="chevron" className="h-4 w-4 rotate-90" />
+            </button>
+          </div>
+        )}
 
         {block.kind === "circuit" && (
           <label className="flex items-center gap-2 font-sans text-xs text-cream/55">

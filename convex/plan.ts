@@ -1010,3 +1010,86 @@ export const adherence = query({
     return { done, total };
   },
 });
+
+/* ---------------------------------------------------- one workout's history */
+
+const progressionPointShape = v.object({
+  date: v.string(),
+  loadKg: v.union(v.null(), v.number()),
+  reps: v.union(v.null(), v.number()),
+  seconds: v.union(v.null(), v.number()),
+});
+
+/**
+ * What one client logged against one workout, session by session, inside a date
+ * range — the numbers behind the coach's progression report.
+ *
+ * Matched on `workoutId`, never on the workout's name: a client's plan can hold
+ * two copies of "Força A" in different phases, and a coach printing one of them
+ * is asking about that one. `by_workout` reads exactly this workout's
+ * assignments and nothing else; the client and the range are then checked on
+ * the handful of rows it returns.
+ *
+ * One point per exercise per session, and that point is the session's best set:
+ * a session logs three sets and a trend line wants one number, so the heaviest
+ * load, the longest hold and the most reps are what carry forward. Which of the
+ * three a chart plots is the caller's decision, because only the workout knows
+ * how each exercise is measured.
+ */
+export const workoutProgression = query({
+  args: {
+    clientId: v.id("users"),
+    workoutId: v.id("workouts"),
+    from: v.string(),
+    to: v.string(),
+  },
+  returns: v.object({
+    sessions: v.array(v.object({ id: v.string(), date: v.string() })),
+    series: v.array(
+      v.object({ exerciseId: v.string(), points: v.array(progressionPointShape) }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    await requireClientAccess(ctx, args.clientId);
+
+    const docs = await ctx.db
+      .query("assignments")
+      .withIndex("by_workout", (q) => q.eq("workoutId", args.workoutId))
+      .collect();
+
+    // Only finished sessions: a scheduled or skipped day has nothing logged
+    // against it, and counting it would put a gap in the line that reads as a
+    // bad session rather than as no session.
+    const sessions: { id: Id<"assignments">; date: string }[] = [];
+    for (const doc of docs) {
+      if (doc.clientId !== args.clientId || doc.status !== "done") continue;
+      const date = doc.date;
+      if (date === null || date < args.from || date > args.to) continue;
+      sessions.push({ id: doc._id, date });
+    }
+    sessions.sort((a, b) => a.date.localeCompare(b.date));
+
+    const points = new Map<string, Infer<typeof progressionPointShape>[]>();
+    for (const session of sessions) {
+      const best = new Map<string, { loadKg: number | null; reps: number | null; seconds: number | null }>();
+      for (const log of await logDocs(ctx, session.id)) {
+        const current = best.get(log.exerciseId) ?? { loadKg: null, reps: null, seconds: null };
+        best.set(log.exerciseId, {
+          loadKg: highest(current.loadKg, log.loadKg),
+          reps: highest(current.reps, log.reps),
+          seconds: highest(current.seconds, log.seconds),
+        });
+      }
+      for (const [exerciseId, values] of best) {
+        const list = points.get(exerciseId) ?? [];
+        list.push({ date: session.date, ...values });
+        points.set(exerciseId, list);
+      }
+    }
+
+    return {
+      sessions,
+      series: [...points.entries()].map(([exerciseId, list]) => ({ exerciseId, points: list })),
+    };
+  },
+});

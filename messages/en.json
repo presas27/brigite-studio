@@ -511,6 +511,8 @@
       "chooseExercise": "Choose an exercise",
       "moveUp": "Move up",
       "moveDown": "Move down",
+      "moveGroupUp": "Move group up",
+      "moveGroupDown": "Move group down",
       "removeItem": "Remove exercise",
       "removeBlock": "Remove block",
       "blockEmpty": "Empty block. Add an exercise.",
@@ -574,6 +576,7 @@
       "scheduleDontHint": "Client picks the day themselves in the app",
       "unscheduled": "Unscheduled",
       "everyWeekday": "Every {day}",
+      "datesMore": "+{count}",
       "addDate": "+ Add date",
       "removeDate": "Remove",
       "moveLabel": "New day",
@@ -951,6 +954,88 @@
       "memberSince": "Client since",
       "saved": "Saved.",
       "back": "Back"
+    },
+    "print": {
+      "print": "Print",
+      "close": "Close",
+      "pdfHint": "In the print dialog choose “Save as PDF” to export a file.",
+      "format": {
+        "completo": "Default format",
+        "completoHint": "The whole workout: prescription, instructions, equipment and stills",
+        "instrucoes": "Instructions only",
+        "instrucoesHint": "Names, prescription and coaching notes — nothing to fill in",
+        "registo": "Tracking sheet only",
+        "registoHint": "Names and blank boxes for weight, reps and rest",
+        "medida": "Custom format",
+        "medidaHint": "Choose which sections to include",
+        "progresso": "Workout progression",
+        "progressoHint": "Charts of what was logged, over a date range"
+      },
+      "section": {
+        "instructions": "Instructions and cues",
+        "equipment": "Equipment list",
+        "images": "Exercise images",
+        "tracking": "Tracking columns"
+      },
+      "rangeLead": "Select a date range to print {name}'s logged history for this workout.",
+      "from": "From",
+      "to": "To",
+      "equipment": "Equipment",
+      "noEquipment": "No equipment tagged on these exercises.",
+      "restShort": "{rest} rest",
+      "setColumn": "Set",
+      "weightColumn": "Weight",
+      "repsColumn": "Reps",
+      "restColumn": "Rest",
+      "notesColumn": "Notes",
+      "progressionTitle": "Logged progression",
+      "sessionCount": "{count, plural, =1 {# session logged} other {# sessions logged}}",
+      "noSessions": "No completed sessions found in this date range.",
+      "noExerciseData": "No data logged for this exercise in the selected range.",
+      "generatedOn": "Printed {date}",
+      "unitKg": " kg",
+      "unitSeconds": " s",
+      "unitReps": " reps",
+      "unitMetres": " m"
+    },
+    "photos": {
+      "metric": "Photos",
+      "fieldsLabel": "Progress photos",
+      "fieldsHint": "Front, back, side. All three optional — upload whichever you want, they save on the spot.",
+      "angle": {
+        "front": "Front",
+        "back": "Back",
+        "side": "Side"
+      },
+      "angleShort": {
+        "front": "F",
+        "back": "B",
+        "side": "S"
+      },
+      "optional": "Add",
+      "uploading": "Uploading…",
+      "failed": "Failed. Tap to retry.",
+      "add": "Add the {angle} photo",
+      "replace": "Replace the {angle} photo",
+      "logEmpty": "No progress photos yet.",
+      "logEmptyHint": "They show up here after a check-in with photos.",
+      "compare": "Compare",
+      "compareHint": "Tick two check-ins to compare them.",
+      "compareReady": "Two check-ins selected.",
+      "comparing": "Comparing {from} → {to}",
+      "exitCompare": "Exit compare",
+      "missingAngle": "No photo",
+      "selectWeek": "Select the {date} check-in",
+      "photoAlt": "{angle}, {date}",
+      "angleCount": "{count, plural, =1 {# photo} other {# photos}}"
     }
+  },
+  "Error": {
+    "title": "Something broke on our side",
+    "lead": "The page could not load. Nothing you did — try again, and if it keeps happening tell Sara what you were doing.",
+    "retry": "Try again",
+    "home": "Back to the site",
+    "studio": "Back to the training area",
+    "reference": "Reference {digest}"
   }
 }

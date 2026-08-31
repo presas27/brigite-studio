@@ -356,6 +356,36 @@ export default defineSchema({
     repliedAt: v.union(v.null(), v.number()),
   }).index("by_client_and_week", ["clientId", "weekOf"]),
 
+  /**
+   * Progress photos: up to three angles (front, back, side) per weekly
+   * check-in, every one of them optional.
+   *
+   * One row per angle rather than three fields on the check-in, so re-shooting
+   * one angle touches one row and one file. The bytes themselves never go near
+   * a document: `fileId`/`thumbId` point into file storage, which costs
+   * $0.03/GB-month against a document's $0.20 and has no 1 MiB ceiling. The
+   * browser downscales and re-encodes to WebP before uploading — see
+   * `PhotoAngleField` — which also strips the EXIF block, and with it the GPS
+   * tag a phone writes into a photo taken at home.
+   *
+   * `(clientId, weekOf, angle)` is unique; `savePhoto` enforces it and deletes
+   * the files the replaced row pointed at.
+   */
+  progressPhotos: defineTable({
+    clientId: v.id("users"),
+    /** Monday of the check-in's week, `YYYY-MM-DD`. The photo's date. */
+    weekOf: v.string(),
+    angle: v.union(v.literal("front"), v.literal("back"), v.literal("side")),
+    /** Long edge 1280, WebP. What the compare view shows. */
+    fileId: v.id("_storage"),
+    /** Long edge 320, WebP. What the list shows, so a year's log stays light. */
+    thumbId: v.id("_storage"),
+    width: v.number(),
+    height: v.number(),
+    /** Bytes of `fileId` and `thumbId` together, for the storage read-out. */
+    bytes: v.number(),
+  }).index("by_client_and_week", ["clientId", "weekOf"]),
+
   /** A body measurement on a day. `kind` is open text: weight, waist, whatever. */
   measurements: defineTable({
     clientId: v.id("users"),

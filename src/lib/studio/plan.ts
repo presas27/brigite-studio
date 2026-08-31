@@ -275,3 +275,35 @@ export async function adherence(
 ): Promise<{ done: number; total: number }> {
   return sq(api.plan.adherence, { clientId: clientId as Id<"users">, days });
 }
+
+/** One session's best numbers for one exercise. */
+export type ProgressionPoint = {
+  date: string;
+  loadKg: number | null;
+  reps: number | null;
+  seconds: number | null;
+};
+
+export type WorkoutProgression = {
+  /** Finished sessions inside the range, oldest first. */
+  sessions: { id: string; date: string }[];
+  series: { exerciseId: string; points: ProgressionPoint[] }[];
+};
+
+/**
+ * What one client logged against one workout inside a date range, matched on
+ * the workout's id rather than its name. Feeds the progression report.
+ */
+export async function workoutProgression(
+  clientId: string,
+  workoutId: string,
+  from: string,
+  to: string,
+): Promise<WorkoutProgression> {
+  return sq(api.plan.workoutProgression, {
+    clientId: clientId as Id<"users">,
+    workoutId: workoutId as Id<"workouts">,
+    from,
+    to,
+  });
+}

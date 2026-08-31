@@ -17,6 +17,7 @@ import type * as model_authz from "../model/authz.js";
 import type * as model_library from "../model/library.js";
 import type * as model_shape from "../model/shape.js";
 import type * as phases from "../phases.js";
+import type * as photos from "../photos.js";
 import type * as plan from "../plan.js";
 import type * as seed from "../seed.js";
 import type * as signInLimit from "../signInLimit.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   "model/library": typeof model_library;
   "model/shape": typeof model_shape;
   phases: typeof phases;
+  photos: typeof photos;
   plan: typeof plan;
   seed: typeof seed;
   signInLimit: typeof signInLimit;

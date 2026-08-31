@@ -14,6 +14,7 @@ import {
   findWorkout,
   groupItems,
   looseBlockId,
+  moveBlock,
   moveItem,
   removeBlock,
   removeItem,
@@ -342,6 +343,22 @@ export async function ungroupBlockAction(workoutId: string, blockId: string): Pr
   await requireCoach();
   if (!workoutId || !blockId) return;
   await ungroupBlock(blockId);
+  refresh();
+}
+
+/**
+ * Move a whole group one slot up or down. Typed rather than form-encoded for
+ * the same reason as `reorderItemsAction`: it is fired from a transition after
+ * the group has already moved on screen.
+ */
+export async function moveGroupAction(
+  workoutId: string,
+  blockId: string,
+  direction: -1 | 1,
+): Promise<void> {
+  await requireCoach();
+  if (!workoutId || !blockId) return;
+  await moveBlock(blockId, direction);
   refresh();
 }
 

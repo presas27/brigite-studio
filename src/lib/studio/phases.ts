@@ -3,9 +3,9 @@ import type { Id } from "@convex/_generated/dataModel";
 import { sm, sq } from "@/lib/studio/convexServer";
 import type {
   PhaseDurationType,
+  PhaseWorkout,
   TrainingPhase,
   TrainingPhaseSummary,
-  WorkoutSummary,
   WorkoutType,
 } from "./types";
 
@@ -101,8 +101,8 @@ export async function removePhase(phaseId: string): Promise<void> {
 
 /* ------------------------------------------------------ workouts in a phase */
 
-/** The workouts of one phase, in the coach's order. */
-export async function phaseWorkouts(phaseId: string): Promise<WorkoutSummary[]> {
+/** The workouts of one phase, in the coach's order, with their calendar days. */
+export async function phaseWorkouts(phaseId: string): Promise<PhaseWorkout[]> {
   return sq(api.phases.workouts, { phaseId: phaseId as Id<"trainingPhases"> });
 }
 

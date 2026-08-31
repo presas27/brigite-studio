@@ -161,6 +161,38 @@ export type Workout = {
 /** Workout metadata without blocks — for lists. */
 export type WorkoutSummary = Omit<Workout, "blocks"> & { itemCount: number };
 
+/**
+ * A workout as it appears inside a training phase: the summary plus the days it
+ * currently occupies on the client's calendar, ascending.
+ *
+ * The dates are read from the assignments rather than stored on the workout,
+ * because the calendar is the truth — a session dragged to another day or
+ * deleted on the week grid has to be what the phase row and the date picker
+ * show. Only the phase view pays for that read; library lists never do.
+ */
+export type PhaseWorkout = WorkoutSummary & { scheduleDates: string[] };
+
+/** The three angles a progress photo can be shot from. */
+export type PhotoAngle = "front" | "back" | "side";
+
+/**
+ * One progress photo. No URL: the bytes are served per request behind the
+ * session, so a photo is an id until something asks for it.
+ */
+export type ProgressPhoto = {
+  id: string;
+  /** Monday of the check-in's week, `YYYY-MM-DD`. */
+  weekOf: string;
+  angle: PhotoAngle;
+  width: number;
+  height: number;
+  /** Stored bytes, full size and thumbnail together. */
+  bytes: number;
+};
+
+/** One check-in's photos, however many of the three angles it has. */
+export type ProgressPhotoWeek = { weekOf: string; photos: ProgressPhoto[] };
+
 /** Two ways to say how long a phase runs. See `TrainingPhase`. */
 export type PhaseDurationType = "calendar" | "weeks";
 

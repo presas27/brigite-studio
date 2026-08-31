@@ -5,17 +5,25 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { buttonGhost, field, muted, surface } from "@/components/studio/theme";
 import { dayKey } from "@/lib/studio/dates";
-import type { WorkoutSummary } from "@/lib/studio/types";
+import type { PhaseWorkout } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
+/**
+ * "Schedule" on a phase workout row: repeat weekly, pick days, or neither.
+ *
+ * The date panel opens on the days the workout already has, not on today — a
+ * coach reopening it is almost always editing a placement rather than starting
+ * one, and a picker that silently forgets three saved days is a picker that
+ * deletes them on the next save.
+ */
 export function WorkoutScheduleMenu({
   workout,
   scheduleAction,
   canRepeatWeekly,
 }: {
-  workout: WorkoutSummary;
+  workout: PhaseWorkout;
   scheduleAction: (formData: FormData) => void | Promise<void>;
   canRepeatWeekly: boolean;
 }) {
@@ -23,7 +31,11 @@ export function WorkoutScheduleMenu({
   const tPhases = useTranslations("Studio.plan.phases");
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"menu" | "weekly" | "custom">("menu");
-  const [dates, setDates] = useState<string[]>([dayKey()]);
+  // The days to open the picker on: the ones the workout already occupies, or
+  // today when it has none. Never empty — a panel with no date row has nothing
+  // to submit and no obvious way back.
+  const saved = workout.scheduleDates.length > 0 ? workout.scheduleDates : [dayKey()];
+  const [dates, setDates] = useState<string[]>(saved);
   const [pending, startTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +107,10 @@ export function WorkoutScheduleMenu({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => setPanel("custom")}
+                onClick={() => {
+                  setDates(saved);
+                  setPanel("custom");
+                }}
                 className="flex items-start gap-3 rounded-[0.85rem] px-3 py-2.5 text-left transition-colors hover:bg-cream/5"
               >
                 <Icon name="calendar" className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />

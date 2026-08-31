@@ -344,3 +344,33 @@ html[data-theme-transition="expanding"]::view-transition-new(root) {
     animation: none;
   }
 }
+
+/*
+ * Print sheets — `/…/treino/[workoutId]/imprimir`.
+ *
+ * The app is wine on near-black, which a printer either lays down as a solid
+ * block of toner or (with background graphics off, the default everywhere)
+ * drops entirely, leaving cream text on white paper. The sheet renders itself
+ * as a light document instead; what is left here is the part utilities cannot
+ * express: the page box, and forcing the canvas white past `body`'s own
+ * background, which would otherwise still be sent to the printer.
+ */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  /* Exact colour, so the hairline rules and axis ticks survive a printer that
+     would otherwise "save ink" by dropping light greys. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

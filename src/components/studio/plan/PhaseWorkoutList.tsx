@@ -1,15 +1,23 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { formatDayKey } from "@/components/studio/format";
 import { Icon } from "@/components/studio/coach/icons";
 import { buttonQuiet, chip, muted, surface } from "@/components/studio/theme";
-import type { WorkoutSummary } from "@/lib/studio/types";
+import type { PhaseWorkout } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { WorkoutScheduleMenu } from "./WorkoutScheduleMenu";
+
+/** How many days a row spells out before it starts counting the rest. */
+const DATES_SHOWN = 3;
 
 /**
  * The workouts inside one training phase, in the coach's order. Each row
  * doubles as a way in (the name links to the builder) and a way to place the
  * workout on the calendar right there, without opening it first.
+ *
+ * A row always says where the workout sits: the weekday it repeats on, the days
+ * it was given, or that it has none. "Unscheduled" disappearing with nothing in
+ * its place is worse than either.
  */
 export async function PhaseWorkoutList({
   workouts,
@@ -18,7 +26,7 @@ export async function PhaseWorkoutList({
   scheduleAction,
   canRepeatWeekly,
 }: {
-  workouts: WorkoutSummary[];
+  workouts: PhaseWorkout[];
   basePath: string;
   removeAction: (formData: FormData) => void | Promise<void>;
   scheduleAction: (formData: FormData) => void | Promise<void>;
@@ -26,10 +34,11 @@ export async function PhaseWorkoutList({
 }) {
   if (workouts.length === 0) return null;
 
-  const [t, tPhases, tWorkouts] = await Promise.all([
+  const [t, tPhases, tWorkouts, locale] = await Promise.all([
     getTranslations("Studio.plan"),
     getTranslations("Studio.plan.phases"),
     getTranslations("Studio.workouts"),
+    getLocale(),
   ]);
 
   return (
@@ -46,7 +55,12 @@ export async function PhaseWorkoutList({
           .filter(Boolean)
           .join(" · ");
 
-        const unscheduled = workout.scheduleMode !== "weekly" && workout.scheduleMode !== "custom";
+        // `scheduleMode` is the method the coach chose; the dates are what came
+        // of it. A custom placement whose sessions have all been moved or
+        // deleted is unscheduled again, whatever the method still says.
+        const weekly = workout.scheduleMode === "weekly" && workout.scheduleWeekday != null;
+        const dates = workout.scheduleMode === "custom" ? workout.scheduleDates : [];
+        const unscheduled = !weekly && dates.length === 0;
 
         return (
           <div
@@ -64,9 +78,19 @@ export async function PhaseWorkoutList({
                   </span>
                 )}
                 {unscheduled && <span className={chip}>{t("unscheduled")}</span>}
-                {workout.scheduleMode === "weekly" && workout.scheduleWeekday != null && (
+                {weekly && (
                   <span className={chip}>
                     {t("everyWeekday", { day: tPhases(`weekday.${workout.scheduleWeekday}`) })}
+                  </span>
+                )}
+                {dates.slice(0, DATES_SHOWN).map((date) => (
+                  <span key={date} className={chip}>
+                    {formatDayKey(date, locale)}
+                  </span>
+                ))}
+                {dates.length > DATES_SHOWN && (
+                  <span className={chip}>
+                    {t("datesMore", { count: dates.length - DATES_SHOWN })}
                   </span>
                 )}
               </div>

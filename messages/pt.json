@@ -511,6 +511,8 @@
       "chooseExercise": "Escolhe um exercício",
       "moveUp": "Subir",
       "moveDown": "Descer",
+      "moveGroupUp": "Subir grupo",
+      "moveGroupDown": "Descer grupo",
       "removeItem": "Remover exercício",
       "removeBlock": "Remover bloco",
       "blockEmpty": "Bloco vazio. Adiciona um exercício.",
@@ -573,6 +575,7 @@
       "scheduleDontHint": "O aluno escolhe o dia na app",
       "unscheduled": "Por agendar",
       "everyWeekday": "Todas as {day}",
+      "datesMore": "+{count}",
       "addDate": "+ Adicionar data",
       "removeDate": "Remover",
       "move": "Mover",
@@ -951,6 +954,88 @@
       "memberSince": "Aluno desde",
       "saved": "Guardado.",
       "back": "Voltar"
+    },
+    "print": {
+      "print": "Imprimir",
+      "close": "Fechar",
+      "pdfHint": "Na janela de impressão escolhe “Guardar como PDF” para exportar o ficheiro.",
+      "format": {
+        "completo": "Formato completo",
+        "completoHint": "O treino todo: prescrição, instruções, material e imagens",
+        "instrucoes": "Só instruções",
+        "instrucoesHint": "Nomes, prescrição e notas — sem nada para preencher",
+        "registo": "Só folha de registo",
+        "registoHint": "Nomes e espaços em branco para carga, repetições e descanso",
+        "medida": "Formato à medida",
+        "medidaHint": "Escolhe que secções incluir",
+        "progresso": "Progressão do treino",
+        "progressoHint": "Gráficos do que foi registado, num intervalo de datas"
+      },
+      "section": {
+        "instructions": "Instruções e indicações",
+        "equipment": "Lista de material",
+        "images": "Imagens dos exercícios",
+        "tracking": "Colunas de registo"
+      },
+      "rangeLead": "Escolhe o intervalo de datas para imprimir o histórico de {name} neste treino.",
+      "from": "De",
+      "to": "Até",
+      "equipment": "Material",
+      "noEquipment": "Sem material identificado nestes exercícios.",
+      "restShort": "{rest} de descanso",
+      "setColumn": "Série",
+      "weightColumn": "Carga",
+      "repsColumn": "Reps",
+      "restColumn": "Descanso",
+      "notesColumn": "Notas",
+      "progressionTitle": "Progressão registada",
+      "sessionCount": "{count, plural, =1 {# sessão registada} other {# sessões registadas}}",
+      "noSessions": "Sem sessões concluídas neste intervalo de datas.",
+      "noExerciseData": "Sem dados registados para este exercício no intervalo escolhido.",
+      "generatedOn": "Impresso a {date}",
+      "unitKg": " kg",
+      "unitSeconds": " s",
+      "unitReps": " reps",
+      "unitMetres": " m"
+    },
+    "photos": {
+      "metric": "Fotos",
+      "fieldsLabel": "Fotos de progresso",
+      "fieldsHint": "Frente, costas, lado. As três são opcionais — envia as que quiseres, ficam guardadas logo.",
+      "angle": {
+        "front": "Frente",
+        "back": "Costas",
+        "side": "Lado"
+      },
+      "angleShort": {
+        "front": "F",
+        "back": "C",
+        "side": "L"
+      },
+      "optional": "Adicionar",
+      "uploading": "A enviar…",
+      "failed": "Falhou. Toca para tentar outra vez.",
+      "add": "Adicionar a foto de {angle}",
+      "replace": "Substituir a foto de {angle}",
+      "logEmpty": "Ainda sem fotos de progresso.",
+      "logEmptyHint": "Aparecem aqui depois de um check-in com fotos.",
+      "compare": "Comparar",
+      "compareHint": "Escolhe dois check-ins para comparar.",
+      "compareReady": "Dois check-ins escolhidos.",
+      "comparing": "A comparar {from} → {to}",
+      "exitCompare": "Sair da comparação",
+      "missingAngle": "Sem foto",
+      "selectWeek": "Escolher o check-in de {date}",
+      "photoAlt": "{angle}, {date}",
+      "angleCount": "{count, plural, =1 {# foto} other {# fotos}}"
     }
+  },
+  "Error": {
+    "title": "Algo falhou do nosso lado",
+    "lead": "A página não carregou. Não foi nada que fizeste — tenta outra vez e, se continuar, diz à Sara o que estavas a fazer.",
+    "retry": "Tentar outra vez",
+    "home": "Voltar ao site",
+    "studio": "Voltar à área de treino",
+    "reference": "Referência {digest}"
   }
 }

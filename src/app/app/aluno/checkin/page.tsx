@@ -1,9 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { requireClient } from "@/lib/studio/auth";
 import { findCheckin, listCheckins } from "@/lib/studio/coaching";
+import { progressPhotoWeeks } from "@/lib/studio/photos";
 import { weekKey } from "@/lib/studio/dates";
 import { ArcRating } from "@/components/studio/checkin/ArcRating";
 import { CheckinHistory } from "@/components/studio/checkin/CheckinHistory";
+import { PhotoFields } from "@/components/studio/checkin/PhotoFields";
 import { CheckinPanel } from "@/components/studio/checkin/CheckinPanel";
 import { WeightField } from "@/components/studio/checkin/WeightField";
 import { Field } from "@/components/studio/Field";
@@ -21,10 +23,12 @@ export default async function ClientCheckinPage() {
   const locale = await getLocale();
 
   const week = weekKey();
-  const [checkin, history] = await Promise.all([
+  const [checkin, history, photoWeeks] = await Promise.all([
     findCheckin(client.id, week),
     listCheckins(client.id),
+    progressPhotoWeeks(client.id, 3),
   ]);
+  const thisWeek = photoWeeks.find((entry) => entry.weekOf === week);
   const alreadyDone = checkin?.submittedAt != null;
 
   return (
@@ -82,6 +86,7 @@ export default async function ClientCheckinPage() {
                 className={field}
               />
             </Field>
+            <PhotoFields clientId={client.id} weekOf={week} photos={thisWeek?.photos ?? []} />
             <div className="flex justify-end">
               <SubmitButton pendingLabel={common("sending")}>{t("submit")}</SubmitButton>
             </div>

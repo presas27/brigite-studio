@@ -58,7 +58,10 @@ const phaseFields = {
 const phaseValidator = v.object(phaseFields);
 const phaseSummaryValidator = v.object({ ...phaseFields, workoutCount: v.number() });
 
-/** `WorkoutSummary`: a workout's metadata plus the size of its exercise list. */
+/**
+ * `PhaseWorkout`: a workout's metadata, the size of its exercise list, and the
+ * days it occupies on the client's calendar.
+ */
 const workoutSummaryValidator = v.object({
   id: v.string(),
   name: v.string(),
@@ -78,6 +81,8 @@ const workoutSummaryValidator = v.object({
   scheduleMode: v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
   scheduleWeekday: v.union(v.null(), v.number()),
   itemCount: v.number(),
+  /** Ascending day keys, read from the assignments. Empty when unscheduled. */
+  scheduleDates: v.array(v.string()),
 });
 
 function mapPhase(doc: Doc<"trainingPhases">) {
@@ -273,7 +278,12 @@ export const workouts = query({
     await requireClientAccess(ctx, phase.clientId);
 
     const docs = await phaseWorkoutDocs(ctx, args.phaseId);
-    return await Promise.all(docs.map((doc) => workoutSummary(ctx, doc)));
+    return await Promise.all(
+      docs.map(async (doc) => ({
+        ...(await workoutSummary(ctx, doc)),
+        scheduleDates: await scheduleDatesOf(ctx, doc._id),
+      })),
+    );
   },
 });
 
@@ -418,6 +428,28 @@ async function phaseWorkoutDocs(
     .withIndex("by_phase_and_position", (q) => q.eq("phaseId", phaseId))
     .collect();
   return options.includeArchived ? docs : docs.filter((doc) => !doc.archived);
+}
+
+/**
+ * The days a phase workout occupies on the client's calendar, ascending and
+ * without repeats.
+ *
+ * Read from the assignments rather than from a field on the workout, because
+ * they are what the calendar renders: a session the coach dragged to another
+ * day, or deleted on the week grid, has to be what the phase row and the date
+ * picker show. `scheduleMode` records the coach's *method*; this is the result.
+ *
+ * Bounded by the parent: one workout's assignments are a phase's worth of days,
+ * a dozen at most, and the index reads only those.
+ */
+async function scheduleDatesOf(ctx: QueryCtx, workoutId: Id<"workouts">): Promise<string[]> {
+  const assignments = await ctx.db
+    .query("assignments")
+    .withIndex("by_workout", (q) => q.eq("workoutId", workoutId))
+    .collect();
+  const dates = new Set<string>();
+  for (const doc of assignments) if (doc.date) dates.add(doc.date);
+  return [...dates].sort();
 }
 
 /** One past the last phase of this client's plan. */

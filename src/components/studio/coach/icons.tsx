@@ -18,6 +18,14 @@ const PATHS: Record<string, string> = {
   library: "M4 4h5v16H4V4Zm7 0h4v16h-4V4Zm7 1.5 3 14.5",
   dumbbell: "M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10",
   bell: "M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9ZM10 18a2 2 0 0 0 4 0",
+  // Warning triangle, for the error boundaries. Drawn on the same 24 grid with
+  // the bang as two subpaths, so the stroke weight matches the rest of the set
+  // instead of arriving as a filled glyph from somewhere else.
+  alert: "M12 4.4 21 19.6H3L12 4.4ZM12 10v3.6M12 16.8h.01",
+  // Printer: paper behind, tray in front, sheet coming out. Three strokes, so
+  // it still reads as a printer at 16px instead of as a stack of rectangles.
+  print:
+    "M7 8V3.5h10V8M7 17.5H5.5A1.5 1.5 0 0 1 4 16V10a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 10v6a1.5 1.5 0 0 1-1.5 1.5H17M7 14h10v6.5H7V14Z",
   plus: "M12 5v14M5 12h14",
   check: "m5 12.6 4.6 4.6L19 8",
   chevron: "m9 6 6 6-6 6",
