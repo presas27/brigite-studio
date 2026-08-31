@@ -1,42 +1,59 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { SessionLibrary } from "@/components/studio/aluno/SessionLibrary";
+import { WorkoutLibrary } from "@/components/studio/aluno/WorkoutLibrary";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireClient } from "@/lib/studio/auth";
-import { clientSessions, sessionFocuses } from "@/lib/studio/clientConsole";
 import { dayKey } from "@/lib/studio/dates";
+import { clientWorkouts } from "@/lib/studio/plan";
+import type { ClientWorkout } from "@/lib/studio/types";
+import { startWorkout } from "./actions";
 
 export const metadata: Metadata = { title: "Treinos" };
 
 /**
- * Every session Sara has put on this aluna's calendar, browsable — the
- * counterpart of the coach's workout library, over what was actually assigned
- * rather than over the templates.
+ * Every workout of every phase in this aluna's plan — always all of them, on
+ * any day.
  *
- * The calendar answers "when"; this answers "which one was that again" — the
- * question you ask when you want to repeat a session you liked or find the
- * week you last did legs.
+ * The plan page draws the calendar: which workout Sara suggests for which day.
+ * This page is the other half of that, and deliberately ignores the calendar:
+ * someone who has twenty minutes on a Tuesday and wants Thursday's mobility
+ * session should be one tap away from doing it, not blocked by a date. Tapping
+ * a workout writes today's session for it — or opens the one already there.
  */
 export default async function AlunoTreinosPage() {
   const client = await requireClient();
   const t = await getTranslations("Studio.aluno");
 
-  const sessions = await clientSessions(client.id);
+  const workouts = await clientWorkouts(client.id);
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("sessions.title")} lead={t("sessions.lead")} />
+      <PageHeader title={t("workouts.title")} lead={t("workouts.lead")} />
 
-      {sessions.length === 0 ? (
-        <Empty title={t("sessions.empty")} hint={t("sessions.emptyHint")} />
+      {workouts.length === 0 ? (
+        <Empty title={t("workouts.empty")} hint={t("workouts.emptyHint")} />
       ) : (
-        <SessionLibrary
-          sessions={sessions}
-          focuses={sessionFocuses(sessions)}
+        <WorkoutLibrary
+          workouts={workouts}
+          focuses={workoutFocuses(workouts)}
           today={dayKey()}
+          startAction={startWorkout}
         />
       )}
     </div>
   );
+}
+
+/** Distinct focuses across the plan, with counts — the library's category filter. */
+function workoutFocuses(workouts: ClientWorkout[]): { tag: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const workout of workouts) {
+    const focus = workout.focus.trim();
+    if (!focus) continue;
+    counts.set(focus, (counts.get(focus) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
 }

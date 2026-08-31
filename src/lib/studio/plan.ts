@@ -5,6 +5,7 @@ import { dayKey } from "./dates";
 import type {
   Assignment,
   AssignmentStatus,
+  ClientWorkout,
   ScheduledAssignment,
   SetLog,
 } from "./types";
@@ -62,6 +63,35 @@ export async function rescheduleWorkout(input: {
     weekday: input.weekday,
     dates: input.dates,
   });
+}
+
+/**
+ * The client training a workout of their own plan today, because they felt like
+ * it — the counterpart of `assignWorkout`, written by the person doing the
+ * session instead of the one who planned it.
+ *
+ * Today's session for that workout is reused when there is one, so the id that
+ * comes back is safe to redirect to either way. `undefined` means the workout
+ * is gone or is not theirs, and nothing was written.
+ */
+export async function startWorkoutNow(
+  clientId: string,
+  workoutId: string,
+): Promise<string | undefined> {
+  const assignmentId = await sm(api.plan.startWorkoutNow, {
+    clientId: clientId as Id<"users">,
+    workoutId: workoutId as Id<"workouts">,
+  });
+  return assignmentId ?? undefined;
+}
+
+/**
+ * Every workout of a client's plan, phase order first, whatever day it was
+ * given. The client's workout list draws this: the calendar says when the coach
+ * suggests each one, and this says what there is to train.
+ */
+export async function clientWorkouts(clientId: string): Promise<ClientWorkout[]> {
+  return sq(api.plan.clientWorkouts, { clientId: clientId as Id<"users"> });
 }
 
 export async function findAssignment(assignmentId: string): Promise<Assignment | undefined> {

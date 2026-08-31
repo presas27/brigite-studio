@@ -2,7 +2,7 @@ import { v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireClientAccess, requireCoach, requireViewer, type Ctx } from "./model/authz";
-import { workoutWithBlocks } from "./model/library";
+import { workoutSize, workoutWithBlocks } from "./model/library";
 import schema from "./schema";
 import { dayKey, shiftDay } from "../src/lib/studio/dates";
 import { buildSessionQueue } from "../src/lib/studio/session-queue";
@@ -102,6 +102,35 @@ const personalRecordShape = v.object({
   bestLoadKg: v.union(v.null(), v.number()),
   bestSeconds: v.union(v.null(), v.number()),
   bestReps: v.union(v.null(), v.number()),
+});
+
+/**
+ * One workout of a client's plan, as their own workout list draws it: the
+ * template's own fields, its size, and where it stands with this client.
+ *
+ * Deliberately not a `WorkoutSummary`: the list is not a builder, so nothing
+ * about blocks, cues or provenance crosses the wire — and it carries three
+ * things a template never has (today's open session, when it was last finished,
+ * how many times).
+ */
+const clientWorkoutShape = v.object({
+  id: v.string(),
+  name: v.string(),
+  focus: v.string(),
+  workoutType: v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval")),
+  estimatedMinutes: v.union(v.null(), v.number()),
+  itemCount: v.number(),
+  blockCount: v.number(),
+  phaseId: v.union(v.null(), v.string()),
+  phaseName: v.union(v.null(), v.string()),
+  /** Monday=0 … Sunday=6, only when the coach repeats it weekly. */
+  scheduleWeekday: v.union(v.null(), v.number()),
+  /** Today's unfinished session for this workout, when the coach placed one. */
+  openAssignmentId: v.union(v.null(), v.string()),
+  startedToday: v.boolean(),
+  /** `YYYY-MM-DD` of the last finished session, or null for never trained. */
+  lastDoneDate: v.union(v.null(), v.string()),
+  doneCount: v.number(),
 });
 
 /* ----------------------------------------------------------------- mapping */
@@ -547,38 +576,43 @@ export const clientWorkouts = query({
 
         const phase = doc.phaseId ? (phaseById.get(doc.phaseId) ?? null) : null;
         return {
-          id: doc._id as string,
-          name: doc.name,
-          focus: doc.focus,
-          workoutType: doc.workoutType,
-          estimatedMinutes: doc.estimatedMinutes ?? null,
-          itemCount: size.itemCount,
-          blockCount: size.blockCount,
-          phaseId: (doc.phaseId as string | null) ?? null,
-          phaseName: phase ? phase.name : null,
-          // The weekday only when the coach chose to repeat it weekly: a
-          // `custom` placement's days are the calendar's business, and the plan
-          // page is where the client reads those.
-          scheduleWeekday:
-            doc.scheduleMode === "weekly" ? (doc.scheduleWeekday ?? null) : null,
-          openAssignmentId: open ? (open._id as string) : null,
-          startedToday: open ? open.startedAt !== null : false,
-          lastDoneDate,
-          doneCount,
           // Phase order first, then the coach's order inside it. Workouts left
-          // outside a phase sort last: legacy rows, and nowhere else to put them.
+          // outside a phase sort last: legacy rows, and nowhere else to put
+          // them. Both keys stay off the wire — the page renders the list in
+          // the order it arrives.
           phasePosition: phase ? phase.position : Number.MAX_SAFE_INTEGER,
           position: doc.position,
+          row: {
+            id: doc._id as string,
+            name: doc.name,
+            focus: doc.focus,
+            workoutType: doc.workoutType,
+            estimatedMinutes: doc.estimatedMinutes ?? null,
+            itemCount: size.itemCount,
+            blockCount: size.blockCount,
+            phaseId: (doc.phaseId as string | null) ?? null,
+            phaseName: phase ? phase.name : null,
+            // The weekday only when the coach chose to repeat it weekly: a
+            // `custom` placement's days are the calendar's business, and the
+            // plan page is where the client reads those.
+            scheduleWeekday: doc.scheduleMode === "weekly" ? (doc.scheduleWeekday ?? null) : null,
+            openAssignmentId: open ? (open._id as string) : null,
+            startedToday: open ? open.startedAt !== null : false,
+            lastDoneDate,
+            doneCount,
+          },
         };
       }),
     );
 
-    return rows.sort(
-      (a, b) =>
-        a.phasePosition - b.phasePosition ||
-        a.position - b.position ||
-        a.name.localeCompare(b.name, "pt", { sensitivity: "base" }),
-    );
+    return rows
+      .sort(
+        (a, b) =>
+          a.phasePosition - b.phasePosition ||
+          a.position - b.position ||
+          a.row.name.localeCompare(b.row.name, "pt", { sensitivity: "base" }),
+      )
+      .map((entry) => entry.row);
   },
 });
 

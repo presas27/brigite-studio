@@ -312,19 +312,28 @@
           "coachMessage": "A Sara escreveu-te."
         }
       },
-      "sessions": {
+      "workouts": {
         "title": "Treinos",
-        "lead": "Tudo o que já fizeste e o que tens marcado.",
+        "lead": "Todos os treinos do teu plano. Faz qualquer um, em qualquer dia.",
         "count": "{count, plural, =1 {# Treino} other {# Treinos}}",
         "items": "{count, plural, =1 {# Exercício} other {# Exercícios}}",
         "blocks": "{count, plural, =1 {# Bloco} other {# Blocos}}",
         "duration": "{count} min",
-        "today": "Hoje",
+        "start": "Começar",
+        "resume": "Retomar",
+        "again": "Fazer outra vez",
+        "starting": "A abrir…",
+        "inProgress": "A decorrer",
+        "doneToday": "Feito hoje",
+        "everyWeekday": "Sugerido: {day}",
+        "noPhase": "O teu plano",
+        "lastDone": "Último a {date}",
+        "neverDone": "Ainda não fizeste",
         "noResults": "Nenhum treino corresponde.",
         "noResultsHint": "Limpa a procura ou escolhe outro foco.",
         "empty": "Ainda não tens treinos.",
-        "emptyHint": "Assim que a Sara marcar o primeiro, aparece aqui.",
-        "rangeNote": "Mostra o último ano e as semanas já marcadas à frente."
+        "emptyHint": "Assim que a Sara montar o teu plano, todos os treinos aparecem aqui.",
+        "note": "Qualquer treino, qualquer dia. O plano mostra o dia que a Sara sugere para cada um."
       }
     },
     "leads": {

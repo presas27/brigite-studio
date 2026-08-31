@@ -312,19 +312,28 @@
           "coachMessage": "Sara wrote to you."
         }
       },
-      "sessions": {
-        "title": "Sessions",
-        "lead": "Everything you've done, and everything that's booked.",
-        "count": "{count, plural, =1 {# Session} other {# Sessions}}",
+      "workouts": {
+        "title": "Workouts",
+        "lead": "Every workout in your plan. Start any of them, any day.",
+        "count": "{count, plural, =1 {# Workout} other {# Workouts}}",
         "items": "{count, plural, =1 {# Exercise} other {# Exercises}}",
         "blocks": "{count, plural, =1 {# Block} other {# Blocks}}",
         "duration": "{count} min",
-        "today": "Today",
-        "noResults": "No session matches.",
+        "start": "Start",
+        "resume": "Resume",
+        "again": "Do it again",
+        "starting": "Opening…",
+        "inProgress": "In progress",
+        "doneToday": "Done today",
+        "everyWeekday": "Suggested: {day}",
+        "noPhase": "Your plan",
+        "lastDone": "Last done {date}",
+        "neverDone": "Never done",
+        "noResults": "No workout matches.",
         "noResultsHint": "Clear the search or pick another focus.",
-        "empty": "You have no sessions yet.",
-        "emptyHint": "As soon as Sara books the first one, it shows up here.",
-        "rangeNote": "Shows the last year and the weeks already booked ahead."
+        "empty": "You have no workouts yet.",
+        "emptyHint": "As soon as Sara builds your plan, every workout shows up here.",
+        "note": "Any workout, any day. The plan shows the day Sara suggests for each one."
       }
     },
     "leads": {

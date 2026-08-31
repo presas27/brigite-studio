@@ -13,7 +13,7 @@ import { isRestItem, type AssignmentStatus, type ScheduledAssignment } from "./t
  * ones run together in a `Promise.all` instead of one after another.
  */
 
-/** How far back the library and the feed look. A year of training is plenty of history to browse. */
+/** How far back the feed looks. A year of training is plenty of history. */
 const HISTORY_DAYS = 365;
 /** How far ahead. Sara plans in weeks, never in seasons. */
 const HORIZON_DAYS = 120;
@@ -167,74 +167,6 @@ export async function clientActivity(clientId: string, limit = 12): Promise<Clie
   }
 
   return items.sort((a, b) => b.at - a.at).slice(0, limit);
-}
-
-/**
- * One assigned session, flattened for lists.
- *
- * Never the whole `Assignment`: its `snapshot` carries every block and every
- * set, and a year of those crossing the server/client boundary to draw a grid
- * of cards would be absurd.
- */
-export type ClientSession = {
-  id: string;
-  date: string;
-  status: AssignmentStatus;
-  name: string;
-  focus: string;
-  /** Total exercises across every block — the card's one honest measure of size. */
-  itemCount: number;
-  blockCount: number;
-  estimatedMinutes: number | null;
-  startedAt: number | null;
-};
-
-function toSession(assignment: ScheduledAssignment): ClientSession {
-  const blocks = assignment.snapshot.blocks;
-  return {
-    id: assignment.id,
-    date: assignment.date,
-    status: assignment.status,
-    name: assignment.snapshot.name,
-    focus: assignment.snapshot.focus,
-    itemCount: blocks.reduce(
-      (total, block) => total + block.items.filter((item) => !isRestItem(item)).length,
-      0,
-    ),
-    blockCount: blocks.length,
-    estimatedMinutes: assignment.snapshot.estimatedMinutes ?? null,
-    startedAt: assignment.startedAt,
-  };
-}
-
-/**
- * Every session on this aluna's calendar, newest first — a year back and the
- * planned weeks ahead. The library page browses this; the calendar reads the
- * raw assignments for the month it is drawing.
- */
-export async function clientSessions(clientId: string): Promise<ClientSession[]> {
-  const today = dayKey();
-  const assignments = await assignmentsBetween(
-    clientId,
-    shiftDay(today, -HISTORY_DAYS),
-    shiftDay(today, HORIZON_DAYS),
-  );
-  return assignments
-    .map(toSession)
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-}
-
-/** Distinct focuses across a session list, with counts — the library's category filter. */
-export function sessionFocuses(sessions: ClientSession[]): { tag: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const session of sessions) {
-    const focus = session.focus.trim();
-    if (!focus) continue;
-    counts.set(focus, (counts.get(focus) ?? 0) + 1);
-  }
-  return [...counts]
-    .map(([tag, count]) => ({ tag, count }))
-    .sort((a, b) => a.tag.localeCompare(b.tag));
 }
 
 /* ------------------------------------------------------------- the overview */

@@ -172,6 +172,39 @@ export type WorkoutSummary = Omit<Workout, "blocks"> & { itemCount: number };
  */
 export type PhaseWorkout = WorkoutSummary & { scheduleDates: string[] };
 
+/**
+ * One workout of a client's plan, as the client's own workout list draws it.
+ *
+ * Not a `PhaseWorkout`: that shape is the coach's, and carries the provenance
+ * and the calendar placement she manages. This one carries what the person
+ * training needs in order to pick a session right now — how big it is, whether
+ * today already has one open for it, and when they last finished it.
+ *
+ * The day the coach suggested is deliberately reduced to `scheduleWeekday`: the
+ * plan page is where the calendar lives, and a workout with a day is still
+ * something the client may train whenever they feel like it.
+ */
+export type ClientWorkout = {
+  id: string;
+  name: string;
+  focus: string;
+  workoutType: WorkoutType;
+  estimatedMinutes: number | null;
+  /** Exercises across every block. Rest rows are not counted. */
+  itemCount: number;
+  blockCount: number;
+  phaseId: string | null;
+  phaseName: string | null;
+  /** Monday=0 … Sunday=6, only when the coach repeats it weekly. */
+  scheduleWeekday: number | null;
+  /** Today's unfinished session for this workout, when there is one. */
+  openAssignmentId: string | null;
+  startedToday: boolean;
+  /** `YYYY-MM-DD` of the last finished session, or null for never trained. */
+  lastDoneDate: string | null;
+  doneCount: number;
+};
+
 /** The three angles a progress photo can be shot from. */
 export type PhotoAngle = "front" | "back" | "side";
 
