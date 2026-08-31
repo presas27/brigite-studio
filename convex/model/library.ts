@@ -285,15 +285,19 @@ export async function workoutWithBlocks(
 }
 
 /**
- * Workout metadata plus how many exercises it holds — the shape every list
- * renders. The count is the `SELECT count(*)` subquery the SQL carried, and it
- * costs one index read per block, which is why lists use this and not
- * `workoutWithBlocks`: no exercise, cue or video is fetched to draw a card.
+ * How big a workout is: how many exercises it holds, and how many blocks they
+ * sit in. Rest rows are not exercises and are not counted.
+ *
+ * One index read per block and nothing about the movements themselves — the
+ * lists that draw a card want the size, never the cues or the video.
  */
-export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<WorkoutSummary> {
+export async function workoutSize(
+  ctx: Ctx,
+  workoutId: Id<"workouts">,
+): Promise<{ itemCount: number; blockCount: number }> {
   const blocks = await ctx.db
     .query("workoutBlocks")
-    .withIndex("by_workout_and_position", (q) => q.eq("workoutId", doc._id))
+    .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
     .collect();
 
   let itemCount = 0;
@@ -305,6 +309,17 @@ export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<Wo
     itemCount += items.filter((item) => item.kind !== "rest").length;
   }
 
+  return { itemCount, blockCount: blocks.length };
+}
+
+/**
+ * Workout metadata plus how many exercises it holds — the shape every list
+ * renders. The count is the `SELECT count(*)` subquery the SQL carried, and it
+ * costs one index read per block, which is why lists use this and not
+ * `workoutWithBlocks`: no exercise, cue or video is fetched to draw a card.
+ */
+export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<WorkoutSummary> {
+  const { itemCount } = await workoutSize(ctx, doc._id);
   return { ...workoutMeta(doc), itemCount };
 }
 

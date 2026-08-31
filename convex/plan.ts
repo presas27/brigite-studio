@@ -225,6 +225,50 @@ function metric(value: number | null | undefined): number | null {
 /* -------------------------------------------------------------- assignments */
 
 /**
+ * Freeze the template and write the assignment.
+ *
+ * Shared by the coach's `assignWorkout` and the client's `startWorkoutNow`, so
+ * a session the client started from their workout list is the same row as one
+ * the coach placed on the calendar — the player, the logs and every report read
+ * one shape, not two.
+ *
+ * `undefined` when the workout is gone, which is the caller's cue that nothing
+ * was written.
+ */
+async function freezeAssignment(
+  ctx: MutationCtx,
+  input: {
+    clientId: Id<"users">;
+    workoutId: Id<"workouts">;
+    date: string | null;
+    note?: string;
+  },
+): Promise<Id<"assignments"> | null> {
+  const workout = await workoutWithBlocks(ctx, input.workoutId);
+  if (!workout) return null;
+
+  return await ctx.db.insert("assignments", {
+    clientId: input.clientId,
+    workoutId: input.workoutId,
+    date: input.date,
+    status: "scheduled",
+    snapshot: {
+      name: workout.name,
+      focus: workout.focus,
+      notes: workout.notes,
+      instructions: workout.instructions,
+      estimatedMinutes: workout.estimatedMinutes,
+      blocks: workout.blocks,
+    },
+    note: input.note ?? "",
+    startedAt: null,
+    doneAt: null,
+    effort: null,
+    extraRestSeconds: 0,
+  });
+}
+
+/**
  * Place a workout on a client's calendar, freezing the template as it is now.
  * `date: null` leaves it unscheduled — it lands in the "sem dia" bucket until
  * the coach assigns it a day.
@@ -245,28 +289,49 @@ export const assignWorkout = mutation({
     // Also proves the subject is a real, non-archived client before anything
     // is frozen against them.
     await requireClientAccess(ctx, args.clientId);
+    return await freezeAssignment(ctx, args);
+  },
+});
 
-    const workout = await workoutWithBlocks(ctx, args.workoutId);
-    if (!workout) return null;
+/**
+ * The client training a workout of their own plan today, because they felt like
+ * it. The counterpart of `assignWorkout`: same row, written by the person doing
+ * the session instead of the one who planned it.
+ *
+ * Today's session for that workout is reused when there is one, so tapping a
+ * workout the coach already put on today never leaves a duplicate behind and
+ * the day still counts once towards adherence. A finished or skipped session is
+ * not reused: training the same workout twice, or changing your mind after
+ * saying you could not train, both deserve a session of their own.
+ *
+ * Only the client's own phase copies can be started — the library is the
+ * coach's, and another client's copy is theirs.
+ *
+ * `null` when the workout is gone or is not theirs: nothing was written.
+ */
+export const startWorkoutNow = mutation({
+  args: { clientId: v.id("users"), workoutId: v.id("workouts") },
+  returns: v.union(v.null(), v.id("assignments")),
+  handler: async (ctx, args) => {
+    await requireClientAccess(ctx, args.clientId);
 
-    return await ctx.db.insert("assignments", {
+    const workout = await ctx.db.get("workouts", args.workoutId);
+    if (!workout || workout.archived || workout.clientId !== args.clientId) return null;
+
+    const today = dayKey();
+    const todays = await ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).eq("date", today))
+      .collect();
+    const open = todays.find(
+      (doc) => doc.workoutId === args.workoutId && doc.status === "scheduled",
+    );
+    if (open) return open._id;
+
+    return await freezeAssignment(ctx, {
       clientId: args.clientId,
       workoutId: args.workoutId,
-      date: args.date,
-      status: "scheduled",
-      snapshot: {
-        name: workout.name,
-        focus: workout.focus,
-        notes: workout.notes,
-        instructions: workout.instructions,
-        estimatedMinutes: workout.estimatedMinutes,
-        blocks: workout.blocks,
-      },
-      note: args.note ?? "",
-      startedAt: null,
-      doneAt: null,
-      effort: null,
-      extraRestSeconds: 0,
+      date: today,
     });
   },
 });
@@ -407,6 +472,113 @@ export const unscheduledAssignments = query({
       .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).eq("date", null))
       .collect();
     return docs.map(mapAssignment);
+  },
+});
+
+/**
+ * Every workout of this client's plan, whatever day it was given.
+ *
+ * This is the list the client's own "Treinos" page draws, and the reason it
+ * reads the workouts and not the assignments: a session on the calendar is the
+ * coach's suggestion of *when*, and the client is allowed to train any workout
+ * of their plan on the day they feel like it. The calendar answers "when";
+ * this answers "what can I do".
+ *
+ * Each row carries what the card needs to be honest about a workout's standing
+ * without opening it: its size, the weekday it repeats on when it has one,
+ * today's unfinished session if the coach already placed it (so tapping the
+ * card resumes that one instead of writing a second), and how often it has been
+ * finished before.
+ *
+ * Bounded by the client: `by_client` reads one person's phase copies — a plan's
+ * worth of workouts, dozens at most — and each one costs its blocks plus its
+ * own assignments, never a table scan.
+ */
+export const clientWorkouts = query({
+  args: { clientId: v.id("users") },
+  returns: v.array(clientWorkoutShape),
+  handler: async (ctx, args) => {
+    await requireClientAccess(ctx, args.clientId);
+    const today = dayKey();
+
+    const phases = await ctx.db
+      .query("trainingPhases")
+      .withIndex("by_client_and_position", (q) => q.eq("clientId", args.clientId))
+      .collect();
+    const phaseById = new Map(phases.map((phase) => [phase._id as string, phase]));
+
+    const workouts = (
+      await ctx.db
+        .query("workouts")
+        .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
+        .collect()
+    ).filter((doc) => !doc.archived);
+
+    const rows = await Promise.all(
+      workouts.map(async (doc) => {
+        const [size, assignments] = await Promise.all([
+          workoutSize(ctx, doc._id),
+          ctx.db
+            .query("assignments")
+            .withIndex("by_workout", (q) => q.eq("workoutId", doc._id))
+            .collect(),
+        ]);
+
+        let lastDoneDate: string | null = null;
+        let doneCount = 0;
+        let open: Doc<"assignments"> | null = null;
+        for (const assignment of assignments) {
+          // A phase copy belongs to one client, but the index is not scoped by
+          // one — so the ownership is checked rather than assumed.
+          if (assignment.clientId !== args.clientId) continue;
+          if (assignment.status === "done") {
+            doneCount += 1;
+            if (assignment.date && (!lastDoneDate || assignment.date > lastDoneDate)) {
+              lastDoneDate = assignment.date;
+            }
+          }
+          if (assignment.date !== today || assignment.status !== "scheduled") continue;
+          // Two sessions of the same workout on one day is a coach placing it
+          // twice; the one already under way is the one to go back into.
+          if (!open || (open.startedAt === null && assignment.startedAt !== null)) {
+            open = assignment;
+          }
+        }
+
+        const phase = doc.phaseId ? (phaseById.get(doc.phaseId) ?? null) : null;
+        return {
+          id: doc._id as string,
+          name: doc.name,
+          focus: doc.focus,
+          workoutType: doc.workoutType,
+          estimatedMinutes: doc.estimatedMinutes ?? null,
+          itemCount: size.itemCount,
+          blockCount: size.blockCount,
+          phaseId: (doc.phaseId as string | null) ?? null,
+          phaseName: phase ? phase.name : null,
+          // The weekday only when the coach chose to repeat it weekly: a
+          // `custom` placement's days are the calendar's business, and the plan
+          // page is where the client reads those.
+          scheduleWeekday:
+            doc.scheduleMode === "weekly" ? (doc.scheduleWeekday ?? null) : null,
+          openAssignmentId: open ? (open._id as string) : null,
+          startedToday: open ? open.startedAt !== null : false,
+          lastDoneDate,
+          doneCount,
+          // Phase order first, then the coach's order inside it. Workouts left
+          // outside a phase sort last: legacy rows, and nowhere else to put them.
+          phasePosition: phase ? phase.position : Number.MAX_SAFE_INTEGER,
+          position: doc.position,
+        };
+      }),
+    );
+
+    return rows.sort(
+      (a, b) =>
+        a.phasePosition - b.phasePosition ||
+        a.position - b.position ||
+        a.name.localeCompare(b.name, "pt", { sensitivity: "base" }),
+    );
   },
 });
 

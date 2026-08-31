@@ -119,10 +119,13 @@ html[data-studio-theme="light"] .studio {
   color: var(--foreground);
 }
 
-/* Trackpad rubber-band bounce scrolls the document a few px past its own
-   content even on a page with nothing to scroll, which is exactly what
-   exposes the near-black `body` beneath `.studio` at the edges. Scoped to
-   app pages only — the marketing site keeps its normal overscroll feel. */
+/* Trackpad rubber-band bounce and touch fling overscroll both scroll the
+   document a few (or, on a fast mobile fling, a few hundred) px past its own
+   content, which is exactly what exposes the near-black `body`/`html` beneath
+   `.studio` at the edges. Needs to sit on both elements — iOS Safari only
+   fully suppresses the bounce when the ancestor chain agrees. Scoped to app
+   pages only — the marketing site keeps its normal overscroll feel. */
+html:has(.studio),
 body:has(.studio) {
   overscroll-behavior-y: none;
 }

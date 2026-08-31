@@ -63,7 +63,16 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
           moves the panel below it every time a badge appears. `w-max` sizes the row
           to its content and `shrink-0` per item is what actually holds it there —
           without it flexbox compresses the labels into each other. */}
-      <div ref={stripRef} onScroll={readEdges} className="-mx-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={stripRef}
+        onScroll={readEdges}
+        // `touch-action: pan-x` tells the browser this element only ever
+        // scrolls sideways, so a swipe that starts here but drifts vertical —
+        // the common case when a thumb lands on the tab strip while scrolling
+        // the page — falls through to the document instead of dragging the
+        // strip and clipping a tab mid-word.
+        className="-mx-1 touch-pan-x overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         <ul className="flex w-max items-stretch px-1">
         {tabs.map((tab) => {
           const active = tab.href === activeHref;
