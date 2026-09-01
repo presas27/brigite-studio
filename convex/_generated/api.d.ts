@@ -19,9 +19,11 @@ import type * as model_shape from "../model/shape.js";
 import type * as phases from "../phases.js";
 import type * as photos from "../photos.js";
 import type * as plan from "../plan.js";
+import type * as programs from "../programs.js";
 import type * as seed from "../seed.js";
 import type * as signInLimit from "../signInLimit.js";
 import type * as users from "../users.js";
+import type * as youtube from "../youtube.js";
 
 import type {
   ApiFromModules,
@@ -41,9 +43,11 @@ declare const fullApi: ApiFromModules<{
   phases: typeof phases;
   photos: typeof photos;
   plan: typeof plan;
+  programs: typeof programs;
   seed: typeof seed;
   signInLimit: typeof signInLimit;
   users: typeof users;
+  youtube: typeof youtube;
 }>;
 
 /**

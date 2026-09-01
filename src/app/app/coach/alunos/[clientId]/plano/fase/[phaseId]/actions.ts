@@ -5,14 +5,16 @@ import { redirect } from "next/navigation";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { datesOnWeekday, dayKey, shiftDay } from "@/lib/studio/dates";
 import { parseMinutesInput } from "@/lib/studio/duration";
+import { copyWorkoutToLibrary } from "@/lib/studio/library";
 import {
   addLibraryWorkoutToPhase,
   createPhaseWorkout,
   findPhase,
   removePhaseWorkout,
+  setPhaseWorkoutHidden,
 } from "@/lib/studio/phases";
 import { rescheduleWorkout } from "@/lib/studio/plan";
-import type { WorkoutType } from "@/lib/studio/types";
+import type { LibraryCategory, WorkoutType } from "@/lib/studio/types";
 
 /**
  * Everything a coach does inside one training phase. The two ways a workout
@@ -91,6 +93,49 @@ export async function removeWorkoutAction(
   const workoutId = String(formData.get("workoutId") ?? "").trim();
   if (!workoutId) return;
   await removePhaseWorkout(phaseId, workoutId);
+  refresh();
+}
+
+/**
+ * "Copy to Workout Library": file this client's workout as a template of the
+ * coach's own, on the shelf she picked in the popup.
+ *
+ * The copy is cut loose from this plan — no client, no phase — so nothing she
+ * does to the template afterwards can reach back into what the client is
+ * training. An unrecognised shelf falls back to `master` rather than being
+ * trusted: the value arrives from a form field.
+ */
+export async function copyWorkoutToLibraryAction(
+  clientId: string,
+  phaseId: string,
+  formData: FormData,
+): Promise<void> {
+  await assertCoach(clientId);
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
+  const workoutId = String(formData.get("workoutId") ?? "").trim();
+  if (!workoutId) return;
+
+  const raw = String(formData.get("category") ?? "").trim();
+  const category: LibraryCategory = raw === "shared" ? "shared" : "master";
+  await copyWorkoutToLibrary(workoutId, category);
+  refresh();
+}
+
+/**
+ * Hide a phase workout from the client's app, or put it back. Neither a delete
+ * nor an archive: the coach keeps the row and its calendar placement.
+ */
+export async function setWorkoutHiddenAction(
+  clientId: string,
+  phaseId: string,
+  formData: FormData,
+): Promise<void> {
+  await assertCoach(clientId);
+  if (!(await assertPhaseBelongsTo(phaseId, clientId))) return;
+  const workoutId = String(formData.get("workoutId") ?? "").trim();
+  if (!workoutId) return;
+
+  await setPhaseWorkoutHidden(phaseId, workoutId, String(formData.get("hidden") ?? "") === "1");
   refresh();
 }
 

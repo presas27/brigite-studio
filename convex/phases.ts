@@ -81,6 +81,10 @@ const workoutSummaryValidator = v.object({
   scheduleMode: v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
   scheduleWeekday: v.union(v.null(), v.number()),
   itemCount: v.number(),
+  libraryCategory: v.union(v.literal("master"), v.literal("shared")),
+  /** Hidden from the client's app; the coach still sees the row. */
+  hiddenFromClient: v.boolean(),
+  programPhaseId: v.union(v.null(), v.string()),
   /** Ascending day keys, read from the assignments. Empty when unscheduled. */
   scheduleDates: v.array(v.string()),
 });
@@ -291,6 +295,12 @@ export const workouts = query({
  * "Add from library". Copies the template into the phase there and then, so the
  * coach's first edit has nowhere to leak: the row they are editing was never
  * the library's. `sourceWorkoutId` keeps the provenance visible.
+ *
+ * Handing a template to a client is also what moves it off the master shelf and
+ * onto the shared one. That is the whole definition of the two shelves — "not
+ * given to anybody yet" versus "at least one client has it" — so it is recorded
+ * here, at the one moment it becomes true, rather than recomputed later from
+ * the copies that happen to still exist.
  */
 export const addLibraryWorkout = mutation({
   args: { phaseId: v.id("trainingPhases"), libraryWorkoutId: v.id("workouts") },
@@ -301,15 +311,52 @@ export const addLibraryWorkout = mutation({
     if (!phase) return null;
     // A template that has since been deleted is a no-op, not an error: the
     // page redirects on a copy id and shows the phase unchanged without one.
-    if (!(await ctx.db.get("workouts", args.libraryWorkoutId))) return null;
+    const template = await ctx.db.get("workouts", args.libraryWorkoutId);
+    if (!template) return null;
 
     const copyId = await copyWorkout(ctx, args.libraryWorkoutId, {
       coachId: phase.coachId,
       clientId: phase.clientId,
       phaseId: phase._id,
       position: await nextWorkoutPosition(ctx, phase._id),
+      // The copy lives in a plan, not in a library; it gets the neutral shelf so
+      // that copying it back out later starts from a clean choice.
+      libraryCategory: "master",
     });
+
+    if (template.libraryCategory !== "shared") {
+      await ctx.db.patch("workouts", args.libraryWorkoutId, { libraryCategory: "shared" });
+    }
     return copyId as string;
+  },
+});
+
+/**
+ * Hide a phase workout from the client's app, or put it back.
+ *
+ * Not a delete and not an archive: the coach keeps the row, its exercises and
+ * its calendar placement, and the client stops seeing both the workout and the
+ * sessions it was placed on — see `hiddenWorkoutIds`, which every client-facing
+ * read filters through.
+ *
+ * The phase id is checked rather than decoration, exactly as in `removeWorkout`:
+ * it is what stops a workout id from another plan being reached through here.
+ */
+export const setWorkoutHidden = mutation({
+  args: {
+    phaseId: v.id("trainingPhases"),
+    workoutId: v.id("workouts"),
+    hidden: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireCoach(ctx);
+    const workout = await ctx.db.get("workouts", args.workoutId);
+    if (!workout || workout.phaseId !== args.phaseId) return null;
+    // Visibility is not editing: `updatedAt` stays where the last real edit
+    // left it, so the card keeps telling the truth about when it changed.
+    await ctx.db.patch("workouts", args.workoutId, { hiddenFromClient: args.hidden });
+    return null;
   },
 });
 

@@ -1,6 +1,7 @@
 import { searchKey } from "../../src/lib/utils";
 import type {
   Exercise,
+  LibraryCategory,
   Tracking,
   Workout,
   WorkoutBlock,
@@ -174,6 +175,12 @@ export function workoutMeta(doc: Doc<"workouts">): Omit<Workout, "blocks"> {
     estimatedMinutes: doc.estimatedMinutes ?? null,
     scheduleMode: doc.scheduleMode ?? null,
     scheduleWeekday: doc.scheduleWeekday ?? null,
+    // Both default rather than being required, so a row written before either
+    // field existed reads as the state it was in: on the master shelf, and
+    // visible to the client it belongs to.
+    libraryCategory: doc.libraryCategory ?? "master",
+    hiddenFromClient: doc.hiddenFromClient ?? false,
+    programPhaseId: (doc.programPhaseId as string | null | undefined) ?? null,
   };
 }
 
@@ -346,6 +353,14 @@ export type WorkoutInput = {
   /** Order inside a phase. Meaningless for library templates. */
   position: number;
   estimatedMinutes?: number | null;
+  /**
+   * Which library shelf the template lands on. Defaults to `master`: a workout
+   * nobody has been given yet is a draft, and every caller that knows better
+   * says so.
+   */
+  libraryCategory?: LibraryCategory;
+  /** The program phase this template belongs to, when it belongs to one. */
+  programPhaseId?: Id<"programPhases"> | null;
 };
 
 export async function insertWorkout(
@@ -366,6 +381,8 @@ export async function insertWorkout(
     archived: false,
     updatedAt: Date.now(),
     estimatedMinutes: input.estimatedMinutes ?? null,
+    libraryCategory: input.libraryCategory ?? "master",
+    programPhaseId: input.programPhaseId ?? null,
   });
 }
 
@@ -384,6 +401,10 @@ export type CopyTarget = {
   position: number;
   name?: string;
   sourceWorkoutId?: string | null;
+  /** Which shelf the copy is filed on. Defaults to the source's own. */
+  libraryCategory?: LibraryCategory;
+  /** The program phase the copy joins, when the copy is going into a program. */
+  programPhaseId?: Id<"programPhases"> | null;
 };
 
 /**
@@ -414,6 +435,8 @@ export async function copyWorkout(
       target.sourceWorkoutId === undefined ? sourceWorkoutId : target.sourceWorkoutId,
     position: target.position,
     estimatedMinutes: source.estimatedMinutes ?? null,
+    libraryCategory: target.libraryCategory ?? source.libraryCategory ?? "master",
+    programPhaseId: target.programPhaseId ?? null,
   });
 
   const blocks = await ctx.db
@@ -505,12 +528,45 @@ export async function touchWorkout(ctx: MutationCtx, workoutId: Id<"workouts">):
   await ctx.db.patch("workouts", workoutId, { updatedAt: Date.now() });
 }
 
-/** Templates only, newest first — see `listWorkouts` in `convex/library.ts`. */
+/**
+ * The loose templates of the workout library, newest first — see `listWorkouts`
+ * in `convex/library.ts`.
+ *
+ * A workout that belongs to a program phase is a template too and also has a
+ * null `clientId`, so it comes back from the same index; it is dropped here.
+ * The program is where it is read, and listing it in both places would make one
+ * session look like two.
+ */
 export async function libraryWorkouts(ctx: Ctx): Promise<Doc<"workouts">[]> {
   const docs = await ctx.db
     .query("workouts")
     .withIndex("by_client", (q) => q.eq("clientId", null))
     .order("desc")
     .take(WORKOUT_LIMIT);
-  return docs.filter((doc) => !doc.archived);
+  return docs.filter((doc) => !doc.archived && !doc.programPhaseId);
+}
+
+/**
+ * The workouts of one client's plan that the coach has hidden, as a set of ids.
+ *
+ * Every client-facing read goes through this instead of checking the flag on
+ * whatever row it happens to have in hand: an assignment carries a frozen
+ * snapshot and not the workout, so the only way to know a session belongs to a
+ * hidden workout is to have looked the client's workouts up. One indexed read
+ * of one person's plan — dozens of rows — answers it for a whole page.
+ *
+ * Empty for the coach: hiding is about the client's app, and a coach who could
+ * not see what she hid could not unhide it.
+ */
+export async function hiddenWorkoutIds(
+  ctx: Ctx,
+  clientId: Id<"users">,
+): Promise<Set<string>> {
+  const docs = await ctx.db
+    .query("workouts")
+    .withIndex("by_client", (q) => q.eq("clientId", clientId))
+    .collect();
+  const hidden = new Set<string>();
+  for (const doc of docs) if (doc.hiddenFromClient) hidden.add(doc._id as string);
+  return hidden;
 }

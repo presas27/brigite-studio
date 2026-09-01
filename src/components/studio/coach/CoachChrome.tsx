@@ -28,6 +28,10 @@ const SECTIONS: ChromeSection[] = [
   {
     titleKey: "sections.library",
     items: [
+      // Widest first: a program contains phases, a phase contains workouts, a
+      // workout contains exercises. The rail reads top-down as that nesting,
+      // which is also the order she builds in.
+      { href: "/app/coach/programas", labelKey: "programs", icon: "program" },
       { href: "/app/coach/treinos", labelKey: "workouts", icon: "library" },
       { href: "/app/coach/exercicios", labelKey: "exercises", icon: "dumbbell" },
     ],

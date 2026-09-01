@@ -8,6 +8,7 @@ import {
   discardAssignment,
   findAssignment,
   recordSet,
+  saveExerciseNote,
   setAssignmentStatus,
   startAssignment,
 } from "@/lib/studio/plan";
@@ -65,6 +66,29 @@ export async function unlogSet(input: {
 }): Promise<void> {
   const assignment = await assignmentFor(input.assignmentId);
   await clearSet(assignment.id, input.itemId, input.setIndex);
+}
+
+/**
+ * Save the client's own note on one exercise of this session, or clear it by
+ * saving an empty one.
+ *
+ * No `refresh()`, for the same reason `logSet` has none: the player already
+ * holds the note in its own state and shows it, and re-rendering the route
+ * mid-session would throw away the position she is at in the queue.
+ */
+export async function saveNote(input: {
+  assignmentId: string;
+  itemId: string;
+  exerciseId: string;
+  body: string;
+}): Promise<void> {
+  const assignment = await assignmentFor(input.assignmentId);
+  await saveExerciseNote({
+    assignmentId: assignment.id,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId,
+    body: input.body,
+  });
 }
 
 export async function beginSession(assignmentId: string): Promise<void> {

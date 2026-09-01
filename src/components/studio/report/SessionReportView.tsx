@@ -147,6 +147,28 @@ export function SessionReportView({
         );
       })}
 
+      {/* What the client said about the exercises, above the per-set remarks:
+          "the shoulder twinged" is context for the whole session, where a set
+          note is a footnote on one number. Both are hers, so both are here and
+          neither is mixed into the coach's own note above. */}
+      {report.exerciseNotes.length > 0 && (
+        <section className={cn(surface, "space-y-3 p-5")}>
+          <h2 className={eyebrow}>{t("exerciseNotes")}</h2>
+          <ul className="space-y-3">
+            {report.exerciseNotes.map((note, index) => (
+              <li key={`${note.exerciseName}-${index}`}>
+                <p className="font-sans text-xs text-cream/45">
+                  {t("noteFrom", { name: note.exerciseName })}
+                </p>
+                <p className="text-sm leading-relaxed whitespace-pre-line text-cream/80">
+                  {note.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {report.setNotes.length > 0 && (
         <section className={cn(surface, "space-y-3 p-5")}>
           <h2 className={eyebrow}>{t("clientNotes")}</h2>

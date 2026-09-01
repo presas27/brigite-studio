@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { AddModal } from "@/components/studio/AddModal";
 import { Empty } from "@/components/studio/Empty";
+import { Field } from "@/components/studio/Field";
+import { SubmitButton } from "@/components/studio/SubmitButton";
 import { AssignPhaseModal } from "@/components/studio/plan/AssignPhaseModal";
 import { AssignWorkoutModal } from "@/components/studio/plan/AssignWorkoutModal";
 import { PhaseList } from "@/components/studio/plan/PhaseList";
 import { UnscheduledList } from "@/components/studio/plan/UnscheduledList";
 import { WeekGrid } from "@/components/studio/plan/WeekGrid";
 import { Icon } from "@/components/studio/coach/icons";
-import { heading } from "@/components/studio/theme";
+import { field, heading } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { dayKey, shiftDay, weekKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
@@ -16,6 +19,7 @@ import { listPhases } from "@/lib/studio/phases";
 import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
 import type { Assignment } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
+import { captureFromClientAction } from "@/app/app/coach/programas/actions";
 import { assign, createPhaseAction, markSkipped, move, remove } from "./actions";
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -47,17 +51,29 @@ export default async function CoachPlanPage({
   const sunday = shiftDay(monday, 6);
   const today = dayKey();
 
-  const [t, tPhases, tWorkouts, locale, workouts, phases, assignments, unscheduled] =
-    await Promise.all([
-      getTranslations("Studio.plan"),
-      getTranslations("Studio.plan.phases"),
-      getTranslations("Studio.workouts"),
-      getLocale(),
-      listWorkouts(),
-      listPhases(clientId),
-      assignmentsBetween(clientId, monday, sunday),
-      unscheduledAssignments(clientId),
-    ]);
+  const [
+    t,
+    tPhases,
+    tWorkouts,
+    tPrograms,
+    common,
+    locale,
+    workouts,
+    phases,
+    assignments,
+    unscheduled,
+  ] = await Promise.all([
+    getTranslations("Studio.plan"),
+    getTranslations("Studio.plan.phases"),
+    getTranslations("Studio.workouts"),
+    getTranslations("Studio.programs"),
+    getTranslations("Studio.common"),
+    getLocale(),
+    listWorkouts(),
+    listPhases(clientId),
+    assignmentsBetween(clientId, monday, sunday),
+    unscheduledAssignments(clientId),
+  ]);
 
   const byDate: Record<string, Assignment[]> = {};
   for (const assignment of assignments) {
@@ -85,7 +101,37 @@ export default async function CoachPlanPage({
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cn(heading, "text-lg")}>{tPhases("sectionTitle")}</h2>
-          <AssignPhaseModal createAction={createPhase} compact />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Only offered once there is a shape worth keeping. A program
+                captured from an empty plan is an empty program. */}
+            {phases.length > 0 && (
+              <AddModal
+                label={tPrograms("captureFromClient")}
+                title={tPrograms("captureTitle")}
+                lead={tPrograms("captureLead")}
+                compact
+              >
+                <form
+                  action={captureFromClientAction.bind(null, clientId)}
+                  className="space-y-4"
+                >
+                  <Field label={tPrograms("nameLabel")} htmlFor="capture-name" required>
+                    <input
+                      id="capture-name"
+                      name="name"
+                      required
+                      defaultValue={tPrograms("namePlaceholder")}
+                      className={field}
+                    />
+                  </Field>
+                  <div className="flex justify-end">
+                    <SubmitButton pendingLabel={common("saving")}>{common("save")}</SubmitButton>
+                  </div>
+                </form>
+              </AddModal>
+            )}
+            <AssignPhaseModal createAction={createPhase} compact />
+          </div>
         </div>
         {phases.length === 0 ? (
           <Empty title={tPhases("empty")} hint={tPhases("emptyHint")} />

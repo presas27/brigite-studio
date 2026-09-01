@@ -1,7 +1,7 @@
 import "server-only";
 
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
-import { fetchMutation, fetchQuery } from "convex/nextjs";
+import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs";
 import type {
   FunctionArgs,
   FunctionReference,
@@ -38,6 +38,21 @@ export async function sm<Mutation extends FunctionReference<"mutation">>(
   ...args: OptionalRestArgs<Mutation>
 ): Promise<FunctionReturnType<Mutation>> {
   return fetchMutation(mutation, args[0] ?? ({} as FunctionArgs<Mutation>), {
+    token: await convexAuthNextjsToken(),
+  });
+}
+
+/**
+ * Run an action. Separate from `sm` because an action is not a mutation: it runs
+ * outside the transaction, may call the outside world, and is therefore neither
+ * atomic nor retried for you. Everything the studio uses this for talks to a
+ * third-party API — see `convex/youtube.ts`.
+ */
+export async function sa<Action extends FunctionReference<"action">>(
+  action: Action,
+  ...args: OptionalRestArgs<Action>
+): Promise<FunctionReturnType<Action>> {
+  return fetchAction(action, args[0] ?? ({} as FunctionArgs<Action>), {
     token: await convexAuthNextjsToken(),
   });
 }

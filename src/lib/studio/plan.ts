@@ -6,6 +6,7 @@ import type {
   Assignment,
   AssignmentStatus,
   ClientWorkout,
+  ExerciseNote,
   ScheduledAssignment,
   SetLog,
 } from "./types";
@@ -260,6 +261,35 @@ export async function clearSet(
     assignmentId: assignmentId as Id<"assignments">,
     itemId,
     setIndex,
+  });
+}
+
+/**
+ * What the client wrote about each exercise in one session. Same gate as the
+ * logs: the client reads their own, the coach reads any of hers, which is what
+ * makes the notes worth collecting.
+ */
+export async function exerciseNotesFor(assignmentId: string): Promise<ExerciseNote[]> {
+  return sq(api.plan.exerciseNotesFor, {
+    assignmentId: assignmentId as Id<"assignments">,
+  });
+}
+
+/**
+ * Write the client's note for one exercise of this session, or clear it — an
+ * empty body deletes the note rather than storing a blank one.
+ */
+export async function saveExerciseNote(input: {
+  assignmentId: string;
+  itemId: string;
+  exerciseId: string;
+  body: string;
+}): Promise<void> {
+  await sm(api.plan.saveExerciseNote, {
+    assignmentId: input.assignmentId as Id<"assignments">,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId,
+    body: input.body,
   });
 }
 

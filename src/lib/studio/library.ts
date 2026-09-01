@@ -1,9 +1,11 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { sm, sq } from "@/lib/studio/convexServer";
+import type { FoundVideo } from "@convex/youtube";
+import { sa, sm, sq } from "@/lib/studio/convexServer";
 import type {
   BlockKind,
   Exercise,
+  LibraryCategory,
   Tracking,
   Workout,
   WorkoutBlock,
@@ -34,6 +36,22 @@ export async function listExercises(
   options: { search?: string; tag?: string } = {},
 ): Promise<Exercise[]> {
   return sq(api.library.listExercises, options);
+}
+
+/**
+ * Look a demo video up on YouTube for one exercise and write the link in.
+ *
+ * `undefined` when nothing matched the exercise's name well enough — the search
+ * refuses rather than guessing, because a wrong video is a mistake the coach
+ * will not notice where an empty field is a gap she will. Costs 100 YouTube
+ * quota units per call, so this is a button she presses, never something that
+ * runs on save; see the header of `convex/youtube.ts`.
+ */
+export async function findExerciseVideo(exerciseId: string): Promise<FoundVideo | undefined> {
+  const found = await sa(api.youtube.fillExerciseVideo, {
+    exerciseId: exerciseId as Id<"exercises">,
+  });
+  return found ?? undefined;
 }
 
 export async function findExercise(exerciseId: string): Promise<Exercise | undefined> {
@@ -285,6 +303,37 @@ export async function duplicateWorkout(
   name: string,
 ): Promise<string | undefined> {
   return copyWorkout(workoutId, { name });
+}
+
+/**
+ * "Copy to Workout Library": file any workout — usually a client's phase copy
+ * the coach has just finished tuning — as a template of its own, on the shelf
+ * she picked.
+ *
+ * The copy is cut loose from where it came from: no client, no phase, no
+ * program. Editing it afterwards cannot reach back into the plan it was taken
+ * from.
+ */
+export async function copyWorkoutToLibrary(
+  workoutId: string,
+  category: LibraryCategory,
+): Promise<string | undefined> {
+  const copyId = await sm(api.library.copyToLibrary, {
+    workoutId: workoutId as Id<"workouts">,
+    category,
+  });
+  return copyId ?? undefined;
+}
+
+/** Move a template between the master and shared shelves. */
+export async function setWorkoutLibraryCategory(
+  workoutId: string,
+  category: LibraryCategory,
+): Promise<void> {
+  await sm(api.library.setLibraryCategory, {
+    workoutId: workoutId as Id<"workouts">,
+    category,
+  });
 }
 
 /* --------------------------------------------------- supersets and circuits */

@@ -12,8 +12,10 @@ import { findPhase, listPhases, phaseWorkouts } from "@/lib/studio/phases";
 import {
   addFromLibraryAction,
   buildWorkoutAction,
+  copyWorkoutToLibraryAction,
   removeWorkoutAction,
   scheduleWorkoutAction,
+  setWorkoutHiddenAction,
 } from "./actions";
 import { deletePhaseAction, updatePhaseAction } from "../../actions";
 
@@ -100,6 +102,8 @@ export default async function PhasePage({
           workouts={workouts}
           basePath={basePath}
           removeAction={removeWorkoutAction.bind(null, clientId, phaseId)}
+          copyAction={copyWorkoutToLibraryAction.bind(null, clientId, phaseId)}
+          hideAction={setWorkoutHiddenAction.bind(null, clientId, phaseId)}
           scheduleAction={scheduleWorkoutAction.bind(null, clientId, phaseId)}
           canRepeatWeekly={
             Boolean(phase.startDate && phase.endDate) || Boolean(phase.weeks && phase.weeks > 0)

@@ -1,7 +1,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { sq } from "@/lib/studio/convexServer";
-import { findAssignment, logsFor } from "./plan";
+import { exerciseNotesFor, findAssignment, logsFor } from "./plan";
 import { buildSessionQueue } from "./session-queue";
 import type { Assignment, BlockKind, SetLog, Tracking, WorkoutItem } from "./types";
 
@@ -90,6 +90,15 @@ export type SessionReport = {
   volumeKg: number;
   /** Everything the client typed into a set's note field, in session order. */
   setNotes: { exerciseName: string; setNumber: number; body: string }[];
+  /**
+   * What the client wrote about each exercise in this session, in the order the
+   * exercises came up.
+   *
+   * Separate from `setNotes`: that is a remark attached to one set's numbers,
+   * this is the client telling the coach about the movement — the shoulder, the
+   * band, the thing she would have had to ask about otherwise.
+   */
+  exerciseNotes: { exerciseName: string; body: string }[];
 };
 
 /**
@@ -104,12 +113,17 @@ export async function sessionReport(assignmentId: string): Promise<SessionReport
   if (!assignment) return undefined;
 
   const steps = buildSessionQueue(assignment.snapshot);
-  const logs = await logsFor(assignment.id);
+  const [logs, notes] = await Promise.all([
+    logsFor(assignment.id),
+    exerciseNotesFor(assignment.id),
+  ]);
   const byKey = new Map(logs.map((log) => [`${log.itemId}:${log.setIndex}`, log]));
+  const noteByItem = new Map(notes.map((note) => [note.itemId, note.body]));
 
   const blocks: ReportBlock[] = [];
   const items = new Map<string, ReportItem>();
   const setNotes: SessionReport["setNotes"] = [];
+  const exerciseNotes: SessionReport["exerciseNotes"] = [];
 
   for (const step of steps) {
     let block = blocks.find((candidate) => candidate.id === step.blockId);
@@ -124,6 +138,14 @@ export async function sessionReport(assignmentId: string): Promise<SessionReport
       entry = { item: step.item, interleaved: step.round != null, sets: [] };
       items.set(itemKey, entry);
       block.items.push(entry);
+
+      // Collected on the item's first step rather than on every set of it, so
+      // one note per exercise is listed once — the steps loop visits an
+      // exercise as many times as it has sets.
+      const note = noteByItem.get(step.itemId);
+      if (note?.trim()) {
+        exerciseNotes.push({ exerciseName: step.item.exerciseName, body: note.trim() });
+      }
     }
 
     const log = byKey.get(step.key) ?? null;
@@ -145,5 +167,6 @@ export async function sessionReport(assignmentId: string): Promise<SessionReport
     durationMinutes: durationOf(assignment),
     volumeKg: volumeOf(logs),
     setNotes,
+    exerciseNotes,
   };
 }

@@ -80,6 +80,18 @@ const snapshotBlock = v.object({
   items: v.array(snapshotItem),
 });
 
+/**
+ * Which library shelf a template sits on, workout or program alike.
+ *
+ *  - `master` is the untested shelf: what the coach wrote as a starting point
+ *    and has not handed to anybody yet.
+ *  - `shared` is the shelf of templates at least one client has been given.
+ *
+ * The distinction is the coach's filing system and nothing else — it never
+ * decides who may read a template.
+ */
+const libraryCategory = v.union(v.literal("master"), v.literal("shared"));
+
 export default defineSchema({
   ...authTables,
 
@@ -238,10 +250,74 @@ export default defineSchema({
     ),
     /** Monday=0 … Sunday=6. Only meaningful when `scheduleMode` is `weekly`. */
     scheduleWeekday: v.optional(v.union(v.null(), v.number())),
+    /**
+     * Which library shelf a template sits on. Absent reads as `master`, so the
+     * field could be added without rewriting every existing row first.
+     *
+     * Only meaningful while `clientId` is null: a client's phase copy is not in
+     * anybody's library and its value is ignored.
+     */
+    libraryCategory: v.optional(libraryCategory),
+    /**
+     * Hidden from the client's app without being deleted. The coach still sees
+     * the workout in the plan; the client sees neither it nor the sessions it
+     * was scheduled for.
+     *
+     * Absent reads as visible, which is what every row written before the flag
+     * existed means.
+     */
+    hiddenFromClient: v.optional(v.boolean()),
+    /**
+     * The program phase this template belongs to, when it belongs to one. Set
+     * means the workout is part of a program and is not loose in the workout
+     * library — `libraryWorkouts` filters those out, or a program's sessions
+     * would be listed twice.
+     */
+    programPhaseId: v.optional(v.union(v.null(), v.id("programPhases"))),
   })
     .index("by_archived_and_updated", ["archived", "updatedAt"])
     .index("by_phase_and_position", ["phaseId", "position"])
-    .index("by_client", ["clientId"]),
+    .index("by_client", ["clientId"])
+    // Only used to find the templates a phase copy came from, which is how the
+    // one-off backfill decides which of them are already shared with a client.
+    .index("by_source", ["sourceWorkoutId"])
+    .index("by_program_phase_and_position", ["programPhaseId", "position"]),
+
+  /**
+   * A reusable training program: the multi-week, multi-phase shape of a block
+   * of training, kept as a template rather than built into one client's plan.
+   *
+   * It is the phase-level twin of a library workout, and it files itself on the
+   * same two shelves (`libraryCategory`) for the same reason: a coach needs to
+   * tell what she has only drafted from what a client is actually running.
+   */
+  trainingPrograms: defineTable({
+    coachId: v.id("users"),
+    name: v.string(),
+    /** What the program trains. Free text, same role as a workout's focus. */
+    focus: v.string(),
+    notes: v.string(),
+    libraryCategory,
+    archived: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_coach_and_category", ["coachId", "libraryCategory"])
+    .index("by_coach", ["coachId"]),
+
+  /**
+   * One block of weeks inside a program template. The counterpart of
+   * `trainingPhases`, minus the client and minus the calendar: a template has a
+   * length in weeks and no dates, because the dates only exist once the program
+   * is given to somebody.
+   */
+  programPhases: defineTable({
+    programId: v.id("trainingPrograms"),
+    name: v.string(),
+    position: v.number(),
+    /** How long this phase runs. Null means the coach has not decided. */
+    weeks: v.union(v.null(), v.number()),
+    notes: v.string(),
+  }).index("by_program_and_position", ["programId", "position"]),
 
   workoutBlocks: defineTable({
     workoutId: v.id("workouts"),
@@ -324,6 +400,36 @@ export default defineSchema({
   })
     .index("by_assignment", ["assignmentId"])
     .index("by_exercise", ["exerciseId"]),
+
+  /**
+   * A note the client wrote about one exercise while training it — "shoulder
+   * twinged on the third set", "band was too light". The coach reads it in the
+   * session report, so context like that arrives without having to be asked
+   * for.
+   *
+   * Keyed by `(assignmentId, itemId)`: one note per exercise per *session*.
+   * That is deliberate and is why this is not a field on the workout item or on
+   * the assignment — the same exercise trained next week is a different note,
+   * and last week's must still say what it said. `itemId` is a plain string
+   * copied from the assignment's snapshot, for the same reason `setLogs` keys
+   * on one: it is a copy, not a reference.
+   *
+   * A note is not a set log either. Clearing a set must not delete what the
+   * client said about the exercise, and a note can exist for an exercise whose
+   * sets were never filled in.
+   *
+   * Uniqueness of `(assignmentId, itemId)` has no engine behind it: `saveNote`
+   * reads `by_assignment_and_item` and patches rather than inserting.
+   */
+  exerciseNotes: defineTable({
+    assignmentId: v.id("assignments"),
+    itemId: v.string(),
+    exerciseId: v.string(),
+    body: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_and_item", ["assignmentId", "itemId"]),
 
   /**
    * One thread per client. `authorId` says who wrote it; `readAt` is null until

@@ -71,6 +71,24 @@ const PATHS: Record<string, string> = {
     "M4.4 8.6A8.5 8.5 0 1 1 3.5 12.4M4.4 8.6 3.5 4.2M4.4 8.6 8.8 7.7M12 7.6V12l3.4 2",
   clock: "M12 7v5l3.5 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
   flame: "M12.5 3c.4 2.6-.6 4.2-1.9 5.4-1.5 1.4-2.6 2.8-2.6 4.6a5 5 0 0 0 10 0c0-3.4-2.3-5.9-5.5-10ZM12 20a2.4 2.4 0 0 0 2.4-2.4c0-1.4-2.4-3.1-2.4-3.1s-2.4 1.7-2.4 3.1A2.4 2.4 0 0 0 12 20Z",
+  // Three dots on the vertical, the row-level "more actions" affordance. Drawn
+  // as three degenerate segments so they inherit the set's round cap and come
+  // out as dots at any size rather than as circles that need their own radius.
+  more: "M12 6h.01M12 12h.01M12 18h.01",
+  // An eye, and the same eye struck through — "hidden from the client" needs
+  // both states to read as one pair, so the lid is the identical arc in each
+  // and only the slash is added.
+  eye: "M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Zm9.5 2.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z",
+  eyeOff:
+    "M4 15.6A15.9 15.9 0 0 1 2.5 12S6 6.5 12 6.5c1.1 0 2.1.2 3 .5M20 8.4A15.9 15.9 0 0 1 21.5 12S18 17.5 12 17.5c-1.1 0-2.1-.2-3-.5M4 20 20 4",
+  // Two stacked sheets: the front one offset down-right, the back one showing
+  // as an L of two strokes. A full second rectangle behind it turns to mush at
+  // 16px, which is the size this is actually used at.
+  copy: "M9 9h11v11H9V9ZM15.5 5.5H4.5v11",
+  // A program: phases stacked as three bars of different lengths, the shape a
+  // multi-week plan has when you look at it end-on. Deliberately not the
+  // `library` books glyph, which the workout library already owns.
+  program: "M4 5h13M4 12h9M4 19h16M20 3.5v3M20 10.5v3M20 17.5v3",
 };
 
 export type IconName = keyof typeof PATHS;

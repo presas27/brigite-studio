@@ -2,7 +2,7 @@ import { v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireClientAccess, requireCoach, requireViewer, type Ctx } from "./model/authz";
-import { workoutSize, workoutWithBlocks } from "./model/library";
+import { hiddenWorkoutIds, workoutSize, workoutWithBlocks } from "./model/library";
 import schema from "./schema";
 import { dayKey, shiftDay } from "../src/lib/studio/dates";
 import { buildSessionQueue } from "../src/lib/studio/session-queue";
@@ -79,6 +79,22 @@ const setLogShape = v.object({
   rpe: v.union(v.null(), v.number()),
   notes: v.string(),
   loggedAt: v.number(),
+});
+
+/**
+ * How long a client's note on an exercise may be. Generous for a sentence about
+ * a sore shoulder, short enough that the field cannot be used as storage.
+ */
+const NOTE_LIMIT = 1000;
+
+/** A client's note on one exercise of one session. `ExerciseNote` in `types.ts`. */
+const exerciseNoteShape = v.object({
+  id: v.string(),
+  assignmentId: v.string(),
+  itemId: v.string(),
+  exerciseId: v.string(),
+  body: v.string(),
+  updatedAt: v.number(),
 });
 
 /** One row of the coach's session history. Mirrors `SessionRow` in `report.ts`. */
@@ -191,6 +207,38 @@ function scheduledOnly(docs: Doc<"assignments">[]): ScheduledAssignment[] {
     rows.push({ ...mapAssignment(doc), date: doc.date });
   }
   return rows;
+}
+
+/**
+ * The set of workout ids this caller must not be shown, ready to filter an
+ * assignment list with.
+ *
+ * Empty for the coach — hiding is about the client's app, and hiding something
+ * from herself would leave her no way to unhide it — and empty again for a
+ * client whose plan has nothing hidden, which is the normal case and costs one
+ * indexed read of their own workouts to establish.
+ *
+ * Only the forward-facing reads use it: the plan, the calendar, the workout
+ * list, the next session up. A finished session stays in the client's history
+ * whatever the coach later hides, because that history is a record of what they
+ * actually did and is not the coach's to retract.
+ */
+async function hiddenFor(
+  ctx: Ctx,
+  clientId: Id<"users">,
+  viewer: Doc<"users">,
+): Promise<Set<string>> {
+  if (viewer.role === "coach") return new Set();
+  return hiddenWorkoutIds(ctx, clientId);
+}
+
+/** Drops the assignments whose workout the caller must not be shown. */
+function visible(
+  docs: Doc<"assignments">[],
+  hidden: Set<string>,
+): Doc<"assignments">[] {
+  if (hidden.size === 0) return docs;
+  return docs.filter((doc) => !doc.workoutId || !hidden.has(doc.workoutId as string));
 }
 
 /* -------------------------------------------------------------------- gates */
@@ -477,16 +525,19 @@ export const assignmentsBetween = query({
   args: { clientId: v.id("users"), from: v.string(), to: v.string() },
   returns: v.array(scheduledShape),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
-    const docs = await ctx.db
-      .query("assignments")
-      .withIndex("by_client_and_date", (q) =>
-        q.eq("clientId", args.clientId).gte("date", args.from).lte("date", args.to),
-      )
-      .collect();
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const [docs, hidden] = await Promise.all([
+      ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) =>
+          q.eq("clientId", args.clientId).gte("date", args.from).lte("date", args.to),
+        )
+        .collect(),
+      hiddenFor(ctx, args.clientId, viewer),
+    ]);
     // The index orders by (clientId, date, _creationTime), which is the
     // `ORDER BY date, created_at` the calendar reads.
-    return scheduledOnly(docs);
+    return scheduledOnly(visible(docs, hidden));
   },
 });
 
@@ -495,12 +546,15 @@ export const unscheduledAssignments = query({
   args: { clientId: v.id("users") },
   returns: v.array(assignmentShape),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
-    const docs = await ctx.db
-      .query("assignments")
-      .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).eq("date", null))
-      .collect();
-    return docs.map(mapAssignment);
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const [docs, hidden] = await Promise.all([
+      ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).eq("date", null))
+        .collect(),
+      hiddenFor(ctx, args.clientId, viewer),
+    ]);
+    return visible(docs, hidden).map(mapAssignment);
   },
 });
 
@@ -527,7 +581,7 @@ export const clientWorkouts = query({
   args: { clientId: v.id("users") },
   returns: v.array(clientWorkoutShape),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
     const today = dayKey();
 
     const phases = await ctx.db
@@ -536,12 +590,16 @@ export const clientWorkouts = query({
       .collect();
     const phaseById = new Map(phases.map((phase) => [phase._id as string, phase]));
 
+    // The hidden flag is filtered here rather than through `hiddenFor`: this
+    // query already has the client's workouts in hand, so a second read of the
+    // same index to learn which of them are hidden would be wasted.
+    const forCoach = viewer.role === "coach";
     const workouts = (
       await ctx.db
         .query("workouts")
         .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
         .collect()
-    ).filter((doc) => !doc.archived);
+    ).filter((doc) => !doc.archived && (forCoach || !doc.hiddenFromClient));
 
     const rows = await Promise.all(
       workouts.map(async (doc) => {
@@ -666,14 +724,17 @@ export const assignmentsOn = query({
   args: { clientId: v.id("users"), date: v.string() },
   returns: v.array(scheduledShape),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
-    const docs = await ctx.db
-      .query("assignments")
-      .withIndex("by_client_and_date", (q) =>
-        q.eq("clientId", args.clientId).eq("date", args.date),
-      )
-      .collect();
-    return scheduledOnly(docs);
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const [docs, hidden] = await Promise.all([
+      ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) =>
+          q.eq("clientId", args.clientId).eq("date", args.date),
+        )
+        .collect(),
+      hiddenFor(ctx, args.clientId, viewer),
+    ]);
+    return scheduledOnly(visible(docs, hidden));
   },
 });
 
@@ -682,8 +743,9 @@ export const nextAssignment = query({
   args: { clientId: v.id("users"), from: v.optional(v.string()) },
   returns: v.union(v.null(), scheduledShape),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
     const from = args.from ?? dayKey();
+    const hidden = await hiddenFor(ctx, args.clientId, viewer);
 
     // Streamed rather than collected: the answer is almost always the first
     // row, and the index already has it in (date, created_at) order.
@@ -693,6 +755,7 @@ export const nextAssignment = query({
         q.eq("clientId", args.clientId).gte("date", from),
       )) {
       if (doc.date === null || doc.status !== "scheduled") continue;
+      if (doc.workoutId && hidden.has(doc.workoutId as string)) continue;
       return { ...mapAssignment(doc), date: doc.date };
     }
     return null;
@@ -766,7 +829,7 @@ export const removeAssignment = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await coachAssignment(ctx, args.assignmentId);
-    await deleteLogs(ctx, args.assignmentId);
+    await deleteSessionEntries(ctx, args.assignmentId);
     await ctx.db.delete("assignments", args.assignmentId);
     return null;
   },
@@ -855,7 +918,7 @@ export const discardAssignment = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const doc = await writable(ctx, args.assignmentId);
-    await deleteLogs(ctx, doc._id);
+    await deleteSessionEntries(ctx, doc._id);
     await ctx.db.patch("assignments", doc._id, {
       status: "scheduled",
       startedAt: null,
@@ -932,10 +995,27 @@ async function logDocs(ctx: Ctx, assignmentId: Id<"assignments">): Promise<Doc<"
     .collect();
 }
 
-async function deleteLogs(ctx: MutationCtx, assignmentId: Id<"assignments">): Promise<void> {
+/**
+ * Everything the client wrote during a session: its set logs and its notes on
+ * the exercises.
+ *
+ * The two always go together. Deleting the assignment must take both or the
+ * notes are orphaned — nothing else points at them — and discarding a session
+ * to start it over must take both or last attempt's notes reappear under the
+ * next one.
+ */
+async function deleteSessionEntries(
+  ctx: MutationCtx,
+  assignmentId: Id<"assignments">,
+): Promise<void> {
   for (const log of await logDocs(ctx, assignmentId)) {
     await ctx.db.delete("setLogs", log._id);
   }
+  const notes = await ctx.db
+    .query("exerciseNotes")
+    .withIndex("by_assignment", (q) => q.eq("assignmentId", assignmentId))
+    .collect();
+  for (const note of notes) await ctx.db.delete("exerciseNotes", note._id);
 }
 
 export const logsFor = query({
@@ -1010,6 +1090,85 @@ export const clearSet = mutation({
         await ctx.db.delete("setLogs", log._id);
       }
     }
+    return null;
+  },
+});
+
+/* ------------------------------------------------------- notes on exercises */
+
+/**
+ * What the client wrote about each exercise in this session, newest edit kept.
+ *
+ * Same gate as the logs — the client reads their own, the coach reads any of
+ * hers — because the coach reading these in the session report is the whole
+ * point of collecting them.
+ */
+export const exerciseNotesFor = query({
+  args: { assignmentId: v.id("assignments") },
+  returns: v.array(exerciseNoteShape),
+  handler: async (ctx, args) => {
+    const doc = await readable(ctx, args.assignmentId);
+    if (!doc) return [];
+    const notes = await ctx.db
+      .query("exerciseNotes")
+      .withIndex("by_assignment", (q) => q.eq("assignmentId", doc._id))
+      .collect();
+    return notes.map((note) => ({
+      id: note._id as string,
+      assignmentId: note.assignmentId as string,
+      itemId: note.itemId,
+      exerciseId: note.exerciseId,
+      body: note.body,
+      updatedAt: note.updatedAt,
+    }));
+  },
+});
+
+/**
+ * Write the client's note for one exercise of this session, or clear it.
+ *
+ * Upsert on `(assignmentId, itemId)` — the table has no uniqueness of its own,
+ * so this function is what keeps "one note per exercise per session" true. An
+ * empty body deletes the row rather than storing a blank one: an emptied
+ * textarea means "never mind", and a blank note would otherwise draw an empty
+ * highlighted block under the exercise and an empty line in the coach's report.
+ */
+export const saveExerciseNote = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    itemId: v.string(),
+    exerciseId: v.string(),
+    body: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await writable(ctx, args.assignmentId);
+    const body = args.body.trim().slice(0, NOTE_LIMIT);
+
+    const existing = await ctx.db
+      .query("exerciseNotes")
+      .withIndex("by_assignment_and_item", (q) =>
+        q.eq("assignmentId", doc._id).eq("itemId", args.itemId),
+      )
+      .unique();
+
+    if (!body) {
+      if (existing) await ctx.db.delete("exerciseNotes", existing._id);
+      return null;
+    }
+
+    if (existing) {
+      await ctx.db.patch("exerciseNotes", existing._id, { body, updatedAt: Date.now() });
+      return null;
+    }
+
+    await ctx.db.insert("exerciseNotes", {
+      assignmentId: doc._id,
+      itemId: args.itemId,
+      exerciseId: args.exerciseId,
+      body,
+      updatedAt: Date.now(),
+    });
     return null;
   },
 });

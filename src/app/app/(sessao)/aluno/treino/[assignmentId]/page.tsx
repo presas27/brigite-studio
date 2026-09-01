@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { findAssignment, lastLogsForExercise, logsFor } from "@/lib/studio/plan";
+import { exerciseNotesFor, findAssignment, lastLogsForExercise, logsFor } from "@/lib/studio/plan";
 import type { SetLog } from "@/lib/studio/types";
 import { SessionPlayer } from "@/components/studio/session/SessionPlayer";
 import {
@@ -8,6 +8,7 @@ import {
   discardSession,
   finishSession,
   logSet,
+  saveNote,
   skipSession,
   unlogSet,
 } from "./actions";
@@ -38,8 +39,9 @@ export default async function TreinoPage({
     new Set(assignment.snapshot.blocks.flatMap((block) => block.items.map((item) => item.exerciseId))),
   );
 
-  const [initialLogs, previousLogsList] = await Promise.all([
+  const [initialLogs, noteRows, previousLogsList] = await Promise.all([
     logsFor(assignment.id),
+    exerciseNotesFor(assignment.id),
     Promise.all(
       exerciseIds.map((exerciseId) => lastLogsForExercise(client.id, exerciseId, assignment.id)),
     ),
@@ -49,13 +51,20 @@ export default async function TreinoPage({
     previousByExercise[exerciseId] = previousLogsList[index];
   });
 
+  // Keyed by `itemId` — the exercise's identity inside this session's frozen
+  // snapshot — which is the same key the player already indexes its steps by.
+  const initialNotes: Record<string, string> = {};
+  for (const note of noteRows) initialNotes[note.itemId] = note.body;
+
   return (
     <SessionPlayer
       assignment={assignment}
       initialLogs={initialLogs}
+      initialNotes={initialNotes}
       previousByExercise={previousByExercise}
       logSetAction={logSet}
       unlogSetAction={unlogSet}
+      saveNoteAction={saveNote}
       beginAction={beginSession.bind(null, assignment.id)}
       finishAction={finishSession.bind(null, assignment.id)}
       skipAction={skipSession.bind(null, assignment.id)}

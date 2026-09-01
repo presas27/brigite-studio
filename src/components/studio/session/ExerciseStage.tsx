@@ -39,6 +39,7 @@ export function ExerciseStage({
   actions,
   progress,
   onOpenList,
+  note,
   onChange,
 }: {
   step: SessionStep;
@@ -51,6 +52,12 @@ export function ExerciseStage({
   /** The session's progress, shown in the panel where the header has none. */
   progress: React.ReactNode;
   onOpenList: () => void;
+  /**
+   * The client's note on this exercise, as a slot. Passed in rather than built
+   * here because the note is per session and the stage only knows the step —
+   * the player owns the assignment and the draft state.
+   */
+  note?: React.ReactNode;
   onChange: (value: SetValue) => void;
 }) {
   const t = useTranslations("Studio.session");
@@ -146,7 +153,7 @@ export function ExerciseStage({
           </div>
         </div>
 
-        {(itemNotes || cueLines.length > 0) && (
+        {(itemNotes || cueLines.length > 0 || note) && (
           <div
             data-stage="identity"
             className="order-2 space-y-2 md:order-3 md:space-y-3 md:border-t md:border-cream/10 md:pt-5"
@@ -171,6 +178,9 @@ export function ExerciseStage({
                 ))}
               </div>
             )}
+            {/* The client's own note, below the coach's cues: hers is what the
+                exercise asks for, this is what actually happened. */}
+            {note}
           </div>
         )}
 

@@ -158,3 +158,20 @@ export async function removePhaseWorkout(phaseId: string, workoutId: string): Pr
     workoutId: workoutId as Id<"workouts">,
   });
 }
+
+/**
+ * Hide a phase workout from the client's app, or put it back. Neither a delete
+ * nor an archive: the coach keeps the row and its calendar placement, and the
+ * client stops seeing both the workout and the sessions it was placed on.
+ */
+export async function setPhaseWorkoutHidden(
+  phaseId: string,
+  workoutId: string,
+  hidden: boolean,
+): Promise<void> {
+  await sm(api.phases.setWorkoutHidden, {
+    phaseId: phaseId as Id<"trainingPhases">,
+    workoutId: workoutId as Id<"workouts">,
+    hidden,
+  });
+}

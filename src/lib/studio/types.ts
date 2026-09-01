@@ -127,6 +127,17 @@ export type WorkoutBlock = {
  */
 export type WorkoutType = "regular" | "circuit" | "interval";
 
+/**
+ * Which shelf of the coach's library a template sits on.
+ *
+ *  - `master` — written as a starting point, not handed to anybody yet.
+ *  - `shared` — at least one client has been given it.
+ *
+ * Filing only. It never decides who may read a template: a client sees the
+ * workouts of their own plan and no library at all.
+ */
+export type LibraryCategory = "master" | "shared";
+
 export type Workout = {
   id: string;
   name: string;
@@ -155,6 +166,15 @@ export type Workout = {
   scheduleMode: "weekly" | "custom" | "none" | null;
   /** Monday=0 … Sunday=6. Only set when repeating weekly. */
   scheduleWeekday: number | null;
+  /** Which library shelf this template sits on. Meaningless on a phase copy. */
+  libraryCategory: LibraryCategory;
+  /**
+   * Hidden from the client's app without being deleted: the coach still sees it
+   * in the plan, the client sees neither it nor the sessions it was placed on.
+   */
+  hiddenFromClient: boolean;
+  /** The program phase this template belongs to, when it belongs to one. */
+  programPhaseId: string | null;
   blocks: WorkoutBlock[];
 };
 
@@ -251,6 +271,62 @@ export type TrainingPhase = {
 /** A phase with the size of its workout list — for the plan tab. */
 export type TrainingPhaseSummary = TrainingPhase & { workoutCount: number };
 
+/**
+ * A reusable training program: the multi-week, multi-phase shape of a block of
+ * training, kept as a template rather than built into one client's plan.
+ *
+ * The phase-level twin of a library workout, filed on the same two shelves for
+ * the same reason — a coach needs to tell what she has only drafted from what a
+ * client is actually running.
+ */
+export type TrainingProgram = {
+  id: string;
+  coachId: string;
+  name: string;
+  focus: string;
+  notes: string;
+  libraryCategory: LibraryCategory;
+  archived: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** A program with the three numbers the list prints. */
+export type TrainingProgramSummary = TrainingProgram & {
+  phaseCount: number;
+  /** Weeks across every phase. Phases with no length count as zero. */
+  weekCount: number;
+  workoutCount: number;
+};
+
+/**
+ * One block of weeks inside a program template. The counterpart of
+ * `TrainingPhase`, minus the client and minus the calendar: a template has a
+ * length in weeks and no dates, because the dates only exist once the program
+ * is given to somebody.
+ */
+export type ProgramPhase = {
+  id: string;
+  programId: string;
+  name: string;
+  position: number;
+  weeks: number | null;
+  notes: string;
+};
+
+/** A program phase with the sessions inside it, as the program page draws them. */
+export type ProgramPhaseDetail = ProgramPhase & {
+  workouts: {
+    id: string;
+    name: string;
+    focus: string;
+    workoutType: WorkoutType;
+    position: number;
+    itemCount: number;
+    estimatedMinutes: number | null;
+  }[];
+};
+
 export type AssignmentStatus = "scheduled" | "done" | "skipped";
 
 /**
@@ -303,6 +379,24 @@ export type SetLog = {
   rpe: number | null;
   notes: string;
   loggedAt: number;
+};
+
+/**
+ * What the client wrote about one exercise while training it — "shoulder
+ * twinged on the third set", "band was too light". The coach reads it back in
+ * the session report.
+ *
+ * One per exercise per *session*: `itemId` identifies the exercise inside the
+ * assignment's frozen snapshot, so the same movement trained next week gets its
+ * own note and last week's still says what it said.
+ */
+export type ExerciseNote = {
+  id: string;
+  assignmentId: string;
+  itemId: string;
+  exerciseId: string;
+  body: string;
+  updatedAt: number;
 };
 
 export type Message = {

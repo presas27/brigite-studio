@@ -5,6 +5,7 @@ import { EditExerciseModal } from "@/components/studio/library/EditExerciseModal
 import { ExerciseCues } from "@/components/studio/library/ExerciseCues";
 import { ExerciseDemo } from "@/components/studio/library/ExerciseDemo";
 import { ExerciseTags } from "@/components/studio/library/ExerciseTags";
+import { FindVideoButton } from "@/components/studio/library/FindVideoButton";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { eyebrow, surface } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
@@ -60,7 +61,12 @@ export default async function ExercisePage({
       />
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <ExerciseDemo exerciseId={exercise.id} videoUrl={exercise.videoUrl} />
+        <div className="space-y-2">
+          <ExerciseDemo exerciseId={exercise.id} videoUrl={exercise.videoUrl} />
+          {/* Under the plate, not in the masthead: it is one way of filling this
+              one field, and it belongs next to the field it fills. */}
+          <FindVideoButton exerciseId={exercise.id} />
+        </div>
         <ExerciseCues exerciseId={exercise.id} cues={exercise.cues} cuesEn={exercise.cuesEn} />
       </div>
 

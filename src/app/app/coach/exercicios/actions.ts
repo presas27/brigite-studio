@@ -3,7 +3,12 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCoach } from "@/lib/studio/auth";
-import { archiveExercise, createExercise, updateExercise } from "@/lib/studio/library";
+import {
+  archiveExercise,
+  createExercise,
+  findExerciseVideo,
+  updateExercise,
+} from "@/lib/studio/library";
 import type { Tracking } from "@/lib/studio/types";
 
 /**
@@ -157,4 +162,39 @@ export async function saveVideoUrlAction(
   await updateExercise(exerciseId, { videoUrl });
   refresh();
   return { status: "ok" };
+}
+
+/**
+ * What the "Find on YouTube" button gets back. `found` carries the video's own
+ * title so the panel can say *what* it linked — a coach who is told only "done"
+ * has to open the player to find out whether the guess was any good.
+ */
+export type VideoSearchState =
+  | { status: "idle" }
+  | { status: "found"; url: string; title: string }
+  | { status: "notFound" }
+  | { status: "failed" };
+
+/**
+ * Look a demo up on YouTube for this exercise and write the link in.
+ *
+ * The search is a suggestion and is treated as one: it refuses when nothing
+ * matches the name well enough, and the coach is expected to correct what it
+ * does find as she builds plans. It also spends YouTube quota on every press,
+ * which is why it is a button and not something that happens on save.
+ */
+export async function findVideoAction(exerciseId: string): Promise<VideoSearchState> {
+  await requireCoach();
+
+  try {
+    const found = await findExerciseVideo(exerciseId);
+    if (!found) return { status: "notFound" };
+    refresh();
+    return { status: "found", url: found.url, title: found.title };
+  } catch (error) {
+    // A missing API key, an exhausted quota and a network blip all land here and
+    // all mean the same thing to the coach: it did not work, paste it by hand.
+    console.error(`YouTube search failed for exercise ${exerciseId}:`, error);
+    return { status: "failed" };
+  }
 }

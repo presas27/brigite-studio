@@ -7,6 +7,7 @@ import { buildSessionQueue, type SessionStep } from "@/lib/studio/session-queue"
 import type { Assignment, AssignmentStatus, SetLog } from "@/lib/studio/types";
 import { isRestItem } from "@/lib/studio/types";
 import { EffortDial } from "./EffortDial";
+import { ExerciseNoteButton } from "./ExerciseNoteButton";
 import { ExerciseStage } from "./ExerciseStage";
 import { ExitSheet } from "./ExitSheet";
 import { RestScreen } from "./RestScreen";
@@ -48,9 +49,11 @@ const FRAME = "mx-auto w-full max-w-[76rem]";
 export function SessionPlayer({
   assignment,
   initialLogs,
+  initialNotes,
   previousByExercise,
   logSetAction,
   unlogSetAction,
+  saveNoteAction,
   beginAction,
   finishAction,
   skipAction,
@@ -58,9 +61,17 @@ export function SessionPlayer({
 }: {
   assignment: Assignment;
   initialLogs: SetLog[];
+  /** This session's notes, keyed by the snapshot `itemId` they belong to. */
+  initialNotes: Record<string, string>;
   previousByExercise: Record<string, SetLog[]>;
   logSetAction: (input: LogSetInput) => Promise<void>;
   unlogSetAction: (input: UnlogSetInput) => Promise<void>;
+  saveNoteAction: (input: {
+    assignmentId: string;
+    itemId: string;
+    exerciseId: string;
+    body: string;
+  }) => Promise<void>;
   beginAction: () => Promise<void>;
   finishAction: (input: { effort: number | null; extraRestSeconds: number }) => Promise<void>;
   skipAction: () => Promise<void>;
@@ -83,6 +94,26 @@ export function SessionPlayer({
     logSetAction,
     unlogSetAction,
   });
+
+  // Notes are held here and written straight through, unlike the set logs: a
+  // note is one deliberate save behind a dialog, not a value that changes on
+  // every keystroke, so there is nothing to debounce and no queue to replay.
+  // The optimistic update is what keeps the block on screen while the write
+  // travels.
+  const [notes, setNotes] = useState(initialNotes);
+  const saveNote = useCallback(
+    async (itemId: string, exerciseId: string, body: string) => {
+      const trimmed = body.trim();
+      setNotes((current) => {
+        const next = { ...current };
+        if (trimmed) next[itemId] = trimmed;
+        else delete next[itemId];
+        return next;
+      });
+      await saveNoteAction({ assignmentId: assignment.id, itemId, exerciseId, body: trimmed });
+    },
+    [assignment.id, saveNoteAction],
+  );
 
   const isLogged = useCallback(
     (step: SessionStep) => {
@@ -470,6 +501,13 @@ export function SessionPlayer({
                 </div>
               }
               onOpenList={() => setListOpen(true)}
+              note={
+                <ExerciseNoteButton
+                  exerciseName={step.item.exerciseName}
+                  note={notes[step.itemId] ?? ""}
+                  onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
+                />
+              }
               onChange={(value) => updateSet(step.itemId, step.setIndex, value)}
             />
           )}

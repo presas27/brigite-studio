@@ -2,7 +2,13 @@ import { v } from "convex/values";
 import type { WorkoutSummary } from "../src/lib/studio/types";
 import { searchKey } from "../src/lib/utils";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { requireCoach } from "./model/authz";
 import {
   blocksFor,
@@ -50,6 +56,8 @@ const blockKind = v.union(
 );
 
 const workoutType = v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval"));
+
+const libraryCategory = v.union(v.literal("master"), v.literal("shared"));
 
 /**
  * The return shapes are the domain types from `src/lib/studio/types.ts`, so the
@@ -116,6 +124,9 @@ const workoutFields = {
   estimatedMinutes: v.union(v.null(), v.number()),
   scheduleMode: v.union(v.null(), v.literal("weekly"), v.literal("custom"), v.literal("none")),
   scheduleWeekday: v.union(v.null(), v.number()),
+  libraryCategory,
+  hiddenFromClient: v.boolean(),
+  programPhaseId: v.union(v.null(), v.string()),
 };
 
 const workoutShape = v.object({ ...workoutFields, blocks: v.array(blockShape) });
@@ -815,6 +826,100 @@ export const copyWorkout = mutation({
       sourceWorkoutId: args.sourceWorkoutId ?? null,
       position: args.position === undefined ? 0 : whole(args.position, 0),
     });
+  },
+});
+
+/**
+ * "Copy to Workout Library": take any workout — usually a client's phase copy
+ * the coach has just finished tuning — and put it on one of her library
+ * shelves as a template of its own.
+ *
+ * The copy is deliberately cut loose from where it came from: no client, no
+ * phase, no program, `position` 0, and `sourceWorkoutId` pointing back at the
+ * workout it was taken from so the provenance survives. Editing the template
+ * afterwards cannot reach back into the client's plan, which is the same
+ * one-way rule `addLibraryWorkout` relies on in the other direction.
+ *
+ * `null` when the id names nothing, matching the rest of this file.
+ */
+export const copyToLibrary = mutation({
+  args: { workoutId: v.id("workouts"), category: libraryCategory },
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx, args) => {
+    const coach = await requireCoach(ctx);
+    const source = await ctx.db.get("workouts", args.workoutId);
+    if (!source) return null;
+
+    return copyWorkoutRow(ctx, args.workoutId, {
+      coachId: source.coachId ?? coach._id,
+      clientId: null,
+      phaseId: null,
+      programPhaseId: null,
+      position: 0,
+      sourceWorkoutId: args.workoutId,
+      libraryCategory: args.category,
+    });
+  },
+});
+
+/** Move a template between the two library shelves. */
+export const setLibraryCategory = mutation({
+  args: { workoutId: v.id("workouts"), category: libraryCategory },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireCoach(ctx);
+    if (!(await ctx.db.get("workouts", args.workoutId))) return null;
+    // Filing is not editing, so `updatedAt` is left where the last real edit
+    // put it — the same reasoning as `archiveWorkout` above.
+    await ctx.db.patch("workouts", args.workoutId, { libraryCategory: args.category });
+    return null;
+  },
+});
+
+/**
+ * One-off: file the templates a client already has onto the shared shelf.
+ *
+ * `libraryCategory` is written from now on by whatever hands a template to a
+ * client (`phases.addLibraryWorkout`), but rows that predate the field read as
+ * `master` by default — including templates a client has been training for
+ * months. This walks every phase copy, follows its `sourceWorkoutId` back to
+ * the template it came from, and moves that template across.
+ *
+ * Internal, and safe to run more than once: it only ever patches a template
+ * that is not already `shared`, and it returns how many it moved. Run it once
+ * after deploying the field:
+ *
+ * ```
+ * bunx convex run library:backfillLibraryCategory
+ * ```
+ */
+export const backfillLibraryCategory = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    // Every workout that came from somewhere. `by_source` is bounded by the
+    // template it points at, so this walks the plans' copies rather than the
+    // whole table, and each distinct source is patched at most once.
+    const copies = await ctx.db
+      .query("workouts")
+      .withIndex("by_source")
+      .collect();
+
+    const seen = new Set<string>();
+    let moved = 0;
+    for (const copy of copies) {
+      // A library-to-library copy is not a client having it; only a row that
+      // belongs to a client says a template was actually handed over.
+      if (!copy.sourceWorkoutId || copy.clientId === null) continue;
+      if (seen.has(copy.sourceWorkoutId)) continue;
+      seen.add(copy.sourceWorkoutId);
+
+      const template = await ctx.db.get("workouts", copy.sourceWorkoutId as Id<"workouts">);
+      if (!template || template.libraryCategory === "shared") continue;
+      await ctx.db.patch("workouts", template._id, { libraryCategory: "shared" });
+      moved += 1;
+    }
+    return moved;
   },
 });
 

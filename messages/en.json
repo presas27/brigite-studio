@@ -162,7 +162,8 @@
       "closeMenu": "Close menu",
       "notifications": "Notifications",
       "expand": "Expand",
-      "collapse": "Collapse"
+      "collapse": "Collapse",
+      "programs": "Programs"
     },
     "signIn": {
       "title": "Training area",
@@ -467,7 +468,22 @@
       "videoRemove": "Remove video",
       "videoOpen": "Open on YouTube",
       "videoExternal": "This link is not from YouTube, so it opens outside the app.",
-      "showingSome": "Showing {shown} of {total}. Type to filter."
+      "showingSome": "Showing {shown} of {total}. Type to filter.",
+      "tabs": {
+        "masterWorkouts": "Master Workouts",
+        "masterPrograms": "Master Programs",
+        "shared": "Shared with Clients"
+      },
+      "emptyMaster": "Nothing here yet",
+      "emptyMasterHint": "This is your template shelf: what you write before you hand it to anybody.",
+      "emptyShared": "Nothing shared yet",
+      "emptySharedHint": "The moment you give one of these to a client, it shows up here.",
+      "findVideo": "Find on YouTube",
+      "findVideoHint": "Finds a short tutorial and fills the link in. Always check it before using it.",
+      "findingVideo": "Searching…",
+      "videoFound": "Video found",
+      "videoNotFound": "Nothing found. Paste the link by hand.",
+      "videoSearchFailed": "The search failed. Try again."
     },
     "workouts": {
       "title": "Workouts",
@@ -672,6 +688,28 @@
           "4": "Fri",
           "5": "Sat",
           "6": "Sun"
+        },
+        "moreActions": "More actions",
+        "copy": "Copy",
+        "copyToLibrary": "Copy to Workout Library",
+        "copyDestinationTitle": "Where should this workout be saved?",
+        "copyDestinationLead": "\"{name}\" is copied with every exercise, set, rep and rest time.",
+        "deleteWorkout": "Delete",
+        "removeWorkoutConfirm": "\"{name}\" leaves this phase for good. Sessions already trained stay in the client's history.",
+        "hideFromClient": "Hide from client",
+        "hideFromClientHint": "Stops showing in their app. Stays here.",
+        "unhideFromClient": "Unhide from client",
+        "unhideFromClientHint": "Shows in their app again.",
+        "hiddenTag": "Hidden",
+        "copiedTo": {
+          "master": "Copied to Master Library",
+          "shared": "Copied to Shared with Clients"
+        },
+        "library": {
+          "master": "Master Library",
+          "masterHint": "Your own templates, the starting point for new workouts. Not tied to a client.",
+          "shared": "Shared with Clients",
+          "sharedHint": "Workouts you have already given somebody, kept apart from untested templates."
         }
       }
     },
@@ -774,7 +812,15 @@
       "statVolume": "Volume",
       "statExtraRest": "Extra rest",
       "minutes": "{value} min",
-      "doneSets": "{done} of {total} sets"
+      "doneSets": "{done} of {total} sets",
+      "addNote": "Add note",
+      "editNote": "Edit note",
+      "noteTitle": "Note for {name}",
+      "notePrivacy": "Only visible to you and your coach.",
+      "notePlaceholder": "Left shoulder twinged on the third set…",
+      "saveNote": "Save note",
+      "noteSaved": "Note saved",
+      "noteLabel": "Your note"
     },
     "report": {
       "title": "Sessions",
@@ -798,7 +844,9 @@
         "superset": "Superset",
         "circuit": "Circuit",
         "interval": "Intervals"
-      }
+      },
+      "exerciseNotes": "Client's notes",
+      "noteFrom": "On {name}"
     },
     "messages": {
       "title": "Messages",
@@ -1037,6 +1085,48 @@
       "selectWeek": "Select the {date} check-in",
       "photoAlt": "{angle}, {date}",
       "angleCount": "{count, plural, =1 {# photo} other {# photos}}"
+    },
+    "programs": {
+      "title": "Programs",
+      "lead": "Multi-week plans, kept as a template instead of rewritten for every client.",
+      "add": "New program",
+      "addTitle": "New program",
+      "nameLabel": "Name",
+      "namePlaceholder": "Base — 12 weeks",
+      "focusLabel": "Focus",
+      "focusPlaceholder": "Strength, mobility…",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Who it is for, what it assumes, what comes before it.",
+      "count": "{count, plural, one {# program} other {# programs}}",
+      "phaseCount": "{count, plural, =0 {no phases} one {# phase} other {# phases}}",
+      "weekCount": "{count, plural, one {# week} other {# weeks}}",
+      "workoutCount": "{count, plural, =0 {no workouts} one {# workout} other {# workouts}}",
+      "editedOn": "Edited on {date}",
+      "delete": "Delete program",
+      "deleteConfirmTitle": "Delete program",
+      "deleteConfirmBody": "\"{name}\", its phases and the workouts inside them are deleted. Clients' plans stay as they are.",
+      "addPhase": "Add phase",
+      "addPhaseTitle": "New phase",
+      "phaseNameLabel": "Phase name",
+      "phaseNamePlaceholder": "Phase 1 — Base",
+      "weeksLabel": "Weeks",
+      "weeksHint": "A template has a length, not dates. The dates only exist once it is given to somebody.",
+      "removePhase": "Remove phase",
+      "phasesEmpty": "No phases yet",
+      "phasesEmptyHint": "A phase is a block of weeks. Add the first one and put workouts in it.",
+      "addWorkout": "Add workout",
+      "addWorkoutTitle": "Add workout to phase",
+      "addWorkoutHint": "The workout is copied from the library. Editing it here never changes the original.",
+      "removeWorkout": "Remove from phase",
+      "workoutsEmpty": "No workouts in this phase",
+      "libraryEmpty": "The workout library is empty.",
+      "captureFromClient": "Save plan as program",
+      "captureTitle": "Save plan as program",
+      "captureLead": "This plan's phases and the workouts inside them are copied into a new program. The client's plan stays as it is.",
+      "captured": "Saved as a program",
+      "empty": "No programs yet",
+      "emptyHint": "A program is the shape of a block of training — its phases and their workouts — kept to reuse.",
+      "noResults": "Nothing matches"
     }
   },
   "Error": {

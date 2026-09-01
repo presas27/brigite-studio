@@ -162,7 +162,8 @@
       "closeMenu": "Fechar menu",
       "notifications": "Notificações",
       "expand": "Expandir",
-      "collapse": "Fechar"
+      "collapse": "Fechar",
+      "programs": "Programas"
     },
     "signIn": {
       "title": "Área de treino",
@@ -467,7 +468,22 @@
       "videoRemove": "Remover vídeo",
       "videoOpen": "Abrir no YouTube",
       "videoExternal": "Este link não é do YouTube, por isso abre fora da app.",
-      "showingSome": "A mostrar {shown} de {total}. Escreve para filtrar."
+      "showingSome": "A mostrar {shown} de {total}. Escreve para filtrar.",
+      "tabs": {
+        "masterWorkouts": "Treinos principais",
+        "masterPrograms": "Programas principais",
+        "shared": "Partilhados com alunos"
+      },
+      "emptyMaster": "Ainda não tens nada aqui",
+      "emptyMasterHint": "Isto é a tua prateleira de modelos: o que escreves antes de dar a alguém.",
+      "emptyShared": "Ainda não partilhaste nada",
+      "emptySharedHint": "Assim que deres um destes a um aluno, aparece aqui.",
+      "findVideo": "Procurar no YouTube",
+      "findVideoHint": "Procura um tutorial curto e preenche o link. Confirma sempre antes de usar.",
+      "findingVideo": "A procurar…",
+      "videoFound": "Vídeo encontrado",
+      "videoNotFound": "Nada encontrado. Cola o link à mão.",
+      "videoSearchFailed": "A procura falhou. Tenta outra vez."
     },
     "workouts": {
       "title": "Treinos",
@@ -672,6 +688,28 @@
           "4": "Sex",
           "5": "Sáb",
           "6": "Dom"
+        },
+        "moreActions": "Mais ações",
+        "copy": "Copiar",
+        "copyToLibrary": "Copiar para a biblioteca",
+        "copyDestinationTitle": "Onde guardar este treino?",
+        "copyDestinationLead": "\"{name}\" é copiado com todos os exercícios, séries, repetições e descansos.",
+        "deleteWorkout": "Eliminar",
+        "removeWorkoutConfirm": "\"{name}\" sai desta fase para sempre. Os treinos já feitos ficam no histórico do aluno.",
+        "hideFromClient": "Esconder do aluno",
+        "hideFromClientHint": "Deixa de aparecer na app dele. Continua aqui.",
+        "unhideFromClient": "Mostrar ao aluno",
+        "unhideFromClientHint": "Volta a aparecer na app dele.",
+        "hiddenTag": "Escondido",
+        "copiedTo": {
+          "master": "Copiado para a Biblioteca principal",
+          "shared": "Copiado para Partilhados com alunos"
+        },
+        "library": {
+          "master": "Biblioteca principal",
+          "masterHint": "Os teus modelos, o ponto de partida para treinos novos. Sem aluno associado.",
+          "shared": "Partilhados com alunos",
+          "sharedHint": "Os treinos que já deste a alguém, separados dos modelos ainda por testar."
         }
       }
     },
@@ -774,7 +812,15 @@
       "statVolume": "Volume",
       "statExtraRest": "Descanso extra",
       "minutes": "{value} min",
-      "doneSets": "{done} de {total} séries"
+      "doneSets": "{done} de {total} séries",
+      "addNote": "Adicionar nota",
+      "editNote": "Editar nota",
+      "noteTitle": "Nota para {name}",
+      "notePrivacy": "Só tu e a tua treinadora veem isto.",
+      "notePlaceholder": "O ombro esquerdo picou na terceira série…",
+      "saveNote": "Guardar nota",
+      "noteSaved": "Nota guardada",
+      "noteLabel": "A tua nota"
     },
     "report": {
       "title": "Treinos",
@@ -798,7 +844,9 @@
         "superset": "Superset",
         "circuit": "Circuito",
         "interval": "Intervalado"
-      }
+      },
+      "exerciseNotes": "Notas do aluno",
+      "noteFrom": "Em {name}"
     },
     "messages": {
       "title": "Mensagens",
@@ -1037,6 +1085,48 @@
       "selectWeek": "Escolher o check-in de {date}",
       "photoAlt": "{angle}, {date}",
       "angleCount": "{count, plural, =1 {# foto} other {# fotos}}"
+    },
+    "programs": {
+      "title": "Programas",
+      "lead": "Planos de várias semanas, guardados como modelo em vez de escritos de novo para cada aluno.",
+      "add": "Novo programa",
+      "addTitle": "Novo programa",
+      "nameLabel": "Nome",
+      "namePlaceholder": "Base — 12 semanas",
+      "focusLabel": "Foco",
+      "focusPlaceholder": "Força, mobilidade…",
+      "notesLabel": "Notas",
+      "notesPlaceholder": "Para quem é, o que assume, o que vem antes.",
+      "count": "{count, plural, one {# programa} other {# programas}}",
+      "phaseCount": "{count, plural, =0 {sem fases} one {# fase} other {# fases}}",
+      "weekCount": "{count, plural, one {# semana} other {# semanas}}",
+      "workoutCount": "{count, plural, =0 {sem treinos} one {# treino} other {# treinos}}",
+      "editedOn": "Editado a {date}",
+      "delete": "Eliminar programa",
+      "deleteConfirmTitle": "Eliminar programa",
+      "deleteConfirmBody": "\"{name}\", as suas fases e os treinos dentro delas são eliminados. Os planos dos alunos ficam como estão.",
+      "addPhase": "Adicionar fase",
+      "addPhaseTitle": "Nova fase",
+      "phaseNameLabel": "Nome da fase",
+      "phaseNamePlaceholder": "Fase 1 — Base",
+      "weeksLabel": "Semanas",
+      "weeksHint": "Um modelo tem duração, não datas. As datas só existem quando o programa é dado a alguém.",
+      "removePhase": "Remover fase",
+      "phasesEmpty": "Programa sem fases",
+      "phasesEmptyHint": "Uma fase é um bloco de semanas. Acrescenta a primeira e põe treinos dentro.",
+      "addWorkout": "Adicionar treino",
+      "addWorkoutTitle": "Adicionar treino à fase",
+      "addWorkoutHint": "O treino é copiado da biblioteca. Editá-lo aqui nunca altera o original.",
+      "removeWorkout": "Remover da fase",
+      "workoutsEmpty": "Fase sem treinos",
+      "libraryEmpty": "A biblioteca de treinos está vazia.",
+      "captureFromClient": "Guardar plano como programa",
+      "captureTitle": "Guardar plano como programa",
+      "captureLead": "As fases deste plano e os treinos dentro delas são copiados para um programa novo. O plano do aluno fica como está.",
+      "captured": "Guardado como programa",
+      "empty": "Ainda não tens programas",
+      "emptyHint": "Um programa é a forma de um bloco de treino — as fases e os treinos dentro delas — guardada para reutilizar.",
+      "noResults": "Nada corresponde"
     }
   },
   "Error": {
