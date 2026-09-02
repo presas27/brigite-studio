@@ -328,6 +328,24 @@ export async function personalRecords(
   return sq(api.plan.personalRecords, { clientId: clientId as Id<"users"> });
 }
 
+export type ExerciseProgression = {
+  exerciseId: string;
+  exerciseName: string;
+  /** Oldest first; one point per finished session, the session's best set. */
+  points: {
+    date: string;
+    loadKg: number | null;
+    reps: number | null;
+    seconds: number | null;
+    rpe: number | null;
+  }[];
+};
+
+/** Per exercise, what was logged session by session over the last `days` days. */
+export async function exerciseProgression(clientId: string, days = 180): Promise<ExerciseProgression[]> {
+  return sq(api.plan.exerciseProgression, { clientId: clientId as Id<"users">, days });
+}
+
 /** Share of scheduled sessions completed over the last `days` days. */
 export async function adherence(
   clientId: string,

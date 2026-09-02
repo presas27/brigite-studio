@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
-import { measurements } from "@/lib/studio/coaching";
-import { seriesFromMeasurements } from "@/lib/studio/analytics";
-import { mockExerciseOptions } from "@/lib/studio/analyticsMock";
 import { ProgressChart } from "@/components/studio/analytics/ProgressChart";
-import { progressPhotoWeeks } from "@/lib/studio/photos";
+import { exerciseOptions, seriesFromMeasurements } from "@/lib/studio/analytics";
 import { requireClientAccess } from "@/lib/studio/auth";
+import { measurements } from "@/lib/studio/coaching";
+import { progressPhotoWeeks } from "@/lib/studio/photos";
+import { exerciseProgression } from "@/lib/studio/plan";
 
 /**
- * Read-only view of one client's progress — one filterable card (weight, an
- * exercise's reps/effort, or her progress photos) instead of a fixed
- * dashboard. Weight and photos are real data; exercise reps/effort are still
- * mock, same as the aluno's own tab.
+ * Read-only view of one client's progress — the same chart the client sees on
+ * their Evolução page: weight, any exercise they have logged, their photos.
+ * Records and history live on the client's overview and sessions tabs.
  */
 export default async function ClientProgressoPage({
   params,
@@ -21,19 +20,20 @@ export default async function ClientProgressoPage({
   const { viewer } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno/evolucao");
 
-  const [weightEntries, photoWeeks] = await Promise.all([
-    measurements(clientId, "weight", 24),
+  const [weightEntries, photoWeeks, progression] = await Promise.all([
+    measurements(clientId, "weight", 52),
     progressPhotoWeeks(clientId),
+    exerciseProgression(clientId),
   ]);
   const weightSeries =
     weightEntries.length > 0
-      ? seriesFromMeasurements(weightEntries, { id: "weight", unit: "kg", direction: "lower-is-better" })
+      ? seriesFromMeasurements(weightEntries, { id: "weight", unit: "kg", direction: "neutral" })
       : null;
 
   return (
     <ProgressChart
       weightSeries={weightSeries}
-      exercises={mockExerciseOptions()}
+      exercises={exerciseOptions(progression)}
       photoWeeks={photoWeeks}
     />
   );

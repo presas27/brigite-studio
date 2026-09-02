@@ -41,7 +41,7 @@ export async function AdherenceCard({
 
   return (
     <Link
-      href="/app/aluno/progresso"
+      href="/app/aluno/evolucao"
       className={cn(surfaceLink, "flex flex-col justify-between gap-4 p-4 sm:gap-6 sm:p-6", className)}
     >
       <div>

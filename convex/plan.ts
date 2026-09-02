@@ -1329,6 +1329,81 @@ function highest(current: number | null, candidate: number | null): number | nul
   return current == null ? candidate : Math.max(current, candidate);
 }
 
+const exerciseProgressionShape = v.object({
+  exerciseId: v.string(),
+  exerciseName: v.string(),
+  points: v.array(
+    v.object({
+      date: v.string(),
+      loadKg: v.union(v.null(), v.number()),
+      reps: v.union(v.null(), v.number()),
+      seconds: v.union(v.null(), v.number()),
+      rpe: v.union(v.null(), v.number()),
+    }),
+  ),
+});
+
+/**
+ * What one client logged per exercise, session by session, across every
+ * workout of theirs — the numbers behind the Evolução chart. The twin of
+ * `workoutProgression`, which answers for one workout; this one answers for
+ * one person, because the person reading their own chart does not think in
+ * workouts, they think in exercises.
+ *
+ * One point per exercise per finished session: the session's heaviest load,
+ * most reps, longest hold and hardest effort. Same walk as `personalRecords`
+ * — her assignments, then their logs — and the same reason the name comes
+ * from the snapshot. Bounded by `days`, oldest first, so a chart can draw it
+ * as it arrives.
+ */
+export const exerciseProgression = query({
+  args: { clientId: v.id("users"), days: v.optional(v.number()) },
+  returns: v.array(exerciseProgressionShape),
+  handler: async (ctx, args) => {
+    await requireClientAccess(ctx, args.clientId);
+    const from = shiftDay(dayKey(), -bounded(args.days, 180, 730));
+
+    const assignments = (
+      await ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).gte("date", from))
+        .collect()
+    ).filter((doc) => doc.status === "done" && doc.date !== null);
+    assignments.sort((a, b) => a.date!.localeCompare(b.date!) || a._creationTime - b._creationTime);
+
+    const names = new Map<string, string>();
+    const series = new Map<string, Infer<typeof exerciseProgressionShape>["points"]>();
+    for (const assignment of assignments) {
+      for (const block of assignment.snapshot.blocks) {
+        for (const item of block.items) names.set(item.exerciseId, item.exerciseName);
+      }
+      const best = new Map<
+        string,
+        { loadKg: number | null; reps: number | null; seconds: number | null; rpe: number | null }
+      >();
+      for (const log of await logDocs(ctx, assignment._id)) {
+        const current = best.get(log.exerciseId) ?? { loadKg: null, reps: null, seconds: null, rpe: null };
+        best.set(log.exerciseId, {
+          loadKg: highest(current.loadKg, log.loadKg),
+          reps: highest(current.reps, log.reps),
+          seconds: highest(current.seconds, log.seconds),
+          rpe: highest(current.rpe, log.rpe),
+        });
+      }
+      for (const [exerciseId, values] of best) {
+        const list = series.get(exerciseId) ?? [];
+        list.push({ date: assignment.date!, ...values });
+        series.set(exerciseId, list);
+      }
+    }
+
+    return [...series.entries()]
+      .map(([exerciseId, points]) => ({ exerciseId, exerciseName: names.get(exerciseId) ?? "", points }))
+      .filter((entry) => entry.exerciseName !== "")
+      .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, "pt", { sensitivity: "base" }));
+  },
+});
+
 /**
  * Every session this client has finished or missed, newest first — the coach's
  * training log.

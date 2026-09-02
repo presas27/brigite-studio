@@ -925,24 +925,18 @@
       "studioLead": "This week's check-ins, everyone."
     },
     "progress": {
-      "title": "Progress",
-      "lead": "What the numbers say.",
       "adherence": "Adherence (28 days)",
       "sessionsDone": "{done} of {total} sessions",
       "records": "Records",
       "bestLoad": "Best load",
       "bestHold": "Longest hold",
       "bestReps": "Most reps",
-      "weight": "Weight",
       "history": "Session history",
       "empty": "No data yet.",
       "emptyHint": "It shows up here after your first logged session.",
       "weightEmpty": "No weight logged yet.",
       "weightEmptyHint": "Shows up here after a check-in with weight.",
-      "weightAria": "Weight chart over time.",
-      "adherenceHint": "Sessions done out of the ones Sara booked in the last 28 days.",
-      "sinceFirst": "since the first entry",
-      "openTrends": "See the chart",
+      "adherenceHint": "Sessions done out of those scheduled in the last 28 days.",
       "openSessions": "See all"
     },
     "medidas": {
@@ -967,17 +961,25 @@
     },
     "evolucao": {
       "title": "Trends",
-      "lead": "Your progress, charted.",
+      "lead": "Your numbers: adherence, records, weight and what you logged session by session.",
       "weightMetric": "Weight",
       "exerciseMetric": "Exercise",
       "selectExercise": "Choose exercise",
-      "measureReps": "Reps",
-      "measureEffort": "Effort",
+      "measure": {
+        "loadKg": "Load",
+        "reps": "Reps",
+        "seconds": "Time",
+        "rpe": "Effort"
+      },
+      "exerciseEmpty": "Nothing logged yet.",
+      "exerciseEmptyHint": "Log sets in two sessions and the line shows up here.",
       "chartLine": "Line",
       "chartBar": "Bars",
       "metricLabel": "Metric",
       "measureLabel": "Measure",
-      "chartTypeLabel": "Chart type"
+      "chartTypeLabel": "Chart type",
+      "chart": "Chart",
+      "logMeasures": "Log weight and measurements"
     },
     "errors": {
       "generic": "Could not complete. Try again.",

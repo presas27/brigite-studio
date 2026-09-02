@@ -925,24 +925,18 @@
       "studioLead": "Os check-ins da semana, de todos."
     },
     "progress": {
-      "title": "Progresso",
-      "lead": "O que os números dizem.",
       "adherence": "Adesão (28 dias)",
       "sessionsDone": "{done} de {total} treinos",
       "records": "Recordes",
       "bestLoad": "Carga máx.",
       "bestHold": "Isometria máx.",
       "bestReps": "Reps máx.",
-      "weight": "Peso",
       "history": "Histórico de treinos",
       "empty": "Ainda sem dados.",
       "emptyHint": "Depois do primeiro treino registado aparece aqui.",
       "weightEmpty": "Ainda sem peso registado.",
       "weightEmptyHint": "Aparece aqui depois de um check-in com peso.",
-      "weightAria": "Gráfico de peso ao longo do tempo.",
-      "adherenceHint": "Treinos feitos dos que a Sara marcou nos últimos 28 dias.",
-      "sinceFirst": "desde o primeiro registo",
-      "openTrends": "Ver gráfico",
+      "adherenceHint": "Treinos feitos dos que estavam marcados nos últimos 28 dias.",
       "openSessions": "Ver todos"
     },
     "medidas": {
@@ -967,17 +961,25 @@
     },
     "evolucao": {
       "title": "Evolução",
-      "lead": "A tua progressão, em gráfico.",
+      "lead": "Os teus números: adesão, recordes, peso e o que registaste sessão a sessão.",
       "weightMetric": "Peso",
       "exerciseMetric": "Exercício",
       "selectExercise": "Escolher exercício",
-      "measureReps": "Reps",
-      "measureEffort": "Esforço",
+      "measure": {
+        "loadKg": "Carga",
+        "reps": "Reps",
+        "seconds": "Tempo",
+        "rpe": "Esforço"
+      },
+      "exerciseEmpty": "Ainda sem registos.",
+      "exerciseEmptyHint": "Faz dois treinos com séries registadas e a linha aparece aqui.",
       "chartLine": "Linha",
       "chartBar": "Barras",
       "metricLabel": "Métrica",
       "measureLabel": "Medida",
-      "chartTypeLabel": "Tipo de gráfico"
+      "chartTypeLabel": "Tipo de gráfico",
+      "chart": "Gráfico",
+      "logMeasures": "Registar peso e medidas"
     },
     "errors": {
       "generic": "Não foi possível concluir. Tenta outra vez.",

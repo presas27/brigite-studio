@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MockExerciseOption } from "@/lib/studio/analyticsMock";
-import type { MetricSeries } from "@/lib/studio/analytics";
+import type { ExerciseMeasure, ExerciseOption, MetricSeries } from "@/lib/studio/analytics";
 import { formatSigned } from "@/lib/studio/bodyMetrics";
 import { Empty } from "@/components/studio/Empty";
 import type { ProgressPhotoWeek } from "@/lib/studio/types";
@@ -13,8 +12,9 @@ import { PhotoLog } from "./PhotoLog";
 import { MetricChart } from "./MetricChart";
 
 type MetricKind = "weight" | "exercise" | "photos";
-type ExerciseMeasure = "reps" | "effort";
 type ChartType = "line" | "bar";
+
+const MEASURE_ORDER: ExerciseMeasure[] = ["loadKg", "reps", "seconds", "rpe"];
 
 function Pill<T extends string>({
   value,
@@ -53,10 +53,11 @@ function Pill<T extends string>({
 
 /**
  * One chart, filtered instead of three fixed cards: pick the metric (weight,
- * an exercise's reps/effort, or the progress photos), then how to draw it
- * (line or bar). Weight is real per-client data (`seriesFromMeasurements`,
- * passed in from the server); exercise reps/effort are still `analyticsMock`
- * until that's wired up too.
+ * an exercise, or the progress photos), then how to draw it (line or bar).
+ * Everything is this person's own rows — weight from `measurements`, an
+ * exercise's load / reps / hold / effort from what they logged session by
+ * session (`exerciseProgression`). Only measures with data are offered, so a
+ * plank never shows a kilo pill and a squat never shows a hold.
  *
  * Photos are not a chart, so choosing them replaces the plot rather than
  * feeding it: same card, same toggle, a different thing inside. The chart-type
@@ -68,7 +69,7 @@ export function ProgressChart({
   photoWeeks,
 }: {
   weightSeries: MetricSeries | null;
-  exercises: MockExerciseOption[];
+  exercises: ExerciseOption[];
   photoWeeks: ProgressPhotoWeek[];
 }) {
   const t = useTranslations("Studio.evolucao");
@@ -78,20 +79,24 @@ export function ProgressChart({
 
   const [metric, setMetric] = useState<MetricKind>("weight");
   const [exerciseId, setExerciseId] = useState(exercises[0]?.id ?? "");
-  const [measure, setMeasure] = useState<ExerciseMeasure>("reps");
+  const [chosenMeasure, setChosenMeasure] = useState<ExerciseMeasure | null>(null);
   const [chartType, setChartType] = useState<ChartType>("line");
 
   const exercise = exercises.find((option) => option.id === exerciseId) ?? exercises[0];
-  const series = metric === "weight" ? weightSeries : (exercise?.[measure] ?? null);
+  const measures = exercise ? MEASURE_ORDER.filter((key) => exercise.series[key]) : [];
+  // The chosen measure carries across exercises when both have it; otherwise
+  // the first one this exercise has.
+  const measure = chosenMeasure && measures.includes(chosenMeasure) ? chosenMeasure : measures[0];
+  const series = metric === "weight" ? weightSeries : (exercise && measure ? exercise.series[measure] : null) ?? null;
   const title =
     metric === "weight"
       ? t("weightMetric")
-      : `${exercise?.name ?? ""} — ${t(measure === "reps" ? "measureReps" : "measureEffort")}`;
+      : `${exercise?.name ?? ""} — ${measure ? t(`measure.${measure}`) : ""}`;
 
   const points = series?.points ?? [];
   const latest = points[points.length - 1];
   const previous = points.length > 1 ? points[points.length - 2] : undefined;
-  const delta = latest && previous ? latest.value - previous.value : null;
+  const delta = latest && previous ? Number((latest.value - previous.value).toFixed(1)) : null;
   const deltaIsGood =
     delta == null || !series || series.direction === "neutral"
       ? null
@@ -129,13 +134,10 @@ export function ProgressChart({
               </select>
             </label>
             <Pill
-              value={measure}
-              onChangeAction={setMeasure}
+              value={measure ?? "reps"}
+              onChangeAction={setChosenMeasure}
               groupLabel={t("measureLabel")}
-              options={[
-                { value: "reps", label: t("measureReps") },
-                { value: "effort", label: t("measureEffort") },
-              ]}
+              options={measures.map((key) => ({ value: key, label: t(`measure.${key}`) }))}
             />
           </>
         )}
@@ -155,7 +157,10 @@ export function ProgressChart({
       {metric === "photos" ? (
         <PhotoLog weeks={photoWeeks} />
       ) : !series || points.length === 0 ? (
-        <Empty title={tProgress("weightEmpty")} hint={tProgress("weightEmptyHint")} />
+        <Empty
+          title={metric === "weight" ? tProgress("weightEmpty") : t("exerciseEmpty")}
+          hint={metric === "weight" ? tProgress("weightEmptyHint") : t("exerciseEmptyHint")}
+        />
       ) : (
         <>
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
