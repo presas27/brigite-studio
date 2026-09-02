@@ -113,7 +113,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   }
 
   return (
-    <div className="gradient-hero grain relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-12">
+    <div className="gradient-hero grain relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-[max(1rem,env(safe-area-inset-left))] pt-[calc(3rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))]">
       <div className="relative w-full max-w-md rounded-[1.5rem] bg-ink p-8 shadow-[0_40px_80px_-32px_rgba(18,17,20,0.65)] ring-1 ring-cream/10 sm:p-10">
         <p className="mb-6 flex items-center gap-2 font-display text-sm uppercase tracking-[0.1em] text-accent-ink">
           <SolMark className="h-4 w-4" />

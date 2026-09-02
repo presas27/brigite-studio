@@ -400,7 +400,9 @@ export function SessionPlayer({
           a long one wraps to a second line, so the band's height is not a
           number the content below it can be padded past — it has to take its
           own room in the flow. */}
-      <header className="sticky top-0 z-20 bg-background/90 px-5 pt-4 pb-3 backdrop-blur-sm md:px-8 lg:px-10">
+      {/* The top inset is what keeps the close button and the exercise name
+          clear of the clock and the battery when the app runs installed. */}
+      <header className="sticky top-0 z-20 bg-background/90 px-[max(1.25rem,env(safe-area-inset-left))] pt-[calc(1rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm md:px-8 lg:px-10">
         <div
           className={cn(
             FRAME,

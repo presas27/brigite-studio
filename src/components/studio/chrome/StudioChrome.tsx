@@ -283,7 +283,7 @@ export function StudioChrome({
           // A flat lift is not enough separation at this width, so the rail gets
           // a faint caramel wash from the top-left corner — the same layering
           // trick the site's hero uses, at a tenth of the intensity.
-          "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 overflow-x-hidden border-r border-cream/12 bg-rail px-4 py-5",
+          "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 overflow-x-hidden border-r border-cream/12 bg-rail px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
           "bg-[radial-gradient(115%_55%_at_0%_0%,rgba(143,42,58,0.11),transparent_62%)]",
           // Genuinely fixed at every breakpoint — immune to scroll and to the
           // overscroll rubber-band bounce, which `sticky` still visibly moves
@@ -333,7 +333,14 @@ export function StudioChrome({
         {/* Opaque, not a translucent blur: `<main>` scrolls directly under this bar,
             and a gold hero card or a display heading passing beneath a 95% wash reads
             as a rendering fault, not as depth. */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background px-4 py-3 sm:px-6">
+        {/*
+         * `pt` is the padding plus whatever the device reserves at the top:
+         * installed on iOS the app owns the whole screen (`viewport-fit=cover`
+         * plus a translucent status bar), so without the inset the clock and
+         * the battery sit on top of this row. Same reasoning for the sides,
+         * which is landscape and the curved edges.
+         */}
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background px-[max(1rem,env(safe-area-inset-left))] pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 sm:px-[max(1.5rem,env(safe-area-inset-left))]">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -356,7 +363,7 @@ export function StudioChrome({
 
         <main
           id="main"
-          className="min-w-0 grow px-4 py-6 sm:px-6 sm:py-8 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+          className="min-w-0 grow px-[max(1rem,env(safe-area-inset-left))] pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:pt-8 sm:pb-[calc(2rem+env(safe-area-inset-bottom))] lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
         >
           {children}
         </main>
