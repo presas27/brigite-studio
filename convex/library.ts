@@ -9,7 +9,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { requireCoach } from "./model/authz";
+import { requireBuilder, requireCoach, requireViewer } from "./model/authz";
 import {
   blocksFor,
   copyWorkout as copyWorkoutRow,
@@ -28,10 +28,13 @@ import {
 /**
  * The library, over the wire: Sara's exercises and the workouts built from them.
  *
- * Every function here is `requireCoach`. The library is the coach's workshop —
- * a client never reads a template or a block, they read the *snapshot* frozen
- * into their assignment, which is `convex/plan.ts` and goes nowhere near these
- * tables. So coach-only is the default and there is no exception in this file.
+ * Who may be here: any coach, and a client who trains alone — a *builder*
+ * (`requireBuilder`). The exercise catalogue is shared and readable by every
+ * builder, and only a coach edits it. Workouts are owned: a template or a
+ * phase copy carries its builder as `coachId`, and every write below checks
+ * it (`ownedWorkout`). A coached client never reads a template or a block —
+ * they read the *snapshot* frozen into their assignment, which is
+ * `convex/plan.ts` and goes nowhere near these tables.
  *
  * Two things SQLite gave for free and which are therefore written out by hand:
  * the `ON DELETE CASCADE` from a block down to its items (`removeBlock`), and
@@ -148,6 +151,54 @@ type ItemPatch = Partial<Omit<Doc<"workoutItems">, "_id" | "_creationTime">>;
 function whole(value: number, min: number): number {
   if (!Number.isFinite(value)) throw new Error("Expected a finite number");
   return Math.max(min, Math.trunc(value));
+}
+
+/**
+ * The workout, if the caller may edit it: they built it. A coach edits their
+ * templates and their clients' phase copies (both carry the coach's id); a
+ * client training alone edits their own. Anyone else gets an error, not a
+ * different answer.
+ */
+async function ownedWorkout(ctx: QueryCtx, workoutId: Id<"workouts">): Promise<Doc<"workouts">> {
+  const builder = await requireBuilder(ctx);
+  const doc = await ctx.db.get("workouts", workoutId);
+  if (!doc || doc.coachId !== builder._id) throw new Error("Not your workout");
+  return doc;
+}
+
+/** The block and the workout it belongs to, ownership already checked. */
+async function ownedBlock(
+  ctx: QueryCtx,
+  blockId: Id<"workoutBlocks">,
+): Promise<{ block: Doc<"workoutBlocks">; workout: Doc<"workouts"> }> {
+  const block = await ctx.db.get("workoutBlocks", blockId);
+  if (!block) throw new Error("No such block");
+  return { block, workout: await ownedWorkout(ctx, block.workoutId) };
+}
+
+/** Same, one level down. */
+async function ownedItem(
+  ctx: QueryCtx,
+  itemId: Id<"workoutItems">,
+): Promise<{ item: Doc<"workoutItems">; block: Doc<"workoutBlocks">; workout: Doc<"workouts"> }> {
+  const item = await ctx.db.get("workoutItems", itemId);
+  if (!item) throw new Error("No such item");
+  return { item, ...(await ownedBlock(ctx, item.blockId)) };
+}
+
+/**
+ * A workout the caller may *read*: its builder, or the client it was copied
+ * for. `null` for anyone else, so a page renders "not found" rather than an
+ * error for an id that is not theirs.
+ */
+async function readableWorkout(
+  ctx: QueryCtx,
+  workoutId: Id<"workouts">,
+): Promise<Doc<"workouts"> | null> {
+  const user = await requireViewer(ctx);
+  const doc = await ctx.db.get("workouts", workoutId);
+  if (!doc) return null;
+  return doc.coachId === user._id || doc.clientId === user._id ? doc : null;
 }
 
 /**
@@ -286,7 +337,7 @@ export const listExercises = query({
   args: { search: v.optional(v.string()), tag: v.optional(v.string()) },
   returns: v.array(exerciseShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await requireBuilder(ctx);
     const search = args.search?.trim();
     const tag = args.tag?.trim();
     const docs = search ? await searchExercises(ctx, search) : await liveExercises(ctx);
@@ -301,7 +352,7 @@ export const findExercise = query({
   args: { exerciseId: v.id("exercises") },
   returns: v.union(v.null(), exerciseShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await requireBuilder(ctx);
     const doc = await ctx.db.get("exercises", args.exerciseId);
     return doc ? mapExercise(doc) : null;
   },
@@ -312,7 +363,7 @@ export const exerciseTags = query({
   args: {},
   returns: v.array(tagCountShape),
   handler: async (ctx) => {
-    await requireCoach(ctx);
+    await requireBuilder(ctx);
     const counts = new Map<string, number>();
     for (const doc of await liveExercises(ctx)) {
       for (const tag of doc.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
@@ -330,7 +381,7 @@ export const exerciseNameKeys = query({
   args: {},
   returns: v.array(v.string()),
   handler: async (ctx) => {
-    await requireCoach(ctx);
+    await requireBuilder(ctx);
     return [...(await exerciseKeys(ctx))];
   },
 });
@@ -421,7 +472,7 @@ export const workoutBlocks = query({
   args: { workoutId: v.id("workouts") },
   returns: v.array(blockShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    if (!(await readableWorkout(ctx, args.workoutId))) return [];
     return blocksFor(ctx, args.workoutId);
   },
 });
@@ -430,7 +481,7 @@ export const findWorkout = query({
   args: { workoutId: v.id("workouts") },
   returns: v.union(v.null(), workoutShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    if (!(await readableWorkout(ctx, args.workoutId))) return null;
     return (await workoutWithBlocks(ctx, args.workoutId)) ?? null;
   },
 });
@@ -444,8 +495,8 @@ export const listWorkouts = query({
   args: { search: v.optional(v.string()) },
   returns: v.array(summaryShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const docs = await libraryWorkouts(ctx);
+    const builder = await requireBuilder(ctx);
+    const docs = await libraryWorkouts(ctx, builder._id);
     // The SQL matched name and focus with a `LIKE`; folding both sides through
     // `searchKey` keeps that and adds what a Portuguese library needs, which is
     // for "mobilidade" to find "Mobilidade".
@@ -467,9 +518,9 @@ export const workoutFocuses = query({
   args: {},
   returns: v.array(tagCountShape),
   handler: async (ctx) => {
-    await requireCoach(ctx);
+    const builder = await requireBuilder(ctx);
     const counts = new Map<string, number>();
-    for (const doc of await libraryWorkouts(ctx)) {
+    for (const doc of await libraryWorkouts(ctx, builder._id)) {
       const focus = doc.focus.trim();
       if (focus) counts.set(focus, (counts.get(focus) ?? 0) + 1);
     }
@@ -478,9 +529,9 @@ export const workoutFocuses = query({
 });
 
 /**
- * A workout row. Left plain it is a library template; give it `clientId` and
- * `phaseId` and it is that client's own copy inside one training phase, which
- * the library never lists.
+ * A library template, owned by whoever is signed in. Phase copies are not made
+ * here — `phases.addWorkout` and `phases.createWorkout` do that, from a phase
+ * the caller has already been checked against.
  */
 export const createWorkout = mutation({
   args: {
@@ -488,26 +539,21 @@ export const createWorkout = mutation({
     focus: v.optional(v.string()),
     instructions: v.optional(v.string()),
     workoutType: v.optional(workoutType),
-    coachId: v.optional(v.union(v.null(), v.id("users"))),
-    clientId: v.optional(v.union(v.null(), v.id("users"))),
-    phaseId: v.optional(v.union(v.null(), v.id("trainingPhases"))),
-    sourceWorkoutId: v.optional(v.union(v.null(), v.string())),
-    position: v.optional(v.number()),
     estimatedMinutes: v.optional(v.union(v.null(), v.number())),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    const builder = await requireBuilder(ctx);
     return insertWorkout(ctx, {
       name: args.name,
       focus: args.focus ?? "",
       instructions: args.instructions ?? "",
       workoutType: args.workoutType ?? "regular",
-      coachId: args.coachId ?? null,
-      clientId: args.clientId ?? null,
-      phaseId: args.phaseId ?? null,
-      sourceWorkoutId: args.sourceWorkoutId ?? null,
-      position: args.position === undefined ? 0 : whole(args.position, 0),
+      coachId: builder._id,
+      clientId: null,
+      phaseId: null,
+      sourceWorkoutId: null,
+      position: 0,
       estimatedMinutes: args.estimatedMinutes ?? null,
     });
   },
@@ -530,7 +576,7 @@ export const updateWorkout = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedWorkout(ctx, args.workoutId);
     const patch: WorkoutPatch = {};
     if (args.patch.name !== undefined) patch.name = args.patch.name.trim();
     if (args.patch.focus !== undefined) patch.focus = args.patch.focus;
@@ -556,9 +602,7 @@ export const archiveWorkout = mutation({
   args: { workoutId: v.id("workouts") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const doc = await ctx.db.get("workouts", args.workoutId);
-    if (!doc) return null;
+    await ownedWorkout(ctx, args.workoutId);
     await ctx.db.patch("workouts", args.workoutId, { archived: true });
     return null;
   },
@@ -577,7 +621,7 @@ export const addBlock = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedWorkout(ctx, args.workoutId);
     const blockId = await appendBlock(ctx, args.workoutId, args);
     await touchWorkout(ctx, args.workoutId);
     return blockId;
@@ -596,7 +640,7 @@ export const updateBlock = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedBlock(ctx, args.blockId);
     const patch: BlockPatch = {};
     if (args.patch.kind !== undefined) patch.kind = args.patch.kind;
     if (args.patch.label !== undefined) patch.label = args.patch.label;
@@ -618,9 +662,7 @@ export const removeBlock = mutation({
   args: { blockId: v.id("workoutBlocks") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const block = await ctx.db.get("workoutBlocks", args.blockId);
-    if (!block) return null;
+    const { block } = await ownedBlock(ctx, args.blockId);
     for (const itemId of await itemIdsOf(ctx, args.blockId)) {
       await ctx.db.delete("workoutItems", itemId);
     }
@@ -646,7 +688,7 @@ export const addItem = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedBlock(ctx, args.blockId);
     const rest = args.kind === "rest";
     if (!rest && !args.exerciseId) throw new Error("exerciseId required");
     const position = (await lastItemPosition(ctx, args.blockId)) + 1;
@@ -699,7 +741,7 @@ export const updateItem = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedItem(ctx, args.itemId);
     const patch: ItemPatch = {};
     if (args.patch.sets !== undefined) patch.sets = whole(args.patch.sets, 1);
     if (args.patch.reps !== undefined) patch.reps = args.patch.reps;
@@ -727,9 +769,7 @@ export const removeItem = mutation({
   args: { itemId: v.id("workoutItems") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const item = await ctx.db.get("workoutItems", args.itemId);
-    if (!item) return null;
+    const { item } = await ownedItem(ctx, args.itemId);
     // The parent is read before the delete, because after it there is no item
     // left to ask which block it belonged to.
     const workoutId = await workoutIdForBlock(ctx, item.blockId);
@@ -749,9 +789,7 @@ export const moveItem = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const item = await ctx.db.get("workoutItems", args.itemId);
-    if (!item) return null;
+    const { item } = await ownedItem(ctx, args.itemId);
 
     // The nearest neighbour on the chosen side, straight off the position index.
     const neighbour =
@@ -789,7 +827,7 @@ export const reorderItems = mutation({
   args: { blockId: v.id("workoutBlocks"), itemIds: v.array(v.id("workoutItems")) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedBlock(ctx, args.blockId);
     if (args.itemIds.length === 0) return null;
     await renumber(ctx, args.blockId, args.itemIds);
     const workoutId = await workoutIdForBlock(ctx, args.blockId);
@@ -799,35 +837,22 @@ export const reorderItems = mutation({
 });
 
 /**
- * Deep-copy a workout — blocks and items included — applying the overrides to
- * the copy's own fields. `null` when there is no such workout, which is the
- * `undefined` the caller used to get.
+ * Deep-copy one of your workouts — blocks and items included — as a library
+ * template of your own, optionally renamed. `null` when there is no such
+ * workout, which is the `undefined` the caller used to get.
  */
 export const copyWorkout = mutation({
-  args: {
-    workoutId: v.id("workouts"),
-    name: v.optional(v.string()),
-    coachId: v.optional(v.union(v.null(), v.id("users"))),
-    clientId: v.optional(v.union(v.null(), v.id("users"))),
-    phaseId: v.optional(v.union(v.null(), v.id("trainingPhases"))),
-    sourceWorkoutId: v.optional(v.union(v.null(), v.string())),
-    position: v.optional(v.number()),
-  },
+  args: { workoutId: v.id("workouts"), name: v.optional(v.string()) },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const source = await ctx.db.get("workouts", args.workoutId);
-    if (!source) return null;
+    const source = await ownedWorkout(ctx, args.workoutId);
     return copyWorkoutRow(ctx, args.workoutId, {
       name: args.name,
-      // An override that is absent keeps the source's coach; absent client and
-      // phase mean "a library template", which is why those two default to null
-      // and not to the source's own.
-      coachId: args.coachId ?? source.coachId,
-      clientId: args.clientId ?? null,
-      phaseId: args.phaseId ?? null,
-      sourceWorkoutId: args.sourceWorkoutId ?? null,
-      position: args.position === undefined ? 0 : whole(args.position, 0),
+      coachId: source.coachId,
+      clientId: null,
+      phaseId: null,
+      sourceWorkoutId: null,
+      position: 0,
     });
   },
 });
@@ -849,12 +874,10 @@ export const copyToLibrary = mutation({
   args: { workoutId: v.id("workouts"), category: libraryCategory },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    const coach = await requireCoach(ctx);
-    const source = await ctx.db.get("workouts", args.workoutId);
-    if (!source) return null;
+    const source = await ownedWorkout(ctx, args.workoutId);
 
     return copyWorkoutRow(ctx, args.workoutId, {
-      coachId: source.coachId ?? coach._id,
+      coachId: source.coachId,
       clientId: null,
       phaseId: null,
       programPhaseId: null,
@@ -870,8 +893,7 @@ export const setLibraryCategory = mutation({
   args: { workoutId: v.id("workouts"), category: libraryCategory },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    if (!(await ctx.db.get("workouts", args.workoutId))) return null;
+    await ownedWorkout(ctx, args.workoutId);
     // Filing is not editing, so `updatedAt` is left where the last real edit
     // put it — the same reasoning as `archiveWorkout` above.
     await ctx.db.patch("workouts", args.workoutId, { libraryCategory: args.category });
@@ -993,7 +1015,7 @@ export const tailBlockId = mutation({
   args: { workoutId: v.id("workouts") },
   returns: v.string(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedWorkout(ctx, args.workoutId);
     return tailBlock(ctx, args.workoutId);
   },
 });
@@ -1024,7 +1046,7 @@ export const groupItems = mutation({
   },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    await ownedWorkout(ctx, args.workoutId);
     if (args.itemIds.length < 2) return null;
 
     const blocks = await ctx.db
@@ -1118,9 +1140,7 @@ export const moveBlock = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const block = await ctx.db.get("workoutBlocks", args.blockId);
-    if (!block) return null;
+    const { block } = await ownedBlock(ctx, args.blockId);
 
     // The nearest neighbour on the chosen side, straight off the position index.
     const neighbour =

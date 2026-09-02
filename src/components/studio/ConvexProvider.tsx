@@ -1,7 +1,8 @@
 "use client";
 
-import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { ConvexReactClient } from "convex/react";
+import { authClient } from "@/lib/auth-client";
 
 /**
  * The Convex client, mounted only under `/app`.
@@ -11,12 +12,23 @@ import { ConvexReactClient } from "convex/react";
  * signed in. The studio, on the other side of the sign-in screen, is an app.
  *
  * Server Components read through `src/lib/studio/convexServer.ts` and never
- * touch this client; what it exists for is the auth actions (`useAuthActions`)
- * — signing in and out has to happen from the browser, because it is the
- * browser's cookies that change.
+ * touch this client; what it exists for is the browser-side auth flows (sign
+ * in, sign up, sign out) and the few live queries the app makes. `initialToken`
+ * is the session's token from the server render, so the first client query
+ * does not have to wait for a round trip to learn who is signed in.
  */
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export function StudioConvexProvider({ children }: { children: React.ReactNode }) {
-  return <ConvexAuthNextjsProvider client={convex}>{children}</ConvexAuthNextjsProvider>;
+export function StudioConvexProvider({
+  children,
+  initialToken,
+}: {
+  children: React.ReactNode;
+  initialToken?: string | null;
+}) {
+  return (
+    <ConvexBetterAuthProvider client={convex} authClient={authClient} initialToken={initialToken}>
+      {children}
+    </ConvexBetterAuthProvider>
+  );
 }

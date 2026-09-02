@@ -1,13 +1,12 @@
 "use server";
 
+import { ConvexError } from "convex/values";
 import { refresh } from "next/cache";
 import { requireCoach } from "@/lib/studio/auth";
-import { sendInvite } from "@/lib/studio/email";
-import { requestOrigin } from "@/lib/studio/origin";
 import {
   createClient,
   findClient,
-  findUserByEmail,
+  resendInvite as resendInviteMutation,
   setClientStatus,
   updateClient,
 } from "@/lib/studio/users";
@@ -29,6 +28,7 @@ function isPlanId(value: string): value is PlanId {
 export type AddClientState =
   | { status: "idle" }
   | { status: "created"; name: string }
+  | { status: "invited"; name: string }
   | { status: "duplicate" }
   | { status: "invalid" };
 
@@ -55,19 +55,22 @@ export async function addClient(
   if (!name || name.length > 200 || !EMAIL_RE.test(email) || email.length > 320 || !isPlanId(plan)) {
     return { status: "invalid" };
   }
-  if (await findUserByEmail(email)) return { status: "duplicate" };
 
-  const client = await createClient({ email, name, plan, goals, injuries });
-
-  await sendInvite({
-    to: client.email,
-    name: client.name.split(" ")[0] || client.name,
-    locale: client.locale,
-    origin: await requestOrigin(),
-  });
-
-  refresh();
-  return { status: "created", name: client.name };
+  try {
+    // The deployment mints the invite and mails it: the token never passes
+    // through here.
+    const outcome = await createClient({ email, name, plan, goals, injuries });
+    refresh();
+    return outcome.kind === "created"
+      ? { status: "created", name: outcome.name }
+      : { status: "invited", name: outcome.name };
+  } catch (error) {
+    // An address that is a coach's, or already trains with somebody: the
+    // roster says "already has an account" for both, which is all the coach
+    // needs to know.
+    if (error instanceof ConvexError) return { status: "duplicate" };
+    throw error;
+  }
 }
 
 /** Profile fields the coach can edit in one form. Empty required fields are ignored, not blanked. */
@@ -115,7 +118,7 @@ export async function setStatus(formData: FormData): Promise<void> {
   refresh();
 }
 
-/** Send the invite again. There is no token to mint: the client asks for their own link. */
+/** Send the invite again, with a fresh link. Only for a client who has not claimed theirs. */
 export async function resendInvite(formData: FormData): Promise<void> {
   await requireCoach();
 
@@ -123,12 +126,6 @@ export async function resendInvite(formData: FormData): Promise<void> {
   const client = clientId ? await findClient(clientId) : undefined;
   if (!client) return;
 
-  await sendInvite({
-    to: client.email,
-    name: client.name.split(" ")[0] || client.name,
-    locale: client.locale,
-    origin: await requestOrigin(),
-  });
-
+  await resendInviteMutation(client.id);
   refresh();
 }

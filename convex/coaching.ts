@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { Ctx } from "./model/authz";
-import { requireClientAccess, requireCoach } from "./model/authz";
+import { requireClientAccess, requireCoach, requireCoachOf } from "./model/authz";
 import { dayKey, shiftDay, weekKey } from "../src/lib/studio/dates";
 import { clampScale } from "../src/lib/studio/scale";
 import type {
@@ -228,7 +228,7 @@ export const unreadTotal = query({
     const coach = await requireCoach(ctx);
 
     let total = 0;
-    for (const client of await roster(ctx)) {
+    for (const client of await roster(ctx, coach._id)) {
       total += (await unreadTail(ctx, client._id, coach._id)).length;
     }
     return total;
@@ -385,10 +385,11 @@ export const submitCheckin = mutation({
 export const replyToCheckin = mutation({
   args: { checkinId: v.id("checkins"), reply: v.string() },
   handler: async (ctx, args): Promise<null> => {
-    await requireCoach(ctx);
-
     const checkin = await ctx.db.get("checkins", args.checkinId);
     if (!checkin) throw new Error("No such check-in");
+    // The gate runs on the check-in's client, not on the caller's role alone:
+    // a coach replies to their own clients' check-ins and to nobody else's.
+    await requireCoachOf(ctx, checkin.clientId);
 
     await ctx.db.patch("checkins", args.checkinId, {
       reply: args.reply.trim(),
@@ -476,18 +477,23 @@ export const measurements = query({
 /* ------------------------------------------------------------ coach console */
 
 /**
- * Every client account that still counts, archived ones excluded — the spine
- * both console queries walk. `.collect()` is deliberate and safe here: this is
- * the studio's roster, the one list in the schema whose size is the number of
- * people Sara trains.
+ * Every client of this coach that still counts, archived ones excluded — the
+ * spine both console queries walk. `.collect()` is deliberate and safe here:
+ * one coach's roster is the one list in the schema whose size is the number
+ * of people they train.
  */
-async function roster(ctx: Ctx): Promise<Doc<"users">[]> {
-  const clients = await ctx.db
-    .query("users")
-    .withIndex("by_role", (q) => q.eq("role", "client"))
+async function roster(ctx: Ctx, coachId: Id<"users">): Promise<Doc<"users">[]> {
+  const profiles = await ctx.db
+    .query("clientProfiles")
+    .withIndex("by_coach", (q) => q.eq("coachId", coachId))
     .collect();
 
-  return clients.filter((client) => client.status !== "archived");
+  const clients: Doc<"users">[] = [];
+  for (const profile of profiles) {
+    const client = await ctx.db.get("users", profile.userId);
+    if (client && client.status !== "archived") clients.push(client);
+  }
+  return clients;
 }
 
 /**
@@ -516,7 +522,7 @@ export const coachAlerts = query({
     const missed: CoachAlert[] = [];
     const inactive: CoachAlert[] = [];
 
-    for (const client of await roster(ctx)) {
+    for (const client of await roster(ctx, coach._id)) {
       const clientName = client.name;
 
       // Submitted and still unanswered.
@@ -645,11 +651,11 @@ export const coachAlerts = query({
 export const recentActivity = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args): Promise<ActivityItem[]> => {
-    await requireCoach(ctx);
+    const coach = await requireCoach(ctx);
 
     const limit = clampLimit(args.limit, 40, 100);
     const items: ActivityItem[] = [];
-    const clients = await roster(ctx);
+    const clients = await roster(ctx, coach._id);
 
     for (const client of clients) {
       const clientId = client._id;

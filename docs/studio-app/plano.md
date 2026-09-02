@@ -597,6 +597,35 @@ comportamento de magic link só funciona porque `providerDefaults` faz
 uma app de coaching privada num registo aberto. `createOrUpdateUser` assume a criação e
 recusa endereços que não sejam já contas; `beforeSessionCreation` recusa arquivados.
 
+#### Passo 2, revisto (set. 2026): Better Auth, vários treinadores, alunos por conta própria
+
+O Convex Auth entrou em manutenção e a Convex passou a recomendar o Better Auth. A
+troca foi feita de uma vez, com o modelo de contas revisto ao mesmo tempo:
+
+- **Entrada por email e palavra-passe** (`convex/auth.ts`, componente
+  `@convex-dev/better-auth`). Reposição de palavra-passe por email; mudança na
+  página da conta. O Next faz proxy de `/api/auth/*` para a deployment, logo o cookie
+  é first-party e nunca há URL de deployment no browser.
+- **Registo aberto, dados fechados.** Qualquer pessoa cria conta como treinador ou
+  como aluno (`users.completeSignup`). O que continua fechado é o acesso: um
+  treinador só vê os alunos cujo perfil o nomeia (`clientProfiles.coachId`), a sua
+  biblioteca de treinos e programas, e as suas leads; um aluno só se vê a si próprio
+  (`convex/model/authz.ts`: `requireCoachOf`, `requireClientAccess`, `requireBuilder`).
+- **Convites** (`invites`). O treinador adiciona um email: se não existe conta, a
+  linha de aluno nasce logo — sem login — para o plano poder ser montado hoje, e o
+  link do convite é o que a pessoa usa para reclamar a conta escolhendo a
+  palavra-passe. Se o email já treina por conta própria, o convite liga o treinador a
+  essa conta quando é aceite. Um email já treinado por outro treinador é recusado.
+- **Aluno sem treinador.** Cria conta, monta os próprios treinos no mesmo construtor
+  que o treinador usa (`/app/aluno/treinos/editar/[id]`), começa-os, regista séries,
+  check-ins e medidas. Sem tópico de mensagens até ter treinador. Pode deixar o
+  treinador a partir da conta; o histórico fica.
+- **Email sai da deployment** (`convex/email.ts`): convites e reposições com a
+  `RESEND_API_KEY` da deployment. Sem chave, o email vai para os logs.
+- **Três contas provisionadas** (`src/lib/studio/pilot.ts`, `seed:accounts`): Sara
+  (treinadora), Iris (aluna da Sara), Guilherme (aluno por conta própria), com a
+  palavra-passe partilhada de teste. `STUDIO_DEMO=1` mostra um botão por conta.
+
 #### O que o SQLite garantia e agora é trabalho das mutations
 
 - **Unicidade:** `users.email` e `checkins (clientId, weekOf)`. O índice existe para a

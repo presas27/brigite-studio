@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import type { Translate } from "@/components/studio/plan/types";
 import { chip, chipAccent, eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme";
@@ -23,6 +24,7 @@ export function WorkoutCard({
   doneToday,
   t,
   startAction,
+  editHref,
 }: {
   workout: ClientWorkout;
   /** Formatted `lastDoneDate`, or null when it was never finished. */
@@ -32,9 +34,11 @@ export function WorkoutCard({
   doneToday: boolean;
   t: Translate;
   startAction: (formData: FormData) => void | Promise<void>;
+  /** Where this workout is edited — only for one the person built themselves. */
+  editHref?: string | null;
 }) {
   return (
-    <li>
+    <li className="flex flex-col gap-2">
       <form action={startAction} className="h-full">
         <input type="hidden" name="workoutId" value={workout.id} />
         <CardSurface
@@ -45,6 +49,11 @@ export function WorkoutCard({
           t={t}
         />
       </form>
+      {editHref && (
+        <Link href={editHref} className="link-grow self-start font-sans text-xs text-cream/60 hover:text-cream">
+          {t("workouts.edit")}
+        </Link>
+      )}
     </li>
   );
 }

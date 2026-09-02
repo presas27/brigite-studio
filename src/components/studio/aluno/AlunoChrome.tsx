@@ -7,34 +7,42 @@ import { AlunoNotifications } from "./AlunoNotifications";
 
 /**
  * The rail in three runs, in the order an aluna's attention moves: where she
- * lands, the training itself, the loop with Sara, and then the numbers.
+ * lands, the training itself, the loop with the coach, and then the numbers.
  *
  * Progress sits last on purpose. Records and charts are the part you visit on
  * a Sunday; putting them level with today's session would make the app look
  * like a dashboard, and an aluna opening it mid-warm-up needs a workout, not a
  * dashboard.
+ *
+ * Someone training alone has nobody to message, so that item is not offered
+ * to them; the check-in stays, because a weekly reading of energy, sleep and
+ * weight is theirs whether or not anyone replies.
  */
-const SECTIONS: ChromeSection[] = [
-  { items: [{ href: "/app/aluno", labelKey: "today", icon: "overview" }] },
-  {
-    titleKey: "sections.training",
-    items: [
-      { href: "/app/aluno/plano", labelKey: "plan", icon: "calendar" },
-      { href: "/app/aluno/treinos", labelKey: "workouts", icon: "dumbbell" },
-    ],
-  },
-  {
-    titleKey: "sections.coaching",
-    items: [
-      { href: "/app/aluno/checkin", labelKey: "checkin", icon: "checkin" },
-      { href: "/app/aluno/mensagens", labelKey: "messages", icon: "message", urgentBadge: true },
-    ],
-  },
-  {
-    titleKey: "sections.progress",
-    items: [{ href: "/app/aluno/evolucao", labelKey: "evolucao", icon: "trend" }],
-  },
-];
+function sections(solo: boolean): ChromeSection[] {
+  return [
+    { items: [{ href: "/app/aluno", labelKey: "today", icon: "overview" }] },
+    {
+      titleKey: "sections.training",
+      items: [
+        { href: "/app/aluno/plano", labelKey: "plan", icon: "calendar" },
+        { href: "/app/aluno/treinos", labelKey: "workouts", icon: "dumbbell" },
+      ],
+    },
+    {
+      titleKey: "sections.coaching",
+      items: [
+        { href: "/app/aluno/checkin", labelKey: "checkin", icon: "checkin" },
+        ...(solo
+          ? []
+          : [{ href: "/app/aluno/mensagens", labelKey: "messages", icon: "message", urgentBadge: true } as const]),
+      ],
+    },
+    {
+      titleKey: "sections.progress",
+      items: [{ href: "/app/aluno/evolucao", labelKey: "evolucao", icon: "trend" }],
+    },
+  ];
+}
 
 /**
  * Aluna navigation. Same frame as the coach's — one app, one way of moving
@@ -51,6 +59,7 @@ export function AlunoChrome({
   badges,
   alerts,
   quickAction,
+  solo,
   children,
 }: {
   name: string;
@@ -62,13 +71,15 @@ export function AlunoChrome({
   alerts: ClientAlert[];
   /** The topbar's primary control: start or resume today's session. */
   quickAction?: React.ReactNode;
+  /** Training with no coach: no thread to open. */
+  solo: boolean;
   children: React.ReactNode;
 }) {
   return (
     <StudioChrome
       role="client"
       homeHref="/app/aluno"
-      sections={SECTIONS}
+      sections={sections(solo)}
       name={name}
       email={email}
       themeMode={themeMode}

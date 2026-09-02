@@ -1,7 +1,7 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { requireCoach } from "./model/authz";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, query, type QueryCtx } from "./_generated/server";
+import { requireCoach, requireCoachOf } from "./model/authz";
 import type { Lead, LeadSource, LeadStatus, PlanId } from "../src/lib/studio/types";
 
 /**
@@ -106,20 +106,31 @@ export const list = query({
   args: { status: v.optional(statusValidator) },
   returns: v.array(leadValidator),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    const coach = await requireCoach(ctx);
 
     const status = args.status;
     const docs = status
       ? await ctx.db
           .query("leads")
-          .withIndex("by_status", (q) => q.eq("status", status))
+          .withIndex("by_coach_and_status", (q) => q.eq("coachId", coach._id).eq("status", status))
           .order("desc")
           .collect()
-      : await ctx.db.query("leads").order("desc").collect();
+      : await ctx.db
+          .query("leads")
+          .withIndex("by_coach_and_status", (q) => q.eq("coachId", coach._id))
+          .order("desc")
+          .collect();
 
     return docs.map(mapLead);
   },
 });
+
+/** A lead this coach owns, or `null`. Every read and write below goes through it. */
+async function ownLead(ctx: QueryCtx, leadId: Id<"leads">): Promise<Doc<"leads"> | null> {
+  const coach = await requireCoach(ctx);
+  const doc = await ctx.db.get("leads", leadId);
+  return doc && doc.coachId === coach._id ? doc : null;
+}
 
 /**
  * A lead by id, or `null`.
@@ -135,12 +146,9 @@ export const find = query({
   args: { leadId: v.string() },
   returns: v.union(v.null(), leadValidator),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-
     const leadId = ctx.db.normalizeId("leads", args.leadId);
     if (!leadId) return null;
-
-    const doc = await ctx.db.get("leads", leadId);
+    const doc = await ownLead(ctx, leadId);
     return doc ? mapLead(doc) : null;
   },
 });
@@ -148,10 +156,11 @@ export const find = query({
 /**
  * One count per status, zeros included, for the filter row.
  *
- * `GROUP BY status` becomes one pass over the table: four indexed reads would
- * touch the same rows, and there is no counting primitive short of keeping
- * running totals (`@convex-dev/aggregate`), which this table is far too small to
- * earn. Same size assumption as `list` above, and the same thing to revisit.
+ * `GROUP BY status` becomes one pass over this coach's rows: four indexed
+ * reads would touch the same rows, and there is no counting primitive short of
+ * keeping running totals (`@convex-dev/aggregate`), which this table is far too
+ * small to earn. Same size assumption as `list` above, and the same thing to
+ * revisit.
  */
 export const counts = query({
   args: {},
@@ -162,12 +171,14 @@ export const counts = query({
     lost: v.number(),
   }),
   handler: async (ctx) => {
-    await requireCoach(ctx);
+    const coach = await requireCoach(ctx);
 
     const totals: Record<LeadStatus, number> = { new: 0, talking: 0, won: 0, lost: 0 };
-    for (const doc of await ctx.db.query("leads").collect()) {
-      totals[doc.status] += 1;
-    }
+    const docs = await ctx.db
+      .query("leads")
+      .withIndex("by_coach_and_status", (q) => q.eq("coachId", coach._id))
+      .collect();
+    for (const doc of docs) totals[doc.status] += 1;
     return totals;
   },
 });
@@ -202,11 +213,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  *   numbers: name 1–200, email ≤320 and shaped like an address, phone ≤30,
  *   message ≤5000, interest one of the three plans, source one of four.
  *
- * What is *not* here: a rate limit. The abuse it cannot stop is volume — a
- * script posting valid-looking enquiries straight at the deployment fills the
- * "new" column with junk the coach has to sweep. Bounded in blast radius (rows,
- * not data loss) but worth closing with `@convex-dev/rate-limiter` keyed on
- * email once the form is actually wired to this.
+ * Volume is the abuse a validator cannot stop — a script posting valid-looking
+ * enquiries straight at the deployment fills the "new" column with junk the
+ * coach has to sweep. Two throttles, both silent (the caller learns nothing it
+ * could tune around): one enquiry per address per ten minutes, and a ceiling
+ * on how fast the table may grow at all. The Server Action's per-IP limit sits
+ * in front of this for the form itself.
+ *
+ * Every lead is filed under the studio's owner — the first coach account ever
+ * created — because the site is the studio's, not any one coach's.
  */
 export const capture = mutation({
   args: {
@@ -220,7 +235,7 @@ export const capture = mutation({
   returns: v.id("leads"),
   handler: async (ctx, args) => {
     const name = args.name.trim();
-    const email = args.email.trim();
+    const email = args.email.trim().toLowerCase();
     const phone = (args.phone ?? "").trim();
     const message = (args.message ?? "").trim();
 
@@ -229,7 +244,30 @@ export const capture = mutation({
     if (phone.length > LIMITS.phone) throw new Error("Invalid phone");
     if (message.length > LIMITS.message) throw new Error("Invalid message");
 
+    const now = Date.now();
+
+    const recentFromAddress = await ctx.db
+      .query("leads")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .order("desc")
+      .first();
+    if (recentFromAddress && recentFromAddress._creationTime > now - CAPTURE_PER_EMAIL_MS) {
+      return recentFromAddress._id;
+    }
+
+    const burst = await ctx.db.query("leads").order("desc").take(CAPTURE_BURST);
+    const oldestOfBurst = burst[CAPTURE_BURST - 1];
+    if (oldestOfBurst && oldestOfBurst._creationTime > now - CAPTURE_BURST_WINDOW_MS) {
+      throw new Error("Too many enquiries right now");
+    }
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "coach"))
+      .first();
+
     return await ctx.db.insert("leads", {
+      coachId: owner?._id ?? null,
       name,
       email,
       phone,
@@ -239,10 +277,16 @@ export const capture = mutation({
       status: "new",
       notes: "",
       clientId: null,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
   },
 });
+
+/** One enquiry per address per ten minutes. */
+const CAPTURE_PER_EMAIL_MS = 10 * 60 * 1000;
+/** No more than this many enquiries, from anyone, per hour. */
+const CAPTURE_BURST = 30;
+const CAPTURE_BURST_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Move a lead along the pipeline.
@@ -255,8 +299,7 @@ export const setStatus = mutation({
   args: { leadId: v.id("leads"), status: statusValidator },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const lead = await ctx.db.get("leads", args.leadId);
+    const lead = await ownLead(ctx, args.leadId);
     if (!lead) return null;
 
     await ctx.db.patch("leads", args.leadId, { status: args.status, updatedAt: Date.now() });
@@ -277,8 +320,7 @@ export const setNotes = mutation({
   args: { leadId: v.id("leads"), notes: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const lead = await ctx.db.get("leads", args.leadId);
+    const lead = await ownLead(ctx, args.leadId);
     if (!lead) return null;
 
     await ctx.db.patch("leads", args.leadId, { notes: args.notes });
@@ -289,21 +331,17 @@ export const setNotes = mutation({
 /**
  * Mark a lead as converted and remember which account it became.
  *
- * The target is checked to be a real client row, which SQLite's foreign key did
- * for free: a lead pointing at a deleted or non-client id is a link the coach
- * clicks and lands nowhere.
+ * The target is checked to be one of this coach's clients, which SQLite's
+ * foreign key only half did: a lead pointing at a deleted or non-client id is
+ * a link the coach clicks and lands nowhere.
  */
 export const linkToClient = mutation({
   args: { leadId: v.id("leads"), clientId: v.id("users") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-
-    const lead = await ctx.db.get("leads", args.leadId);
+    const lead = await ownLead(ctx, args.leadId);
     if (!lead) return null;
-
-    const client = await ctx.db.get("users", args.clientId);
-    if (!client || client.role !== "client") throw new Error("No such client");
+    await requireCoachOf(ctx, args.clientId);
 
     await ctx.db.patch("leads", args.leadId, {
       status: "won",

@@ -8,15 +8,13 @@ import type { Client, ClientProfile, User } from "../../src/lib/studio/types";
  * `src/lib/studio/types.ts` and they are not the ones that should move because
  * the database did. So every Convex function returns those shapes, and the
  * translation happens here: `_id` becomes `id`, `_creationTime` becomes
- * `createdAt`, and the fields Convex Auth owns on `users` (which are optional
- * because the library creates the row) are resolved to the non-optional domain
- * ones.
+ * `createdAt`.
  */
 
 export function mapUser(doc: Doc<"users">): User {
   return {
     id: doc._id,
-    email: doc.email ?? "",
+    email: doc.email,
     name: doc.name,
     role: doc.role,
     locale: doc.locale,
@@ -27,6 +25,7 @@ export function mapUser(doc: Doc<"users">): User {
 
 export function mapProfile(doc: Doc<"clientProfiles">): ClientProfile {
   return {
+    coachId: doc.coachId,
     plan: doc.plan,
     goals: doc.goals,
     injuries: doc.injuries,

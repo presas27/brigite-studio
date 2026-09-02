@@ -8,7 +8,7 @@ import {
   insertWorkout,
   workoutSummary,
 } from "./model/library";
-import { requireClientAccess, requireCoach, requireViewer } from "./model/authz";
+import { requireClientAccess, requireCoachOf, requireViewer } from "./model/authz";
 
 /**
  * Training phases: the blocks a coach's plan is actually built from. A workout
@@ -171,8 +171,7 @@ export const create = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const coach = await requireCoach(ctx);
-    await requireClientAccess(ctx, args.clientId);
+    const { coach } = await requireCoachOf(ctx, args.clientId);
 
     const duration = normaliseDuration(args);
     const now = Date.now();
@@ -209,9 +208,9 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const current = await ctx.db.get("trainingPhases", args.phaseId);
     if (!current) return null;
+    await requireCoachOf(ctx, current.clientId);
 
     const duration = normaliseDuration({
       durationType: args.durationType ?? current.durationType,
@@ -245,9 +244,9 @@ export const remove = mutation({
   args: { phaseId: v.id("trainingPhases") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const phase = await ctx.db.get("trainingPhases", args.phaseId);
     if (!phase) return null;
+    await requireCoachOf(ctx, phase.clientId);
 
     for (const workout of await phaseWorkoutDocs(ctx, args.phaseId, { includeArchived: true })) {
       await deleteWorkoutCascade(ctx, workout._id);
@@ -305,13 +304,13 @@ export const addLibraryWorkout = mutation({
   args: { phaseId: v.id("trainingPhases"), libraryWorkoutId: v.id("workouts") },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const phase = await ctx.db.get("trainingPhases", args.phaseId);
     if (!phase) return null;
+    const { coach } = await requireCoachOf(ctx, phase.clientId);
     // A template that has since been deleted is a no-op, not an error: the
     // page redirects on a copy id and shows the phase unchanged without one.
     const template = await ctx.db.get("workouts", args.libraryWorkoutId);
-    if (!template) return null;
+    if (!template || template.coachId !== coach._id) return null;
 
     const copyId = await copyWorkout(ctx, args.libraryWorkoutId, {
       coachId: phase.coachId,
@@ -349,9 +348,9 @@ export const setWorkoutHidden = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const workout = await ctx.db.get("workouts", args.workoutId);
-    if (!workout || workout.phaseId !== args.phaseId) return null;
+    if (!workout || workout.phaseId !== args.phaseId || !workout.clientId) return null;
+    await requireCoachOf(ctx, workout.clientId);
     // Visibility is not editing: `updatedAt` stays where the last real edit
     // left it, so the card keeps telling the truth about when it changed.
     await ctx.db.patch("workouts", args.workoutId, { hiddenFromClient: args.hidden });
@@ -373,9 +372,9 @@ export const createWorkout = mutation({
   },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const phase = await ctx.db.get("trainingPhases", args.phaseId);
     if (!phase) return null;
+    await requireCoachOf(ctx, phase.clientId);
 
     const workoutId = await insertWorkout(ctx, {
       name: args.name,
@@ -404,9 +403,9 @@ export const removeWorkout = mutation({
   args: { phaseId: v.id("trainingPhases"), workoutId: v.id("workouts") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
     const workout = await ctx.db.get("workouts", args.workoutId);
-    if (!workout || workout.phaseId !== args.phaseId) return null;
+    if (!workout || workout.phaseId !== args.phaseId || !workout.clientId) return null;
+    await requireCoachOf(ctx, workout.clientId);
     await deleteWorkoutCascade(ctx, args.workoutId);
     await ctx.db.delete("workouts", args.workoutId);
     return null;

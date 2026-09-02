@@ -5,7 +5,12 @@ import { refresh } from "next/cache";
 import { hasLocale } from "@/i18n/config";
 import { setUserLocale } from "@/i18n/locale";
 import { currentUser } from "@/lib/studio/auth";
-import { setUserLocalePreference, setUserName } from "@/lib/studio/users";
+import {
+  changePassword,
+  leaveCoach,
+  setUserLocalePreference,
+  setUserName,
+} from "@/lib/studio/users";
 
 /**
  * Save the signed-in user's own details. Scoped to the session and nothing else
@@ -29,6 +34,30 @@ export async function saveAccount(formData: FormData): Promise<void> {
     await setUserLocale(locale);
   }
 
+  refresh();
+  redirect("/app/conta?guardado=1");
+}
+
+/** Change your own password. Better Auth checks the current one on the deployment. */
+export async function changePasswordAction(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user) redirect("/app/entrar");
+
+  const current = String(formData.get("currentPassword") ?? "");
+  const next = String(formData.get("newPassword") ?? "");
+  if (next.length < 8 || next.length > 200) redirect("/app/conta?senha=0");
+
+  const changed = await changePassword(current, next)
+    .then(() => true)
+    .catch(() => false);
+  redirect(`/app/conta?senha=${changed ? "1" : "0"}`);
+}
+
+/** A client leaves their coach and trains alone. The history stays. */
+export async function leaveCoachAction(): Promise<void> {
+  const user = await currentUser();
+  if (!user) redirect("/app/entrar");
+  if (user.role === "client") await leaveCoach();
   refresh();
   redirect("/app/conta?guardado=1");
 }

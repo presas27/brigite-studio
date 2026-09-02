@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as coaching from "../coaching.js";
+import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as leads from "../leads.js";
 import type * as library from "../library.js";
@@ -21,7 +22,6 @@ import type * as photos from "../photos.js";
 import type * as plan from "../plan.js";
 import type * as programs from "../programs.js";
 import type * as seed from "../seed.js";
-import type * as signInLimit from "../signInLimit.js";
 import type * as users from "../users.js";
 import type * as youtube from "../youtube.js";
 
@@ -34,6 +34,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   coaching: typeof coaching;
+  email: typeof email;
   http: typeof http;
   leads: typeof leads;
   library: typeof library;
@@ -45,7 +46,6 @@ declare const fullApi: ApiFromModules<{
   plan: typeof plan;
   programs: typeof programs;
   seed: typeof seed;
-  signInLimit: typeof signInLimit;
   users: typeof users;
   youtube: typeof youtube;
 }>;
@@ -76,4 +76,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
+};

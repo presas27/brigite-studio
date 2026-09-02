@@ -1,40 +1,36 @@
-import {
-  convexAuthNextjsMiddleware,
-  createRouteMatcher,
-  nextjsMiddlewareRedirect,
-} from "@convex-dev/auth/nextjs/server";
+import { getSessionCookie } from "better-auth/cookies";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Session plumbing for `/app`, and one optimistic redirect.
- *
- * Convex Auth keeps its tokens in cookies, and they are short-lived: this is
- * what refreshes them before a Server Component tries to read one. Without it
- * the studio signs everybody out roughly every hour.
+ * One optimistic redirect for `/app`.
  *
  * The redirect here is a courtesy, not the gate. It saves a signed-out visitor
- * from rendering a page that would only bounce them, but the thing that
- * actually protects the data is `convex/model/authz.ts` on every function, plus
- * the `require*` gates in `src/lib/studio/auth.ts` on every page.
+ * from rendering a page that would only bounce them, and it only looks at
+ * whether a session cookie *exists* — the thing that actually protects the
+ * data is `convex/model/authz.ts` on every function, plus the `require*` gates
+ * in `src/lib/studio/auth.ts` on every page, both of which verify the session.
  */
 
-/** `/app/entrar` is the only publicly reachable page under `/app`. */
-const isSignIn = createRouteMatcher(["/app/entrar"]);
-const isStudio = createRouteMatcher(["/app", "/app/(.*)"]);
+/** Reachable without a session: sign-in, sign-up, an invite link, a password reset. */
+const PUBLIC = [/^\/app\/entrar$/, /^\/app\/convite\/[^/]+$/, /^\/app\/repor$/];
 
-export const proxy = convexAuthNextjsMiddleware(
-  async (request, { convexAuth }) => {
-    const signedIn = await convexAuth.isAuthenticated();
-    if (isStudio(request) && !isSignIn(request) && !signedIn) {
-      return nextjsMiddlewareRedirect(request, "/app/entrar");
-    }
-    if (isSignIn(request) && signedIn) {
-      return nextjsMiddlewareRedirect(request, "/app");
-    }
-  },
-  // Thirty days, matching the session the hand-rolled cookie used to grant.
-  { cookieConfig: { maxAge: 30 * 24 * 60 * 60 } },
-);
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC.some((route) => route.test(pathname));
+
+  // One direction only. A cookie can outlive its session (revoked, or the
+  // account removed), so "cookie present" must never bounce someone *away*
+  // from the sign-in page — that is a loop. The page itself sends a verified
+  // session to its home.
+  if (!isPublic && !getSessionCookie(request)) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/app/entrar";
+    to.search = "";
+    return NextResponse.redirect(to);
+  }
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/app", "/app/:path*", "/api/auth/:path*"],
+  matcher: ["/app", "/app/:path*"],
 };

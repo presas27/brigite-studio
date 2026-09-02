@@ -30,12 +30,18 @@ export function WorkoutLibrary({
   focuses,
   today,
   startAction,
+  editBase,
 }: {
   workouts: ClientWorkout[];
   focuses: { tag: string; count: number }[];
   /** `YYYY-MM-DD`, from the server — the browser's idea of today can be a day off. */
   today: string;
   startAction: (formData: FormData) => void | Promise<void>;
+  /**
+   * For someone training alone: the editor path their own workouts open under.
+   * A workout inside a phase is the coach's and never gets the link.
+   */
+  editBase?: string;
 }) {
   const t = useTranslations("Studio.aluno");
   const tPhases = useTranslations("Studio.plan.phases");
@@ -100,6 +106,7 @@ export function WorkoutLibrary({
                   {...labelsFor(workout)}
                   t={t}
                   startAction={startAction}
+                  editHref={editBase && !workout.phaseId ? `${editBase}/${workout.id}` : null}
                 />
               ))}
             </ul>
@@ -112,6 +119,7 @@ export function WorkoutLibrary({
                   {...labelsFor(workout)}
                   t={t}
                   startAction={startAction}
+                  editHref={editBase && !workout.phaseId ? `${editBase}/${workout.id}` : null}
                 />
               ))}
             </ul>

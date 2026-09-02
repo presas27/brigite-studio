@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useLocale, useTranslations } from "next-intl";
@@ -71,7 +71,14 @@ export function ExerciseStage({
   const mediaHeightRef = useRef(0);
   // Collapsed by default and per exercise: the coach's cues are worth opening
   // for, not worth reading through on the way to the exercise she is here for.
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Keyed by the step: a new exercise closes the details back up — last
+  // exercise's cues have nothing to say about this one. Storing the key the
+  // flag was set for, rather than resetting in an effect, avoids a render
+  // with the old exercise's panel open.
+  const [details, setDetails] = useState<{ key: string; open: boolean }>({ key: step.key, open: false });
+  const detailsOpen = details.key === step.key && details.open;
+  const setDetailsOpen = (update: (current: boolean) => boolean) =>
+    setDetails({ key: step.key, open: update(detailsOpen) });
 
   useGSAP(
     () => {
@@ -101,10 +108,6 @@ export function ExerciseStage({
     },
     { scope, dependencies: [step.key, enterAs] },
   );
-
-  // A new exercise closes the details back up — last exercise's cues have
-  // nothing to say about this one.
-  useEffect(() => setDetailsOpen(false), [step.key]);
 
   // The details panel itself: a clean grow/shrink, in or out of view either
   // way. Independent of the media effect below so a wide screen — which never

@@ -1,4 +1,3 @@
-import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -93,8 +92,6 @@ const snapshotBlock = v.object({
 const libraryCategory = v.union(v.literal("master"), v.literal("shared"));
 
 export default defineSchema({
-  ...authTables,
-
   /**
    * Bookkeeping the app writes about itself. One row so far: the fingerprint of
    * the seeded library, so a re-import inserts only what is new.
@@ -105,60 +102,44 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   /**
-   * One row per sign-in link asked for, so asking again too often can be
-   * refused.
-   *
-   * The old code rate-limited per IP in the Next process, which a serverless
-   * host makes meaningless — the counter died with the instance. Convex Auth
-   * sends the mail from the deployment, so the budget belongs here, and it is
-   * keyed on the address: what needs protecting is a client's mailbox and the
-   * studio's sending reputation, not a request count.
-   *
-   * Rows are swept by the same mutation that reads them; nothing accumulates.
-   */
-  signInAttempts: defineTable({
-    email: v.string(),
-    at: v.number(),
-  }).index("by_email", ["email"]),
-
-  /**
    * Every account, coach and client alike.
    *
-   * This overrides the `users` table that `authTables` brings, because Convex
-   * Auth owns the table and the studio needs three fields of its own on it. The
-   * `email` and `phone` index names are the library's — it queries them by
-   * those exact names, so they are not ours to rename.
+   * Credentials, sessions and password hashes are not here: they live in the
+   * Better Auth component's own tables, and `authId` is the one link between
+   * the two — the component's user id, which is also the `subject` of every
+   * verified token a function sees. A row without an `authId` is a client a
+   * coach has added and who has not yet created their own login: the coach can
+   * already build their plan, and the invite link is what lets the person claim
+   * it (`users.completeSignup`).
    *
-   * `role`, `locale` and `status` stay required even though the library creates
-   * users, because `createOrUpdateUser` in `convex/auth.ts` is what does the
-   * creating and it always supplies them. That callback is also what keeps the
-   * studio closed: an address Sara has not added gets no account.
+   * `email` is unique; the mutations that insert here check the `email` index
+   * first, since Convex has no unique constraint of its own.
    */
   users: defineTable({
-    /** Read and written by Convex Auth. */
-    email: v.optional(v.string()),
-    emailVerificationTime: v.optional(v.number()),
-    phone: v.optional(v.string()),
-    phoneVerificationTime: v.optional(v.number()),
-    image: v.optional(v.string()),
-    isAnonymous: v.optional(v.boolean()),
-    /** The studio's own. */
+    authId: v.union(v.null(), v.string()),
+    email: v.string(),
     name: v.string(),
     role: v.union(v.literal("coach"), v.literal("client")),
     locale: v.union(v.literal("pt"), v.literal("en")),
     status: v.union(v.literal("invited"), v.literal("active"), v.literal("archived")),
   })
     .index("email", ["email"])
-    .index("phone", ["phone"])
+    .index("by_auth_id", ["authId"])
     .index("by_role", ["role"]),
 
   /**
    * The coaching side of a client account. One per user, which is why the
    * `by_user` index is a lookup and not a list. Deleting a user must delete
    * this row: SQLite did it with `ON DELETE CASCADE`.
+   *
+   * `coachId` is who trains this person, or `null` for someone training on
+   * their own: they build their own workouts and log their own sessions, and no
+   * coach sees their data until they accept an invite. One coach at a time —
+   * a thread, a plan and a check-in reply all assume exactly one other side.
    */
   clientProfiles: defineTable({
     userId: v.id("users"),
+    coachId: v.union(v.null(), v.id("users")),
     plan: v.union(v.literal("personal"), v.literal("online"), v.literal("specialty")),
     goals: v.string(),
     injuries: v.string(),
@@ -168,10 +149,30 @@ export default defineSchema({
     /** Remaining credits for in-person session packs. */
     sessionsLeft: v.number(),
     startedAt: v.union(v.null(), v.number()),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_coach", ["coachId"]),
 
-  // The hand-rolled `magic_tokens` table is gone: Convex Auth owns verification
-  // codes now, in `authVerificationCodes` from `authTables`.
+  /**
+   * A coach's invitation to train someone. The token in the emailed link is the
+   * whole proof: whoever presents it may claim the account the coach prepared
+   * (`clientId` with no `authId` yet) or, for a person who already trains on
+   * their own, attach that coach to their existing account.
+   *
+   * Re-sending mints a new row and revokes the old one, so a leaked link stops
+   * working the moment the coach sends another.
+   */
+  invites: defineTable({
+    coachId: v.id("users"),
+    clientId: v.id("users"),
+    email: v.string(),
+    token: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("revoked")),
+    expiresAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_client", ["clientId"])
+    .index("by_coach", ["coachId"]),
 
   /**
    * Sara's library. `videoUrl` is a link and nothing else — a YouTube address
@@ -284,6 +285,7 @@ export default defineSchema({
     .index("by_archived_and_updated", ["archived", "updatedAt"])
     .index("by_phase_and_position", ["phaseId", "position"])
     .index("by_client", ["clientId"])
+    .index("by_owner_and_client", ["coachId", "clientId"])
     // Only used to find the templates a phase copy came from, which is how the
     // one-off backfill decides which of them are already shared with a client.
     .index("by_source", ["sourceWorkoutId"])
@@ -510,8 +512,15 @@ export default defineSchema({
     .index("by_client_and_date", ["clientId", "date"])
     .index("by_client_and_kind", ["clientId", "kind"]),
 
-  /** An enquiry from the marketing site, and where it went. */
+  /**
+   * An enquiry from the marketing site, and where it went.
+   *
+   * `coachId` is who the enquiry is for. The site belongs to the studio, so
+   * `capture` files every lead under the studio's owner — the first coach
+   * account ever created — and no other coach can list them.
+   */
   leads: defineTable({
+    coachId: v.union(v.null(), v.id("users")),
     name: v.string(),
     email: v.string(),
     phone: v.string(),
@@ -528,5 +537,8 @@ export default defineSchema({
     /** Set once a lead becomes a client. */
     clientId: v.union(v.null(), v.id("users")),
     updatedAt: v.number(),
-  }).index("by_status", ["status"]),
+  })
+    .index("by_status", ["status"])
+    .index("by_email", ["email"])
+    .index("by_coach_and_status", ["coachId", "status"]),
 });

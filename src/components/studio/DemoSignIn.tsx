@@ -1,28 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { useTranslations } from "next-intl";
-import { COACH_EMAIL, PILOT_CLIENTS } from "@/lib/studio/pilot";
+import { authClient } from "@/lib/auth-client";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/studio/pilot";
 import { buttonGhost, buttonPrimary, eyebrow, muted } from "./theme";
 
 /**
- * Quick sign-in for the pilot: one button per seeded account, no mailbox.
+ * Quick sign-in for a demo deployment: one button per provisioned account.
  *
- * Sara needs to land in either chair while she is being shown the app, and so
- * does whoever is watching. The button is inert unless the *deployment* sets
- * `STUDIO_DEMO=1` — the check that matters is in `convex/auth.ts`, which only
- * hands a session to an address on this roster. Hiding the buttons here is
- * cosmetic; refusing the session there is the rule.
+ * Nothing here bypasses anything — each button signs in with the account's
+ * real (shared, published) password, so the deployment sees an ordinary
+ * sign-in. The page only renders this when the deployment runs with
+ * `STUDIO_DEMO=1`; on a real deployment the accounts change their passwords
+ * and the buttons are gone.
  */
 export function DemoSignIn() {
   const t = useTranslations("Studio.signIn");
-  const { signIn } = useAuthActions();
-  const router = useRouter();
 
   async function enter(email: string) {
-    await signIn("demo", { email });
-    router.push("/app");
+    const result = await authClient.signIn.email({ email, password: DEMO_PASSWORD });
+    if (result.error) return;
+    window.location.assign("/app");
   }
 
   return (
@@ -30,23 +28,20 @@ export function DemoSignIn() {
       <p className={eyebrow}>{t("demoTitle")}</p>
       <p className={`mt-2 ${muted}`}>{t("demoLead")}</p>
       <div className="mt-4 space-y-2">
-        <button
-          type="button"
-          onClick={() => void enter(COACH_EMAIL)}
-          className={`${buttonPrimary} w-full`}
-        >
-          {t("demoAsCoach")}
-        </button>
-        {PILOT_CLIENTS.map((client) => (
-          <button
-            key={client.email}
-            type="button"
-            onClick={() => void enter(client.email)}
-            className={`${buttonGhost} w-full`}
-          >
-            {t("demoAsClient", { name: client.name.split(" ")[0] })}
-          </button>
-        ))}
+        {DEMO_ACCOUNTS.map((account, index) => {
+          const chair =
+            account.role === "coach" ? "coach" : account.coachEmail ? "coached" : "solo";
+          return (
+            <button
+              key={account.email}
+              type="button"
+              onClick={() => void enter(account.email)}
+              className={`${index === 0 ? buttonPrimary : buttonGhost} w-full`}
+            >
+              {t("demoAs", { name: account.name.split(" ")[0] })} · {t(`demoRole.${chair}`)}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

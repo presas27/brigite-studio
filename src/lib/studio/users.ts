@@ -19,17 +19,38 @@ export async function findClient(clientId: string): Promise<Client | undefined> 
   return client ?? undefined;
 }
 
-/** Active and invited clients, alphabetical. Archived are excluded. */
+/** This coach's active and invited clients, alphabetical. Archived are excluded. */
 export async function listClients(includeArchived = false): Promise<Client[]> {
   return sq(api.users.listClients, { includeArchived });
 }
 
-export async function findUserByEmail(email: string): Promise<User | undefined> {
-  const user = await sq(api.users.findByEmail, { email });
-  return user ?? undefined;
+/** The coach of the signed-in client, or `undefined` when training alone. */
+export async function myCoach(): Promise<User | undefined> {
+  return (await sq(api.users.myCoach)) ?? undefined;
 }
 
-/** Create a client plus its profile. Throws if the email already exists. */
+export type PendingInvite = {
+  id: string;
+  clientId: string;
+  email: string;
+  expiresAt: number;
+  sentAt: number;
+};
+
+export async function pendingInvites(): Promise<PendingInvite[]> {
+  return sq(api.users.pendingInvites);
+}
+
+export type AddClientOutcome =
+  | { kind: "created"; name: string; clientId: string }
+  | { kind: "invited"; name: string };
+
+/**
+ * Add someone to the roster and send them the invite. A new address gets an
+ * account the coach can plan for at once; an address that already trains alone
+ * gets an invite to attach this coach. Throws a `ConvexError` with a code for
+ * an address that is a coach's or already coached.
+ */
 export async function createClient(input: {
   email: string;
   name: string;
@@ -37,8 +58,12 @@ export async function createClient(input: {
   goals?: string;
   injuries?: string;
   locale?: Locale;
-}): Promise<Client> {
+}): Promise<AddClientOutcome> {
   return sm(api.users.createClient, input);
+}
+
+export async function resendInvite(clientId: string): Promise<void> {
+  await sm(api.users.resendInvite, { clientId: clientId as Id<"users"> });
 }
 
 export async function updateClient(
@@ -72,4 +97,14 @@ export async function setUserName(name: string): Promise<void> {
 
 export async function setUserLocalePreference(locale: Locale): Promise<void> {
   await sm(api.users.setOwnLocale, { locale });
+}
+
+/** Change your own password. Better Auth checks the current one. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await sm(api.users.changePassword, { currentPassword, newPassword });
+}
+
+/** A client leaves their coach and trains alone again. */
+export async function leaveCoach(): Promise<void> {
+  await sm(api.users.leaveCoach);
 }

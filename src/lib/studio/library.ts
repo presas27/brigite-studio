@@ -145,29 +145,15 @@ export async function workoutFocuses(): Promise<{ tag: string; count: number }[]
   return sq(api.library.workoutFocuses);
 }
 
-/**
- * A workout row. Left plain it is a library template; give it `clientId` and
- * `phaseId` and it is that client's own copy inside one training phase, which
- * the library never lists.
- */
+/** A library template, owned by whoever is signed in. */
 export async function createWorkout(input: {
   name: string;
   focus?: string;
   instructions?: string;
   workoutType?: WorkoutType;
-  coachId?: string | null;
-  clientId?: string | null;
-  phaseId?: string | null;
-  sourceWorkoutId?: string | null;
-  position?: number;
   estimatedMinutes?: number | null;
 }): Promise<string> {
-  return sm(api.library.createWorkout, {
-    ...input,
-    coachId: input.coachId as Id<"users"> | null | undefined,
-    clientId: input.clientId as Id<"users"> | null | undefined,
-    phaseId: input.phaseId as Id<"trainingPhases"> | null | undefined,
-  });
+  return sm(api.library.createWorkout, input);
 }
 
 export async function updateWorkout(
@@ -268,39 +254,13 @@ export async function reorderItems(blockId: string, itemIds: string[]): Promise<
   });
 }
 
-/**
- * Deep-copy a workout — blocks and items included — applying `overrides` to
- * the copy's own fields. This is what keeps the library safe: adding a
- * template to a training phase copies it here and now, so every later edit the
- * coach makes lands on the client's copy and the template is never touched.
- */
-export async function copyWorkout(
-  workoutId: string,
-  overrides: {
-    name?: string;
-    coachId?: string | null;
-    clientId?: string | null;
-    phaseId?: string | null;
-    sourceWorkoutId?: string | null;
-    position?: number;
-  } = {},
-): Promise<string | undefined> {
-  const copyId = await sm(api.library.copyWorkout, {
-    ...overrides,
-    workoutId: workoutId as Id<"workouts">,
-    coachId: overrides.coachId as Id<"users"> | null | undefined,
-    clientId: overrides.clientId as Id<"users"> | null | undefined,
-    phaseId: overrides.phaseId as Id<"trainingPhases"> | null | undefined,
-  });
-  return copyId ?? undefined;
-}
-
-/** Duplicate a library template as another library template. */
+/** Duplicate one of your workouts as a library template of your own. */
 export async function duplicateWorkout(
   workoutId: string,
   name: string,
 ): Promise<string | undefined> {
-  return copyWorkout(workoutId, { name });
+  const copyId = await sm(api.library.copyWorkout, { workoutId: workoutId as Id<"workouts">, name });
+  return copyId ?? undefined;
 }
 
 /**

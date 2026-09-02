@@ -1,13 +1,7 @@
 import "server-only";
 
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
-import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs";
-import type {
-  FunctionArgs,
-  FunctionReference,
-  FunctionReturnType,
-  OptionalRestArgs,
-} from "convex/server";
+import type { FunctionArgs, FunctionReference, FunctionReturnType, OptionalRestArgs } from "convex/server";
+import { fetchAuthAction, fetchAuthMutation, fetchAuthQuery } from "./auth-server";
 
 /**
  * How the studio's server code talks to its database.
@@ -22,14 +16,17 @@ import type {
  * viewer is `null`, the gate throws), which is the right way round.
  */
 
+type Args<F extends FunctionReference<"query" | "mutation" | "action">> = FunctionArgs<F> extends
+  Record<string, never>
+  ? [args?: Record<string, never>]
+  : [args: FunctionArgs<F>];
+
 /** Read. Returns whatever the query returns, already validated by Convex. */
 export async function sq<Query extends FunctionReference<"query">>(
   query: Query,
   ...args: OptionalRestArgs<Query>
 ): Promise<FunctionReturnType<Query>> {
-  return fetchQuery(query, args[0] ?? ({} as FunctionArgs<Query>), {
-    token: await convexAuthNextjsToken(),
-  });
+  return fetchAuthQuery(query, ...((args.length ? args : [{}]) as Args<Query>));
 }
 
 /** Write. */
@@ -37,9 +34,7 @@ export async function sm<Mutation extends FunctionReference<"mutation">>(
   mutation: Mutation,
   ...args: OptionalRestArgs<Mutation>
 ): Promise<FunctionReturnType<Mutation>> {
-  return fetchMutation(mutation, args[0] ?? ({} as FunctionArgs<Mutation>), {
-    token: await convexAuthNextjsToken(),
-  });
+  return fetchAuthMutation(mutation, ...((args.length ? args : [{}]) as Args<Mutation>));
 }
 
 /**
@@ -52,7 +47,5 @@ export async function sa<Action extends FunctionReference<"action">>(
   action: Action,
   ...args: OptionalRestArgs<Action>
 ): Promise<FunctionReturnType<Action>> {
-  return fetchAction(action, args[0] ?? ({} as FunctionArgs<Action>), {
-    token: await convexAuthNextjsToken(),
-  });
+  return fetchAuthAction(action, ...((args.length ? args : [{}]) as Args<Action>));
 }

@@ -1,32 +1,30 @@
 import type { Metadata } from "next";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { StudioConvexProvider } from "@/components/studio/ConvexProvider";
+import { getToken } from "@/lib/studio/auth-server";
 
 /**
  * Root of the studio app.
  *
  * `robots: noindex` plus the deliberate absence of any inbound link from the
- * marketing site keeps `/app` unlisted — clients arrive through the emailed
- * sign-in link, never by browsing.
+ * marketing site keeps `/app` unlisted — people arrive by signing up or through
+ * an invite link, never by browsing.
  *
- * The two providers are what make the session real on both sides of the render:
- * the server one reads the auth cookies so Server Components can pass a token
- * to Convex, the client one gives the browser `signIn`/`signOut`. Neither wraps
- * the marketing site, which has no session and no need of a socket.
+ * The provider is what makes the session real in the browser: it hands the
+ * Convex client the session's token (read here, on the server, from the
+ * cookie) and refreshes it as Better Auth rotates it. Server Components read
+ * through `src/lib/studio/convexServer.ts` and never touch the socket. Neither
+ * wraps the marketing site, which has no session and no need of one.
  *
- * Nothing seeds here any more. The database is durable now, so the coach
- * account and the library are provisioned once (`convex/seed.ts`) instead of
- * being rebuilt by whichever request happened to land on a cold machine.
+ * Nothing seeds here. The database is durable, so the accounts and the library
+ * are provisioned once (`convex/seed.ts`) instead of being rebuilt by whichever
+ * request happened to land on a cold machine.
  */
 export const metadata: Metadata = {
   title: "Studio",
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function StudioLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ConvexAuthNextjsServerProvider>
-      <StudioConvexProvider>{children}</StudioConvexProvider>
-    </ConvexAuthNextjsServerProvider>
-  );
+export default async function StudioLayout({ children }: { children: React.ReactNode }) {
+  const token = await getToken();
+  return <StudioConvexProvider initialToken={token ?? null}>{children}</StudioConvexProvider>;
 }

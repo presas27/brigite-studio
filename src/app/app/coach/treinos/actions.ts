@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { requireCoach } from "@/lib/studio/auth";
+import { requireBuilder } from "@/lib/studio/auth";
 import { parseDurationInput, parseMinutesInput } from "@/lib/studio/duration";
 import {
   addBlock,
@@ -23,30 +23,30 @@ import {
   updateItem,
   updateWorkout,
 } from "@/lib/studio/library";
-import type { BlockKind, WorkoutType } from "@/lib/studio/types";
+import type { BlockKind, Role, WorkoutType } from "@/lib/studio/types";
 
 /**
  * Server actions for the workout builder. Every export starts with
- * `requireCoach()`. Rows carry their ids as hidden fields rather than bound
- * closures, so one form can wire several buttons (save / move / remove) to
- * different actions via `formAction` while sharing the same hidden inputs.
+ * `requireBuilder()` — a coach, or a client training alone, who builds their
+ * own. Rows carry their ids as hidden fields rather than bound closures, so
+ * one form can wire several buttons (save / move / remove) to different
+ * actions via `formAction` while sharing the same hidden inputs.
  */
-
-const LIST_PATH = "/app/coach/treinos";
 
 /**
- * Where the workout being edited actually lives. A library template is edited
- * under `/app/coach/treinos`; a client-scoped copy is edited inside its
- * training phase, and revalidating the library path would leave that screen
- * showing stale blocks. One indexed read per mutation buys correctness for
- * both.
+ * Where the workout being edited actually lives. A coach's library template is
+ * edited under `/app/coach/treinos`; a client-scoped copy inside its training
+ * phase; a solo client's own template under their workouts. Revalidating the
+ * wrong one would leave the screen showing stale blocks. One indexed read per
+ * mutation buys correctness for all three.
  */
-async function workoutPath(workoutId: string): Promise<string> {
+async function workoutPath(workoutId: string, role: Role): Promise<string> {
+  if (role === "client") return `/app/aluno/treinos/editar/${workoutId}`;
   const workout = await findWorkout(workoutId);
   if (workout?.clientId && workout.phaseId) {
     return `/app/coach/alunos/${workout.clientId}/plano/fase/${workout.phaseId}/treino/${workoutId}`;
   }
-  return `${LIST_PATH}/${workoutId}`;
+  return `/app/coach/treinos/${workoutId}`;
 }
 
 /** `Number.parseInt`, but an invalid or missing value means "leave unchanged". */
@@ -85,7 +85,7 @@ function workoutTypeField(formData: FormData): WorkoutType {
 
 /** Create a library workout and jump straight into its editor. */
 export async function createWorkoutAction(formData: FormData): Promise<void> {
-  const coach = await requireCoach();
+  const builder = await requireBuilder();
   const name = textField(formData, "name").trim();
   if (!name) return;
 
@@ -94,11 +94,10 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
     focus: textField(formData, "focus"),
     instructions: textField(formData, "instructions"),
     workoutType: workoutTypeField(formData),
-    coachId: coach.id,
     estimatedMinutes: parseMinutesInput(textField(formData, "estimatedMinutes")),
   });
   refresh();
-  redirect(await workoutPath(id));
+  redirect(await workoutPath(id, builder.role));
 }
 
 /**
@@ -108,7 +107,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
  * never showed would wipe them.
  */
 export async function updateWorkoutAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
 
@@ -126,7 +125,7 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
  * above the exercise list. Saved on blur like every other builder field.
  */
 export async function updateInstructionsAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
   await updateWorkout(workoutId, { instructions: textField(formData, "instructions") });
@@ -134,7 +133,7 @@ export async function updateInstructionsAction(formData: FormData): Promise<void
 }
 
 export async function archiveWorkoutAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
   await archiveWorkout(workoutId);
@@ -143,7 +142,7 @@ export async function archiveWorkoutAction(formData: FormData): Promise<void> {
 
 /** Deep-copies the workout under "<name> (cópia)" and stays on the list. */
 export async function duplicateWorkoutAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
   const source = await findWorkout(workoutId);
@@ -160,7 +159,7 @@ export async function duplicateWorkoutAction(formData: FormData): Promise<void> 
  * read a different way — so "new block" is how a coach starts a section.
  */
 export async function addBlockAction(workoutId: string): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId) return;
   await addBlock(workoutId, { kind: "normal" });
   refresh();
@@ -172,7 +171,7 @@ export async function setBlockLabelAction(
   blockId: string,
   label: string,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId) return;
   await updateBlock(blockId, { label });
   refresh();
@@ -180,14 +179,14 @@ export async function setBlockLabelAction(
 
 /** Remove a block and, with it, the exercises inside it. */
 export async function removeBlockAction(workoutId: string, blockId: string): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId) return;
   await removeBlock(blockId);
   refresh();
 }
 
 export async function updateItemAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
@@ -224,7 +223,7 @@ export async function reorderItemsAction(
   blockId: string,
   itemIds: string[],
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId || !Array.isArray(itemIds)) return;
   await reorderItems(blockId, itemIds.map(String).filter(Boolean));
   refresh();
@@ -236,7 +235,7 @@ export async function setBlockKindAction(
   blockId: string,
   kind: BlockKind,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId) return;
   // Leaving the circuit resets the round count: "3 rounds of sets of 3" is a
   // prescription nobody means, and it silently doubles the volume.
@@ -250,14 +249,14 @@ export async function addExerciseAction(
   blockId: string,
   exerciseId: string,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId || !exerciseId) return;
   await addItem(blockId, { exerciseId });
   refresh();
 }
 
 export async function removeItemAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
@@ -266,7 +265,7 @@ export async function removeItemAction(formData: FormData): Promise<void> {
 }
 
 export async function moveItemUpAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
@@ -275,7 +274,7 @@ export async function moveItemUpAction(formData: FormData): Promise<void> {
 }
 
 export async function moveItemDownAction(formData: FormData): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   const workoutId = idField(formData, "workoutId");
   const itemId = idField(formData, "itemId");
   if (!workoutId || !itemId) return;
@@ -294,7 +293,7 @@ export async function appendExerciseAction(
   workoutId: string,
   exerciseId: string,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !exerciseId) return;
   await addItem(await tailBlockId(workoutId), { exerciseId });
   refresh();
@@ -302,7 +301,7 @@ export async function appendExerciseAction(
 
 /** Insert a rest row at the end of the workout, same rule as above. */
 export async function addRestAction(workoutId: string): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId) return;
   await addItem(await tailBlockId(workoutId), { kind: "rest", seconds: 60 });
   refresh();
@@ -320,7 +319,7 @@ export async function groupItemsAction(
   kind: "superset" | "circuit",
   rounds?: number,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !Array.isArray(itemIds)) return;
   await groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
   refresh();
@@ -336,7 +335,7 @@ export async function moveBlockAction(
   blockId: string,
   direction: -1 | 1,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId) return;
   await moveBlock(blockId, direction);
   refresh();
@@ -348,7 +347,7 @@ export async function setRoundsAction(
   blockId: string,
   rounds: number,
 ): Promise<void> {
-  await requireCoach();
+  await requireBuilder();
   if (!workoutId || !blockId || !Number.isFinite(rounds)) return;
   await updateBlock(blockId, { rounds });
   refresh();

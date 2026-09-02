@@ -1,12 +1,11 @@
 "use server";
 
+import { ConvexError } from "convex/values";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { requireCoach } from "@/lib/studio/auth";
-import { sendInvite } from "@/lib/studio/email";
 import { findLead, linkLeadToClient, setLeadNotes, setLeadStatus } from "@/lib/studio/leads";
-import { requestOrigin } from "@/lib/studio/origin";
-import { createClient, findUserByEmail } from "@/lib/studio/users";
+import { createClient } from "@/lib/studio/users";
 import type { LeadStatus } from "@/lib/studio/types";
 
 /**
@@ -33,12 +32,13 @@ export async function saveLeadNotesAction(formData: FormData): Promise<void> {
 }
 
 /**
- * Turn a lead into a client: create the account, mail the invite, mark the lead
- * won, and land on the new client's page — the enquiry and the roster entry are
- * the same person, so this is one step, not four.
+ * Turn a lead into a client: add them to the roster (the deployment mails the
+ * invite), and land on the new client's page — the enquiry and the roster
+ * entry are the same person, so this is one step, not four.
  *
  * Their own words become the goals note; nobody describes what they want better
- * than the person who wrote in.
+ * than the person who wrote in. An address that already trains alone gets an
+ * invite instead of an account, and the lead is linked once they accept.
  */
 export async function convertLeadAction(formData: FormData): Promise<void> {
   await requireCoach();
@@ -46,28 +46,27 @@ export async function convertLeadAction(formData: FormData): Promise<void> {
   const lead = leadId ? await findLead(leadId) : undefined;
   if (!lead) return;
 
-  const existing = await findUserByEmail(lead.email);
-  if (existing) {
-    await linkLeadToClient(lead.id, existing.id);
-    refresh();
-    redirect(`/app/coach/alunos/${existing.id}`);
+  let outcome;
+  try {
+    outcome = await createClient({
+      email: lead.email,
+      name: lead.name,
+      plan: lead.interest ?? "online",
+      goals: lead.message,
+    });
+  } catch (error) {
+    // Already a coach, or already somebody's client: nothing to convert.
+    if (error instanceof ConvexError) return;
+    throw error;
   }
 
-  const client = await createClient({
-    email: lead.email,
-    name: lead.name,
-    plan: lead.interest ?? "online",
-    goals: lead.message,
-  });
+  if (outcome.kind === "created") {
+    await linkLeadToClient(lead.id, outcome.clientId);
+    refresh();
+    redirect(`/app/coach/alunos/${outcome.clientId}`);
+  }
 
-  await sendInvite({
-    to: client.email,
-    name: client.name.split(" ")[0] || client.name,
-    locale: client.locale,
-    origin: await requestOrigin(),
-  });
-
-  await linkLeadToClient(lead.id, client.id);
+  await setLeadStatus(lead.id, "talking");
   refresh();
-  redirect(`/app/coach/alunos/${client.id}`);
+  redirect("/app/coach/alunos");
 }

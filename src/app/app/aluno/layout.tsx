@@ -53,6 +53,7 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
       themeMode={await getThemeMode()}
       badges={badges}
       alerts={alerts}
+      solo={client.profile.coachId === null}
       quickAction={
         session && (
           <Link

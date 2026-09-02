@@ -23,6 +23,8 @@ export type User = {
 };
 
 export type ClientProfile = {
+  /** Who trains this person, or `null` when they train alone. */
+  coachId: string | null;
   plan: PlanId;
   goals: string;
   injuries: string;

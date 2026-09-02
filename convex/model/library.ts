@@ -525,18 +525,18 @@ export async function touchWorkout(ctx: MutationCtx, workoutId: Id<"workouts">):
 }
 
 /**
- * The loose templates of the workout library, newest first — see `listWorkouts`
- * in `convex/library.ts`.
+ * The loose templates of one builder's workout library, newest first — see
+ * `listWorkouts` in `convex/library.ts`.
  *
  * A workout that belongs to a program phase is a template too and also has a
  * null `clientId`, so it comes back from the same index; it is dropped here.
  * The program is where it is read, and listing it in both places would make one
  * session look like two.
  */
-export async function libraryWorkouts(ctx: Ctx): Promise<Doc<"workouts">[]> {
+export async function libraryWorkouts(ctx: Ctx, ownerId: Id<"users">): Promise<Doc<"workouts">[]> {
   const docs = await ctx.db
     .query("workouts")
-    .withIndex("by_client", (q) => q.eq("clientId", null))
+    .withIndex("by_owner_and_client", (q) => q.eq("coachId", ownerId).eq("clientId", null))
     .order("desc")
     .take(WORKOUT_LIMIT);
   return docs.filter((doc) => !doc.archived && !doc.programPhaseId);

@@ -1,7 +1,7 @@
 import { v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
-import { requireClientAccess, requireCoach, requireViewer, type Ctx } from "./model/authz";
+import { requireClientAccess, requireCoach, requireCoachOf, requireViewer, type Ctx } from "./model/authz";
 import { hiddenWorkoutIds, workoutSize, workoutWithBlocks } from "./model/library";
 import schema from "./schema";
 import { dayKey, shiftDay } from "../src/lib/studio/dates";
@@ -269,14 +269,14 @@ async function writable(ctx: Ctx, assignmentId: Id<"assignments">): Promise<Doc<
   return doc;
 }
 
-/** Coach-only, for the three things only she does: assign, reschedule, delete. */
+/** The client's coach only, for the three things only they do: assign, reschedule, delete. */
 async function coachAssignment(
   ctx: Ctx,
   assignmentId: Id<"assignments">,
 ): Promise<Doc<"assignments">> {
-  await requireCoach(ctx);
   const doc = await ctx.db.get("assignments", assignmentId);
   if (!doc) throw new Error("No such assignment");
+  await requireCoachOf(ctx, doc.clientId);
   return doc;
 }
 
@@ -361,10 +361,9 @@ export const assignWorkout = mutation({
   },
   returns: v.union(v.null(), v.id("assignments")),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    // Also proves the subject is a real, non-archived client before anything
-    // is frozen against them.
-    await requireClientAccess(ctx, args.clientId);
+    // Also proves the subject is a real, non-archived client of this coach
+    // before anything is frozen against them.
+    await requireCoachOf(ctx, args.clientId);
     return await freezeAssignment(ctx, args);
   },
 });
@@ -384,15 +383,22 @@ export const assignWorkout = mutation({
  * coach's, and another client's copy is theirs.
  *
  * `null` when the workout is gone or is not theirs: nothing was written.
+ *
+ * "Theirs" is a phase copy of their plan, or — for someone training alone — a
+ * template they built themselves.
  */
 export const startWorkoutNow = mutation({
   args: { clientId: v.id("users"), workoutId: v.id("workouts") },
   returns: v.union(v.null(), v.id("assignments")),
   handler: async (ctx, args) => {
-    await requireClientAccess(ctx, args.clientId);
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
 
     const workout = await ctx.db.get("workouts", args.workoutId);
-    if (!workout || workout.archived || workout.clientId !== args.clientId) return null;
+    if (!workout || workout.archived) return null;
+    const inPlan = workout.clientId === args.clientId;
+    const ownTemplate =
+      workout.clientId === null && workout.coachId === args.clientId && viewer._id === args.clientId;
+    if (!inPlan && !ownTemplate) return null;
 
     const today = dayKey();
     const todays = await ctx.db
@@ -427,8 +433,7 @@ export const rescheduleWorkout = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    await requireClientAccess(ctx, args.clientId);
+    await requireCoachOf(ctx, args.clientId);
 
     const workout = await workoutWithBlocks(ctx, args.workoutId);
     if (!workout) return null;
@@ -579,7 +584,7 @@ export const clientWorkouts = query({
   args: { clientId: v.id("users") },
   returns: v.array(clientWorkoutShape),
   handler: async (ctx, args) => {
-    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const { viewer, profile } = await requireClientAccess(ctx, args.clientId);
     const today = dayKey();
 
     const phases = await ctx.db
@@ -592,12 +597,28 @@ export const clientWorkouts = query({
     // query already has the client's workouts in hand, so a second read of the
     // same index to learn which of them are hidden would be wasted.
     const forCoach = viewer.role === "coach";
-    const workouts = (
+    const inPlan = (
       await ctx.db
         .query("workouts")
         .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
         .collect()
     ).filter((doc) => !doc.archived && (forCoach || !doc.hiddenFromClient));
+
+    // Someone training alone builds their own: those are library templates
+    // owned by the client, and this list is the only place they are trained
+    // from. Nothing here for a coached client — their plan is the coach's.
+    const own =
+      profile.coachId === null
+        ? (
+            await ctx.db
+              .query("workouts")
+              .withIndex("by_owner_and_client", (q) =>
+                q.eq("coachId", args.clientId).eq("clientId", null),
+              )
+              .collect()
+          ).filter((doc) => !doc.archived && !doc.programPhaseId)
+        : [];
+    const workouts = [...inPlan, ...own];
 
     const rows = await Promise.all(
       workouts.map(async (doc) => {
@@ -686,12 +707,17 @@ export const studioAssignmentsBetween = query({
   args: { from: v.string(), to: v.string() },
   returns: v.array(studioShape),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
+    const coach = await requireCoach(ctx);
 
-    const clients = await ctx.db
-      .query("users")
-      .withIndex("by_role", (q) => q.eq("role", "client"))
+    const profiles = await ctx.db
+      .query("clientProfiles")
+      .withIndex("by_coach", (q) => q.eq("coachId", coach._id))
       .collect();
+    const clients: Doc<"users">[] = [];
+    for (const profile of profiles) {
+      const client = await ctx.db.get("users", profile.userId);
+      if (client) clients.push(client);
+    }
 
     const rows: (ScheduledAssignment & { clientName: string })[] = [];
     for (const client of clients) {
@@ -939,8 +965,7 @@ export const repeatWeek = mutation({
   args: { clientId: v.id("users"), mondayKey: v.string(), weeks: v.optional(v.number()) },
   returns: v.number(),
   handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    await requireClientAccess(ctx, args.clientId);
+    await requireCoachOf(ctx, args.clientId);
 
     // A year at a time is already far more than the plan screen offers, and the
     // bound is what keeps one call from writing an unbounded number of rows.

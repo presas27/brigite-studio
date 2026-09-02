@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/studio/coach/icons";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +30,6 @@ export function AccountMenu({
   className?: string;
 }) {
   const t = useTranslations("Studio.account");
-  const { signOut } = useAuthActions();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
 
@@ -110,10 +107,12 @@ export function AccountMenu({
                 role="menuitem"
                 onClick={() => {
                   // Dropping the session is a browser-side act — it is the
-                  // browser's auth cookies that change — so this is Convex
-                  // Auth's `signOut`, not a Server Action. The push is what
-                  // makes the now-signed-out tree re-render.
-                  void signOut().then(() => router.push("/app/entrar"));
+                  // browser's cookie that changes — so this is Better Auth's
+                  // `signOut`, not a Server Action. The push and refresh are
+                  // what make the now-signed-out tree re-render.
+                  void authClient.signOut().then(() => {
+                    window.location.assign("/app/entrar");
+                  });
                 }}
                 className={cn(itemClass, "text-silk hover:bg-silk/10 hover:text-silk")}
               >

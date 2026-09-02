@@ -7,6 +7,7 @@ import { clientAlerts } from "@/lib/studio/clientConsole";
 import { coachAlerts, findCheckin, unreadCount, unreadTotal } from "@/lib/studio/coaching";
 import { weekKey } from "@/lib/studio/dates";
 import { getThemeMode } from "@/lib/studio/theme-mode";
+import { myCoach } from "@/lib/studio/users";
 
 /**
  * The account page is the one screen both roles share, so it borrows whichever
@@ -43,10 +44,11 @@ export default async function AccountLayout({ children }: { children: React.Reac
     );
   }
 
-  const [unread, checkin, alerts] = await Promise.all([
+  const [unread, checkin, alerts, coach] = await Promise.all([
     unreadCount(user.id),
     findCheckin(user.id, weekKey()),
     clientAlerts(user.id),
+    myCoach(),
   ]);
 
   const badges: Record<string, number> = {};
@@ -60,6 +62,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       themeMode={themeMode}
       badges={badges}
       alerts={alerts}
+      solo={!coach}
     >
       {children}
     </AlunoChrome>

@@ -32,11 +32,14 @@ import { capitalize, cn } from "@/lib/utils";
 export async function TodayCard({
   session,
   isToday,
+  coachName,
   className,
 }: {
   session: ScheduledAssignment | undefined;
   /** Whether `session` is today's, or the next one ahead. Changes only the label. */
   isToday: boolean;
+  /** Who to ask when the plan is empty. `null` for someone training alone. */
+  coachName: string | null;
   className?: string;
 }) {
   const [t, tSession, locale] = await Promise.all([
@@ -46,14 +49,21 @@ export async function TodayCard({
   ]);
 
   if (!session) {
+    // With a coach the empty plan is theirs to fill; alone, it is yours.
     return (
       <Empty
         title={tSession("planEmpty")}
-        hint={tSession("planEmptyHint")}
+        hint={coachName ? tSession("planEmptyHint") : tSession("planEmptyHintSolo")}
         action={
-          <Link href="/app/aluno/mensagens" className={cn(buttonGhost, "mt-1")}>
-            {t("askSara")}
-          </Link>
+          coachName ? (
+            <Link href="/app/aluno/mensagens" className={cn(buttonGhost, "mt-1")}>
+              {t("askCoach", { name: coachName.split(" ")[0] })}
+            </Link>
+          ) : (
+            <Link href="/app/aluno/treinos" className={cn(buttonGhost, "mt-1")}>
+              {t("buildWorkout")}
+            </Link>
+          )
         }
         className={cn("justify-center", className)}
       />

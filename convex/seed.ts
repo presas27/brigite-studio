@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
+import { createAuth } from "./auth";
 import { exerciseKeys, insertExercise, insertWorkout } from "./model/library";
-import { COACH_EMAIL, PILOT_CLIENTS } from "../src/lib/studio/pilot";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "../src/lib/studio/pilot";
 import { TRAINERIZE_LIBRARY } from "../src/lib/studio/library-trainerize";
 import { searchKey } from "../src/lib/utils";
 import type { ExerciseSeed } from "../src/lib/studio/types";
@@ -111,66 +112,85 @@ const STARTER_LIBRARY: ExerciseSeed[] = [
 ];
 
 /**
- * Sara's account and the two the pilot runs with.
+ * The three provisioned accounts: Sara, a client she trains, a client training
+ * alone (`src/lib/studio/pilot.ts`).
  *
- * The clients arrive empty: active accounts, no plan, no history, no
- * measurements. This used to fabricate a month of completed sessions so the
- * preview had charts to draw, and that is exactly wrong for a pilot — Sara
- * would be reading adherence numbers nobody earned. She writes the plans; the
- * clients do the sessions; every number on screen is then true.
+ * An action, because creating a login is Better Auth's job and it runs its
+ * own transaction. Each login is then attached to the studio row with that
+ * address (`users.linkLogin`), which keeps the row's id — and every plan,
+ * message and session already written against it — when this is re-run on a
+ * deployment that had the pilot data.
+ *
+ * The clients arrive empty otherwise: no fabricated history. Sara writes the
+ * plans; the clients do the sessions; every number on screen is then true.
  */
-export const accounts = internalMutation({
+export const accounts = internalAction({
   args: {},
   handler: async (ctx) => {
-    const created: string[] = [];
+    const linked: string[] = [];
 
-    const existingCoach = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", COACH_EMAIL))
-      .unique();
-    if (!existingCoach) {
-      await ctx.db.insert("users", {
-        email: COACH_EMAIL,
-        name: "Sara Brigites",
-        role: "coach",
-        locale: "pt",
-        status: "active",
+    for (const account of DEMO_ACCOUNTS) {
+      const existing = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+        model: "user",
+        where: [{ field: "email", value: account.email }],
       });
-      created.push(COACH_EMAIL);
+
+      let authId: string;
+      if (existing && typeof existing === "object" && "_id" in existing) {
+        authId = String(existing._id);
+      } else {
+        const created = await createAuth(ctx).api.signUpEmail({
+          body: { email: account.email, name: account.name, password: DEMO_PASSWORD },
+        });
+        authId = created.user.id;
+      }
+
+      await ctx.runMutation(internal.users.linkLogin, {
+        authId,
+        email: account.email,
+        name: account.name,
+        role: account.role,
+        coachEmail: account.coachEmail,
+      });
+      linked.push(account.email);
     }
 
-    for (const person of PILOT_CLIENTS) {
-      const existing = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", person.email))
-        .unique();
-      if (existing) continue;
+    return { linked };
+  },
+});
 
-      const userId = await ctx.db.insert("users", {
-        email: person.email,
-        name: person.name,
-        role: "client",
-        locale: "pt",
-        // Active rather than invited: the pilot signs in by button, and an
-        // invitation nobody has to spend is a state that would never clear.
-        status: "active",
+/**
+ * Remove an account outright: the login, the studio row, the profile, and any
+ * invites addressed to it. Admin-only, by the CLI — the app has no delete
+ * button on purpose (archiving keeps history). What the person wrote or
+ * trained stays: rows that point at the id are not touched, the same as an
+ * archived account.
+ *
+ * ```
+ * npx convex run seed:removeAccount '{"email": "x@y.com"}'
+ * ```
+ */
+export const removeAccount = internalAction({
+  args: { email: v.string() },
+  handler: async (ctx, { email }): Promise<{ removed: boolean }> => {
+    const login = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: "user",
+      where: [{ field: "email", value: email.trim().toLowerCase() }],
+    });
+    if (login && typeof login === "object" && "_id" in login) {
+      const authId = String(login._id);
+      for (const model of ["session", "account"] as const) {
+        await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+          input: { model, where: [{ field: "userId", value: authId }] },
+          paginationOpts: { cursor: null, numItems: 200 },
+        });
+      }
+      await ctx.runMutation(components.betterAuth.adapter.deleteOne, {
+        input: { model: "user", where: [{ field: "_id", value: authId }] },
       });
-      await ctx.db.insert("clientProfiles", {
-        userId,
-        plan: "online",
-        // Left blank on purpose. Goals and injuries are facts about a real
-        // person, and Sara is the one who takes them down.
-        goals: "",
-        injuries: "",
-        notes: "",
-        tags: [],
-        sessionsLeft: 0,
-        startedAt: Date.now(),
-      });
-      created.push(person.email);
     }
-
-    return { created };
+    const removed = await ctx.runMutation(internal.users.removeByEmail, { email });
+    return { removed: removed || login !== null };
   },
 });
 

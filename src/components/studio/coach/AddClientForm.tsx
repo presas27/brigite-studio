@@ -6,7 +6,7 @@ import { addClient, type AddClientState } from "@/app/app/coach/actions";
 import { useModalClose } from "@/components/studio/AddModal";
 import { Field } from "@/components/studio/Field";
 import { SubmitButton } from "@/components/studio/SubmitButton";
-import { field } from "@/components/studio/theme";
+import { field, muted } from "@/components/studio/theme";
 
 const initial: AddClientState = { status: "idle" };
 
@@ -30,9 +30,16 @@ export function AddClientForm() {
 
   const [state, formAction] = useActionState(async (prev: AddClientState, formData: FormData) => {
     const next = await addClient(prev, formData);
+    // A new account shows on the roster at once, which is confirmation enough.
+    // An invite to someone who already trains alone does not — they appear
+    // when they accept — so that outcome stays on screen to say so.
     if (next.status === "created") close();
     return next;
   }, initial);
+
+  if (state.status === "invited") {
+    return <p className={muted}>{t("invitedExisting", { name: state.name })}</p>;
+  }
 
   return (
     <form action={formAction} className="space-y-4">

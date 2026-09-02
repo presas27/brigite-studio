@@ -10,8 +10,12 @@ import { rateLimit } from "@/lib/rate-limit";
 import { site } from "@/lib/site";
 import { createLead } from "@/lib/studio/leads";
 
-/** Sender for both emails — the domain must be verified in Resend. */
-const FROM = "Brigite's Studio <site@brigitestudio.com>";
+/**
+ * Sender for both emails — the domain must be verified in Resend. Same default
+ * as the deployment's `EMAIL_FROM` (`convex/email.ts`), so one verified
+ * address covers the site and the app.
+ */
+const FROM = process.env.EMAIL_FROM ?? "Brigite's Studio <ola@brigitestudio.com>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

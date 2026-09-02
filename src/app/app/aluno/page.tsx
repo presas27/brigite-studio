@@ -10,6 +10,7 @@ import { requireClient } from "@/lib/studio/auth";
 import { clientOverview } from "@/lib/studio/clientConsole";
 import { dayKey } from "@/lib/studio/dates";
 import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
+import { myCoach } from "@/lib/studio/users";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,10 +31,11 @@ export default async function AlunoHojePage() {
   const t = await getTranslations("Studio.aluno");
 
   const today = dayKey();
-  const [overview, todaySessions, next] = await Promise.all([
+  const [overview, todaySessions, next, coach] = await Promise.all([
     clientOverview(client.id),
     assignmentsOn(client.id, today),
     nextAssignment(client.id, today),
+    myCoach(),
   ]);
 
   // Today's session is the hero; with nothing today the gold moves to the next
@@ -74,6 +76,7 @@ export default async function AlunoHojePage() {
           <TodayCard
             session={hero}
             isToday={todaySession != null}
+            coachName={coach?.name ?? null}
             className="col-span-2"
           />
         </div>
