@@ -1,7 +1,13 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { formatDayKey } from "@/components/studio/format";
 import type { WorkoutProgression } from "@/lib/studio/plan";
-import { isRestItem, type Tracking, type WorkoutBlock, type WorkoutItem } from "@/lib/studio/types";
+import {
+  isRestItem,
+  trackingFor,
+  type Tracking,
+  type WorkoutBlock,
+  type WorkoutItem,
+} from "@/lib/studio/types";
 import { PrintChart, type ChartPoint } from "./PrintChart";
 
 /**
@@ -72,7 +78,7 @@ export async function ProgressionSheet({
       {exercisesOf(blocks).map((item) => {
         const points = byExercise.get(item.exerciseId) ?? [];
         const loaded = points.some((point) => point.loadKg != null);
-        const plot = plotFor(item.tracking, units, loaded);
+        const plot = plotFor(trackingFor(item), units, loaded);
 
         const data: ChartPoint[] = [];
         for (const point of points) {

@@ -1,4 +1,11 @@
-import { isRestItem, type BlockKind, type Tracking, type WorkoutItem, type WorkoutSnapshot } from "./types";
+import {
+  isRestItem,
+  trackingFor,
+  type BlockKind,
+  type Tracking,
+  type WorkoutItem,
+  type WorkoutSnapshot,
+} from "./types";
 
 /**
  * One step of a session: a single set of a single exercise, in the order it is
@@ -14,6 +21,7 @@ export type SessionStep = {
   itemId: string;
   exerciseId: string;
   item: WorkoutItem;
+  /** What this set is measured in — see `trackingFor`, not `item.tracking`. */
   tracking: Tracking;
   /** 0-based, and the index this set is logged under. */
   setIndex: number;
@@ -156,7 +164,7 @@ function makeStep(input: {
     itemId: item.id,
     exerciseId: item.exerciseId,
     item,
-    tracking: item.tracking,
+    tracking: trackingFor(item),
     setIndex,
     setNumber: setIndex + 1,
     setCount: input.setCount,

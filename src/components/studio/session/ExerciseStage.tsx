@@ -142,6 +142,10 @@ export function ExerciseStage({
   // The demo, only below `md`: opening the details there hides it, trading
   // the video for room to read — closed, the video is what gets the emphasis.
   // A laptop's two columns have room for both, so the demo never moves there.
+  //
+  // The element tweened is the wrapper around the 16:9 frame, not the frame,
+  // so this is a plain height tween: no flex-basis to override and no aspect
+  // ratio holding the box open against it.
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -152,51 +156,23 @@ export function ExerciseStage({
 
         if (detailsOpen) {
           mediaHeightRef.current = media.getBoundingClientRect().height || mediaHeightRef.current;
-          // `flex: 1 1 0%` sizes the item off its flex-basis, not its `height`,
-          // and `min-h-[10rem]` sets a floor `height` alone can't go under, so
-          // grow/shrink and the min-height need pinning to 0 first. `height`
-          // alone still isn't enough to reach 0, though — a grid container's
-          // own automatic minimum keeps it at the icon's content size unless
-          // `max-height` is clamped down alongside it.
-          gsap.set(media, { flexGrow: 0, flexShrink: 0, minHeight: 0 });
           if (reduced) {
-            gsap.set(media, { height: 0, maxHeight: 0, autoAlpha: 0 });
+            gsap.set(media, { height: 0, autoAlpha: 0 });
           } else {
-            gsap.to(media, {
-              height: 0,
-              maxHeight: 0,
-              autoAlpha: 0,
-              duration: 0.26,
-              ease: "power2.inOut",
-            });
+            gsap.to(media, { height: 0, autoAlpha: 0, duration: 0.26, ease: "power2.inOut" });
           }
         } else {
           const restoreHeight = mediaHeightRef.current;
           if (!restoreHeight) return;
           if (reduced) {
-            gsap.set(media, {
-              height: restoreHeight,
-              maxHeight: restoreHeight,
-              autoAlpha: 1,
-              flexGrow: "",
-              flexShrink: "",
-              minHeight: "",
-            });
+            gsap.set(media, { height: "", autoAlpha: 1 });
           } else {
             gsap.to(media, {
               height: restoreHeight,
-              maxHeight: restoreHeight,
               autoAlpha: 1,
               duration: 0.34,
               ease: "power2.out",
-              onComplete: () =>
-                gsap.set(media, {
-                  height: "",
-                  maxHeight: "",
-                  flexGrow: "",
-                  flexShrink: "",
-                  minHeight: "",
-                }),
+              onComplete: () => gsap.set(media, { height: "" }),
             });
           }
         }
@@ -225,19 +201,28 @@ export function ExerciseStage({
   return (
     <div
       ref={scope}
-      className="flex w-full flex-1 flex-col gap-5 md:grid md:flex-none md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
+      // `my-auto` and not `justify-center` on the parent: the column is sized
+      // by its contents now that the demo holds a ratio instead of eating the
+      // leftover height, and auto margins centre it without clipping the top
+      // off anything taller than the space between the header and the panel.
+      className="my-auto flex w-full flex-col gap-5 md:grid md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
     >
       <StageMedia ref={mediaRef} step={step} />
 
       <div className="contents md:flex md:flex-col md:gap-6">
         <div data-stage="identity" className="order-1 space-y-2 md:order-none">
+          {/* The name, at the size a title deserves — on a screen with room for
+              one. A phone has none: there the name rides in the header, on the
+              line with the close button, so the top of the screen is the
+              exercise and not a heading pushing everything below the fold.
+              See `SessionPlayer`'s header. */}
           <h1
             // Anton set tight enough to look right in English drops the tilde of
             // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
             // and Ó, so the leading is set to clear a diacritic.
             className={cn(
               heading,
-              "text-[1.75rem] leading-[1.05] sm:text-[2.25rem] md:text-[2.25rem] lg:text-[3.25rem] xl:text-[3.75rem]",
+              "hidden leading-[1.05] md:block md:text-[2.25rem] lg:text-[3.25rem] xl:text-[3.75rem]",
             )}
           >
             {step.item.exerciseName}
@@ -315,12 +300,24 @@ export function ExerciseStage({
 }
 
 /**
- * The demo slot, at the size a demo is worth. A YouTube link plays in place —
- * streamed from YouTube same as the library's own demo panel, just without
- * the coach's edit chrome — because a client mid-set should never have to
- * leave the session to see the movement. Anything else falls back to a quiet
- * plate with the movement's icon and an outbound link; no video at all falls
- * back further to the icon alone. The two columns keep their shape regardless.
+ * The demo slot, in the shape of the thing it holds.
+ *
+ * A YouTube link plays in place — streamed from YouTube same as the library's
+ * own demo panel, just without the coach's edit chrome — because a client
+ * mid-set should never have to leave the session to see the movement. Anything
+ * else falls back to a quiet plate with the movement's icon and an outbound
+ * link; no video at all falls back further to the icon alone.
+ *
+ * The frame is 16:9 and nothing else, because that is the frame YouTube's
+ * player renders in: given a taller box it letterboxes the video against the
+ * top and leaves the rest of the plate empty, which is exactly what a demo
+ * stretched to fill the leftover height of a phone looked like. The plate and
+ * the video therefore share one ratio, so the placeholder is the same shape as
+ * the thing it stands in for and the column does not resize when a movement
+ * with a demo follows one without.
+ *
+ * The outer element is the one the parent animates — it carries no ratio of its
+ * own, so collapsing it is a plain height tween with nothing to fight.
  */
 function StageMedia({
   step,
@@ -331,35 +328,39 @@ function StageMedia({
 }) {
   const t = useTranslations("Studio.session");
   const frame =
-    "relative order-3 min-h-[10rem] w-full flex-1 overflow-hidden rounded-[1.5rem] bg-cream/[0.06] ring-1 ring-cream/10 md:order-none md:aspect-square md:min-h-0 md:flex-none md:self-start";
+    "relative aspect-video w-full overflow-hidden rounded-[1.5rem] bg-cream/[0.06] ring-1 ring-cream/10";
   const videoUrl = step.item.videoUrl;
   const id = videoUrl ? youtubeId(videoUrl) : null;
 
-  if (id) {
-    return (
-      <div ref={ref} data-stage="identity" className={frame}>
-        <iframe
-          title={step.item.exerciseName}
-          src={youtubeEmbed(id)}
-          allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
-          className="h-full w-full"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div ref={ref} data-stage="identity" className={cn(frame, "grid place-items-center")}>
-      <Icon name="dumbbell" className="h-14 w-14 text-cream/10 md:h-16 md:w-16" />
-      {videoUrl && (
-        <a
-          href={videoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="absolute bottom-4 left-4 font-sans text-xs text-cream/60 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream"
-        >
-          {t("watchDemo")}
-        </a>
+    <div
+      ref={ref}
+      data-stage="identity"
+      className="order-3 w-full overflow-hidden md:order-none md:self-start"
+    >
+      {id ? (
+        <div className={frame}>
+          <iframe
+            title={step.item.exerciseName}
+            src={youtubeEmbed(id)}
+            allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
+            className="absolute inset-0 h-full w-full"
+          />
+        </div>
+      ) : (
+        <div className={cn(frame, "grid place-items-center")}>
+          <Icon name="dumbbell" className="h-14 w-14 text-cream/10 md:h-16 md:w-16" />
+          {videoUrl && (
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute bottom-4 left-4 font-sans text-xs text-cream/60 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream"
+            >
+              {t("watchDemo")}
+            </a>
+          )}
+        </div>
       )}
     </div>
   );

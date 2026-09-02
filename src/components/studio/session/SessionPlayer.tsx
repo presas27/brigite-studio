@@ -396,8 +396,28 @@ export function SessionPlayer({
 
   return (
     <Shell>
-      <header className="fixed inset-x-0 top-0 z-20 bg-background/90 px-5 pt-4 pb-3 backdrop-blur-sm md:px-8 lg:px-10">
-        <div className={cn(FRAME, "flex items-center justify-end gap-4 md:justify-start")}>
+      {/* Sticky, not fixed: the exercise name lives in this row on a phone and
+          a long one wraps to a second line, so the band's height is not a
+          number the content below it can be padded past — it has to take its
+          own room in the flow. */}
+      <header className="sticky top-0 z-20 bg-background/90 px-5 pt-4 pb-3 backdrop-blur-sm md:px-8 lg:px-10">
+        <div
+          className={cn(
+            FRAME,
+            "flex items-start justify-end gap-4 md:items-center md:justify-start",
+          )}
+        >
+          {/* The exercise, on the line with the way out of it. A phone has no
+              room for a title band of its own — the stage's own `h1` is
+              `md:block` for exactly this reason — and the name is what the
+              screen is about, so it takes this row's spare width and wraps
+              inside it rather than running under the close button. */}
+          {phase === "exercise" && step && !isRestItem(step.item) && (
+            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
+              {step.item.exerciseName}
+            </h1>
+          )}
+
           {syncStatus && (
             <span className="mr-auto flex shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-2 md:mr-0">
               <span
@@ -441,15 +461,14 @@ export function SessionPlayer({
 
       <div
         className={cn(
-          "flex flex-1 flex-col px-5 pt-[3.5rem] md:px-8 md:pt-[4rem] md:pb-12 lg:px-10",
-          // The panel is taller for a timed set — it carries the clock as well
-          // as the numbers — and the content above it has to clear whichever
-          // one is down there.
-          phase !== "exercise"
-            ? "pb-[7.5rem]"
-            : step?.tracking === "time" || step?.tracking === "hold"
-              ? "pb-[18rem]"
-              : "pb-[15rem]",
+          "flex flex-1 flex-col px-5 md:px-8 md:pb-12 lg:px-10",
+          // Room for whichever bar is pinned to the bottom of a phone: the
+          // exercise panel (numbers or clock — they come out the same height,
+          // both being one row of controls under the fields) or the slimmer
+          // rest/effort bar. A reserve much bigger than the bar it clears
+          // reads as the screen being shoved upwards, so it is measured, not
+          // padded generously.
+          phase === "exercise" ? "pb-[15rem]" : "pb-[7.5rem]",
         )}
       >
         <main

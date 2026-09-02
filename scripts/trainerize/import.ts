@@ -52,19 +52,32 @@ const HEADER_ROLES: { role: Role; pattern: RegExp }[] = [
 ];
 
 /**
- * Trainerize's `recordType` vocabulary, which decides which input the logger
- * shows. `timedLongerBetter` is an isometric — hold the shape as long as you
- * can — where `timedFasterBetter` is a clock to beat.
+ * The part of Trainerize's `recordType` vocabulary that actually says how a set
+ * is measured. `timedLongerBetter` is an isometric — hold the shape as long as
+ * you can — where `timedFasterBetter` is a clock to beat.
+ *
+ * `strength`, `endurance` and `general` are deliberately absent. They are the
+ * platform's default for everything that is not on a clock, and a static
+ * hamstring stretch arrives under one of them exactly as a back squat does — so
+ * reading them as "reps" is what put two thousand movements, warm-up
+ * stretches included, on a rep-and-kilo field. They fall through to the
+ * movement's own tags and name instead.
  */
 const RECORD_TYPES: Record<string, Tracking> = {
-  strength: "reps",
-  endurance: "reps",
-  general: "reps",
   timedlongerbetter: "hold",
   timedstrength: "hold",
   timedfasterbetter: "time",
   cardio: "distance",
 };
+
+/**
+ * Set types that say only "some number of repetitions". Trainerize's three
+ * defaults plus the wordings a spreadsheet uses for the same thing — every one
+ * of them a non-answer, and every one of them the reason the movement's own
+ * name and categories have to be read.
+ */
+const UNSPECIFIC =
+  /^(strength|endurance|general|reps?|repetitions?|weight|bodyweight|weightreps|weightandreps|repsweight|repsandweight)$/;
 
 /**
  * A `type` column saying `system` or `custom` is provenance, not a category.
@@ -275,27 +288,60 @@ function inputFiles(target: string): string[] {
 }
 
 /**
- * The set type as the export words it, mapped onto the four the logger knows.
- * Trainerize's `recordType` vocabulary is exact, so it is tried first; a
- * spreadsheet's freer wording (`Weight & Reps`, `Distance & Time`) falls through
- * to the patterns.
+ * The set type as the export words it, mapped onto the four the logger knows,
+ * or `null` when it does not say. Trainerize's `recordType` vocabulary is
+ * exact, so it is tried first; a spreadsheet's freer wording (`Weight & Reps`,
+ * `Distance & Time`) falls through to the patterns. Anything that reduces to
+ * "some number of repetitions" is a non-answer and returns `null`, so the
+ * movement itself gets the last word — see `trackingFromMovement`.
  */
 function trackingFrom(value: string): Tracking | null {
   const key = fold(value);
   if (!key) return null;
-  const known = RECORD_TYPES[key.replace(/ /g, "")];
+  const exact = key.replace(/ /g, "");
+  const known = RECORD_TYPES[exact];
   if (known) return known;
+  // Before the fuzzy patterns, because they are fuzzy: "endurance" contains
+  // "dura" and would otherwise read as a duration.
+  if (UNSPECIFIC.test(exact)) return null;
   if (/dist|km|metro|meter|metre|mile|milha|pace/.test(key)) return "distance";
   if (/hold|isom|estat|static|plank|prancha/.test(key)) return "hold";
   if (/time|tempo|dura|second|segund|min/.test(key)) return "time";
-  return "reps";
+  return null;
 }
 
-/** Last resort when the export carries no set type: the name usually says. */
-function trackingFromName(name: string): Tracking {
+/** A shape held still: the name says so outright. */
+const HELD = /\bhold\b|isometr|wall sit|\bl sit\b|\bhangs?$/;
+
+/**
+ * Stretching, mobilising, rolling. All of it is measured on a clock — nobody
+ * prescribes eight repetitions of a hamstring stretch — so the only question
+ * left is whether the shape is held or moved through, which the tags answer.
+ */
+const STRETCHED =
+  /stretch|alongament|\bpose\b|\bopener\b|mobili|foam roll|thread the needle|cat cow|\bpigeon\b|puppy/;
+
+/** Counted in ground covered rather than in repetitions. */
+const TRAVELLED = /farmer walk|\bcarry\b|sled (drag|push|pull)|shuttle run/;
+
+/**
+ * How the movement itself is measured, from its name and its categories —
+ * what the export's set type could not say.
+ *
+ * Trainerize files a stretch under `staticStretches` and a warm-up drill under
+ * `dynamicWarmUp`. A movement carrying `staticStretches` is a shape entered and
+ * held; one carrying only `dynamicWarmUp` and reading as a stretch is moved
+ * through for a while, so it gets the clock rather than the hold. Everything
+ * else is repetitions, which is what the overwhelming majority of a strength
+ * library is.
+ */
+function trackingFromMovement(name: string, tags: string[]): Tracking {
   const key = fold(name);
-  if (/hold|isom|plank|prancha|suspens|parada|handstand|bridge|ponte|hang/.test(key)) return "hold";
-  if (/run|corrid|walk|caminh|row |remo|bike|bicicl|sprint|carry|farmer/.test(key)) return "distance";
+  const filed = tags.map((tag) => fold(tag).replace(/ /g, ""));
+  if (TRAVELLED.test(key)) return "distance";
+  if (HELD.test(key)) return "hold";
+  if (filed.includes("staticstretches") || filed.includes("static")) return "hold";
+  if (STRETCHED.test(key)) return filed.includes("dynamicwarmup") ? "time" : "hold";
   return "reps";
 }
 
@@ -410,7 +456,7 @@ function collect(files: string[]): { seeds: ExerciseSeed[]; report: Report } {
 
       let tracking = trackingFrom(valuesOf("tracking")[0] ?? "");
       if (!tracking) {
-        tracking = trackingFromName(name);
+        tracking = trackingFromMovement(name, tags);
         report.inferredTracking += 1;
       }
       report.trackingCounts[tracking] += 1;

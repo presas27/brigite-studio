@@ -109,6 +109,28 @@ export function isRestItem(item: { kind?: string | null }): item is { kind: "res
   return item.kind === "rest";
 }
 
+/**
+ * How a set is actually measured — the prescription first, the library second.
+ *
+ * An exercise's `tracking` is a property of the movement: a plank is held, a
+ * squat is counted. What the coach wrote on the item is a property of *this*
+ * workout, and the builder's reps/duration switch writes it unambiguously — a
+ * duration is `seconds` with `reps` cleared, reps are `reps` with no seconds.
+ * When the two disagree the prescription wins, because it is the instruction
+ * the client is being given: 45s of a hamstring stretch is a clock to run, not
+ * a rep count to type kilos against, whatever the library says about the
+ * movement in general.
+ *
+ * `hold` and `time` both mean a clock, so a timed prescription keeps whichever
+ * the library already says and only defaults to `time` when it says neither.
+ */
+export function trackingFor(item: Pick<WorkoutItem, "tracking" | "reps" | "seconds">): Tracking {
+  const reps = item.reps.trim();
+  if (item.seconds != null && !reps) return item.tracking === "hold" ? "hold" : "time";
+  if (reps) return item.tracking === "distance" ? "distance" : "reps";
+  return item.tracking;
+}
+
 export type WorkoutBlock = {
   id: string;
   position: number;

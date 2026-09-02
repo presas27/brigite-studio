@@ -3,7 +3,13 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { Locale } from "@/i18n/config";
 import { cuesFor } from "@/lib/studio/cues";
 import { formatRestDuration } from "@/lib/studio/duration";
-import { isRestItem, type Workout, type WorkoutBlock, type WorkoutItem } from "@/lib/studio/types";
+import {
+  isRestItem,
+  trackingFor,
+  type Workout,
+  type WorkoutBlock,
+  type WorkoutItem,
+} from "@/lib/studio/types";
 import { youtubeId, youtubeThumb } from "@/lib/youtube";
 import type { PrintSections } from "./formats";
 
@@ -34,7 +40,8 @@ function setRows(item: WorkoutItem, rounds: number, circuit: boolean): number {
  */
 function target(item: WorkoutItem, rounds: number, circuit: boolean): string {
   if (isRestItem(item)) return formatRestDuration(item.seconds ?? 60);
-  const timed = item.seconds != null && item.reps.trim() === "";
+  const tracking = trackingFor(item);
+  const timed = (tracking === "time" || tracking === "hold") && item.seconds != null;
   const measure = timed ? formatRestDuration(item.seconds ?? 0) : item.reps.trim();
   const count = circuit ? rounds : item.sets;
   return measure ? `${count} × ${measure}` : `${count}×`;

@@ -6,7 +6,7 @@ import { Modal } from "@/components/studio/Modal";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { buttonDanger } from "@/components/studio/theme";
 import { formatRestDuration } from "@/lib/studio/duration";
-import type { WorkoutItem } from "@/lib/studio/types";
+import { trackingFor, type WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { smallField } from "./parts";
 
@@ -29,8 +29,11 @@ export function ExerciseDetailsDialog({
   const library = useTranslations("Studio.library");
 
   const removeForm = useRef<HTMLFormElement>(null);
+  // The switch opens on whatever the item is actually prescribed as, which is
+  // the prescription's own answer and not the library's — see `trackingFor`.
+  const tracking = trackingFor(item);
   const [mode, setMode] = useState<"reps" | "duration">(
-    item.seconds != null && item.reps.trim() === "" ? "duration" : "reps",
+    tracking === "time" || tracking === "hold" ? "duration" : "reps",
   );
 
   return (
@@ -38,7 +41,7 @@ export function ExerciseDetailsDialog({
       open={open}
       onCloseAction={onCloseAction}
       title={item.exerciseName}
-      lead={library(`tracking.${item.tracking}`)}
+      lead={library(`tracking.${tracking}`)}
     >
       <form
         action={async (formData) => {

@@ -13,6 +13,7 @@ import type { ExerciseSeed } from "../src/lib/studio/types";
  * ```
  * npx convex run seed:accounts
  * npx convex run seed:importLibrary
+ * npx convex run seed:retrackLibrary
  * npx convex run seed:masterWorkouts
  * ```
  *
@@ -23,8 +24,9 @@ import type { ExerciseSeed } from "../src/lib/studio/types";
  * ran on could vanish between two clicks. It cannot now. Creating Sara's
  * account is a thing that happens once, in the open, by someone who meant it.
  *
- * All three steps are idempotent, so re-running one after adding exercises to
- * `library-trainerize.ts` imports only what is new.
+ * Every step is idempotent, so re-running one after adding exercises to
+ * `library-trainerize.ts` imports only what is new and corrects only what the
+ * seed now measures differently.
  */
 
 /**
@@ -239,6 +241,74 @@ export const importLibrary = internalAction({
     }
 
     return { total: entries.length, inserted };
+  },
+});
+
+/** One chunk of the tracking correction. See `retrackLibrary`. */
+export const retrackBatch = internalMutation({
+  args: {
+    entries: v.array(
+      v.object({
+        name: v.string(),
+        tracking: v.union(
+          v.literal("reps"),
+          v.literal("time"),
+          v.literal("hold"),
+          v.literal("distance"),
+        ),
+      }),
+    ),
+  },
+  handler: async (ctx, { entries }) => {
+    let corrected = 0;
+    for (const entry of entries) {
+      if (entry.tracking === "reps") continue;
+      const doc = await ctx.db
+        .query("exercises")
+        .withIndex("by_archived_and_name", (q) =>
+          q.eq("archived", false).eq("name", entry.name.trim()),
+        )
+        .unique();
+      // Only the ones still on the blanket default move. A movement Sara has
+      // since set herself is hers, and a row she renamed is not this row.
+      if (!doc || doc.tracking !== "reps") continue;
+      await ctx.db.patch("exercises", doc._id, { tracking: entry.tracking });
+      corrected += 1;
+    }
+    return corrected;
+  },
+});
+
+/**
+ * Bring the library's tracking back in line with the seed.
+ *
+ * The first Trainerize import read `recordType` as the answer to how a set is
+ * measured, and Trainerize files a static hamstring stretch under the same
+ * `strength`/`endurance`/`general` default as a back squat — so two thousand
+ * movements landed on reps, and a client asked to hold a stretch for 45s was
+ * shown a rep field and a kilo field. `library-trainerize.ts` now derives it
+ * from the movement itself; `importLibrary` only ever adds what is missing, so
+ * this is what reaches the rows already imported.
+ *
+ * Idempotent and safe to re-run: it only ever moves a row off "reps", and only
+ * when the seed has something more specific to say about it.
+ */
+export const retrackLibrary = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const entries = [...STARTER_LIBRARY, ...TRAINERIZE_LIBRARY].map((entry) => ({
+      name: entry.name,
+      tracking: entry.tracking,
+    }));
+    let corrected = 0;
+
+    for (let start = 0; start < entries.length; start += BATCH) {
+      corrected += await ctx.runMutation(internal.seed.retrackBatch, {
+        entries: entries.slice(start, start + BATCH),
+      });
+    }
+
+    return { total: entries.length, corrected };
   },
 });
 

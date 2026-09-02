@@ -150,6 +150,13 @@ function whole(value: number, min: number): number {
   return Math.max(min, Math.trunc(value));
 }
 
+/**
+ * The duration a timed movement is prescribed at when the coach adds it and
+ * says nothing else — a working number she can see and change, not a silent
+ * zero, and short enough that leaving it unread is never a hard set.
+ */
+const DEFAULT_TIMED_SECONDS = 30;
+
 /** Counts by label, commonest first, ties alphabetical — tags and focuses both. */
 function byFrequency(counts: Map<string, number>): { tag: string; count: number }[] {
   return [...counts]
@@ -643,6 +650,21 @@ export const addItem = mutation({
     const rest = args.kind === "rest";
     if (!rest && !args.exerciseId) throw new Error("exerciseId required");
     const position = (await lastItemPosition(ctx, args.blockId)) + 1;
+
+    // A movement the library measures on a clock arrives prescribed on a clock.
+    // Landing it on an empty rep field instead is what left a warm-up full of
+    // stretches asking the client for reps and kilos: the coach has to notice
+    // and flip every single one, and the ones she misses train wrong.
+    const exercise = rest || !args.exerciseId ? null : await ctx.db.get("exercises", args.exerciseId);
+    const timed = exercise?.tracking === "time" || exercise?.tracking === "hold";
+    const seconds = rest
+      ? whole(args.seconds ?? 60, 0)
+      : args.seconds != null
+        ? whole(args.seconds, 0)
+        : timed && !args.reps?.trim()
+          ? DEFAULT_TIMED_SECONDS
+          : null;
+
     const itemId = await ctx.db.insert("workoutItems", {
       blockId: args.blockId,
       position,
@@ -650,7 +672,7 @@ export const addItem = mutation({
       exerciseId: rest ? null : args.exerciseId!,
       sets: whole(args.sets ?? (rest ? 1 : 3), 1),
       reps: args.reps ?? "",
-      seconds: rest ? whole(args.seconds ?? 60, 0) : args.seconds == null ? null : whole(args.seconds, 0),
+      seconds,
       tempo: args.tempo ?? "",
       restSeconds: whole(args.restSeconds ?? (rest ? 0 : 60), 0),
       rpe: args.rpe ?? "",

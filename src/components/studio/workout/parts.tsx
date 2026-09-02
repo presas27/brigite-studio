@@ -1,5 +1,5 @@
 import { formatRestDuration } from "@/lib/studio/duration";
-import { isRestItem, type WorkoutItem } from "@/lib/studio/types";
+import { isRestItem, trackingFor, type WorkoutItem } from "@/lib/studio/types";
 
 export { formatRestDuration, REST_PRESETS, parseDurationInput } from "@/lib/studio/duration";
 
@@ -10,7 +10,8 @@ export { formatRestDuration, REST_PRESETS, parseDurationInput } from "@/lib/stud
  */
 export function prescription(item: WorkoutItem, circuit: boolean): string {
   if (isRestItem(item)) return formatRestDuration(item.seconds ?? 60);
-  const timed = item.seconds != null && item.reps.trim() === "";
+  const tracking = trackingFor(item);
+  const timed = (tracking === "time" || tracking === "hold") && item.seconds != null;
   const measure = timed ? formatRestDuration(item.seconds ?? 0) : item.reps.trim();
   if (circuit) return measure || "1×";
   return measure ? `${item.sets} × ${measure}` : `${item.sets}×`;
