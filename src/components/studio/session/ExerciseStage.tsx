@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useLocale, useTranslations } from "next-intl";
@@ -13,6 +13,7 @@ import type { SetValue } from "./useSessionLog";
 import { Icon } from "../coach/icons";
 import { heading } from "../theme";
 import { cn } from "@/lib/utils";
+import { youtubeEmbed, youtubeId } from "@/lib/youtube";
 
 /**
  * The one screen the client looks at while she trains, in two shapes.
@@ -63,6 +64,14 @@ export function ExerciseStage({
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
   const scope = useRef<HTMLDivElement>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const detailsPanelRef = useRef<HTMLDivElement>(null);
+  // The demo's height right before it collapses, so closing the details
+  // restores it exactly rather than guessing from a frame that is mid-shrink.
+  const mediaHeightRef = useRef(0);
+  // Collapsed by default and per exercise: the coach's cues are worth opening
+  // for, not worth reading through on the way to the exercise she is here for.
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useGSAP(
     () => {
@@ -93,6 +102,110 @@ export function ExerciseStage({
     { scope, dependencies: [step.key, enterAs] },
   );
 
+  // A new exercise closes the details back up — last exercise's cues have
+  // nothing to say about this one.
+  useEffect(() => setDetailsOpen(false), [step.key]);
+
+  // The details panel itself: a clean grow/shrink, in or out of view either
+  // way. Independent of the media effect below so a wide screen — which never
+  // hides the demo — still gets the open/close animation.
+  useGSAP(
+    () => {
+      const panel = detailsPanelRef.current;
+      if (!panel) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (detailsOpen) {
+        gsap.set(panel, { height: "auto" });
+        const openHeight = panel.getBoundingClientRect().height;
+        gsap.set(panel, { height: 0 });
+        if (reduced) {
+          gsap.set(panel, { height: openHeight, autoAlpha: 1 });
+        } else {
+          gsap.to(panel, {
+            height: openHeight,
+            autoAlpha: 1,
+            duration: 0.32,
+            ease: "power2.out",
+            onComplete: () => gsap.set(panel, { height: "auto" }),
+          });
+        }
+      } else if (reduced) {
+        gsap.set(panel, { height: 0, autoAlpha: 0 });
+      } else {
+        gsap.to(panel, { height: 0, autoAlpha: 0, duration: 0.24, ease: "power2.inOut" });
+      }
+    },
+    { scope, dependencies: [detailsOpen] },
+  );
+
+  // The demo, only below `md`: opening the details there hides it, trading
+  // the video for room to read — closed, the video is what gets the emphasis.
+  // A laptop's two columns have room for both, so the demo never moves there.
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(max-width: 767px)", () => {
+        const media = mediaRef.current;
+        if (!media) return;
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (detailsOpen) {
+          mediaHeightRef.current = media.getBoundingClientRect().height || mediaHeightRef.current;
+          // `flex: 1 1 0%` sizes the item off its flex-basis, not its `height`,
+          // and `min-h-[10rem]` sets a floor `height` alone can't go under, so
+          // grow/shrink and the min-height need pinning to 0 first. `height`
+          // alone still isn't enough to reach 0, though — a grid container's
+          // own automatic minimum keeps it at the icon's content size unless
+          // `max-height` is clamped down alongside it.
+          gsap.set(media, { flexGrow: 0, flexShrink: 0, minHeight: 0 });
+          if (reduced) {
+            gsap.set(media, { height: 0, maxHeight: 0, autoAlpha: 0 });
+          } else {
+            gsap.to(media, {
+              height: 0,
+              maxHeight: 0,
+              autoAlpha: 0,
+              duration: 0.26,
+              ease: "power2.inOut",
+            });
+          }
+        } else {
+          const restoreHeight = mediaHeightRef.current;
+          if (!restoreHeight) return;
+          if (reduced) {
+            gsap.set(media, {
+              height: restoreHeight,
+              maxHeight: restoreHeight,
+              autoAlpha: 1,
+              flexGrow: "",
+              flexShrink: "",
+              minHeight: "",
+            });
+          } else {
+            gsap.to(media, {
+              height: restoreHeight,
+              maxHeight: restoreHeight,
+              autoAlpha: 1,
+              duration: 0.34,
+              ease: "power2.out",
+              onComplete: () =>
+                gsap.set(media, {
+                  height: "",
+                  maxHeight: "",
+                  flexGrow: "",
+                  flexShrink: "",
+                  minHeight: "",
+                }),
+            });
+          }
+        }
+      });
+      return () => mm.revert();
+    },
+    { scope, dependencies: [detailsOpen] },
+  );
+
   // The session player is what a client reads mid-set, so it follows her
   // locale; cuesFor falls back to the other language rather than showing a
   // movement with no instructions.
@@ -114,7 +227,7 @@ export function ExerciseStage({
       ref={scope}
       className="flex w-full flex-1 flex-col gap-5 md:grid md:flex-none md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
     >
-      <StageMedia step={step} />
+      <StageMedia ref={mediaRef} step={step} />
 
       <div className="contents md:flex md:flex-col md:gap-6">
         <div data-stage="identity" className="order-1 space-y-2 md:order-none">
@@ -158,25 +271,14 @@ export function ExerciseStage({
             data-stage="identity"
             className="order-2 space-y-2 md:order-3 md:space-y-3 md:border-t md:border-cream/10 md:pt-5"
           >
-            {itemNotes && (
-              <p className="text-xs leading-relaxed text-cream/55 md:text-base md:text-cream/75">
-                {itemNotes}
-              </p>
-            )}
-            {cueLines.length > 0 && (
-              // Side by side for as long as the width allows: three short cues
-              // read as three things at a glance, where a stacked list reads as
-              // a paragraph to work through.
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 md:gap-x-7 md:gap-y-3">
-                {cueLines.map((line, index) => (
-                  <p
-                    key={index}
-                    className="max-w-[18rem] text-xs leading-snug text-cream/50 md:text-sm md:text-cream/65"
-                  >
-                    {line}
-                  </p>
-                ))}
-              </div>
+            {(itemNotes || cueLines.length > 0) && (
+              <ExerciseDetails
+                open={detailsOpen}
+                onToggle={() => setDetailsOpen((current) => !current)}
+                panelRef={detailsPanelRef}
+                notes={itemNotes}
+                cueLines={cueLines}
+              />
             )}
             {/* The client's own note, below the coach's cues: hers is what the
                 exercise asks for, this is what actually happened. */}
@@ -213,21 +315,45 @@ export function ExerciseStage({
 }
 
 /**
- * The demo slot, at the size a demo is worth: a quiet plate with the
- * movement's icon, and an outbound link to the video when the exercise has
- * one. The two columns keep their shape whether or not it does.
+ * The demo slot, at the size a demo is worth. A YouTube link plays in place —
+ * streamed from YouTube same as the library's own demo panel, just without
+ * the coach's edit chrome — because a client mid-set should never have to
+ * leave the session to see the movement. Anything else falls back to a quiet
+ * plate with the movement's icon and an outbound link; no video at all falls
+ * back further to the icon alone. The two columns keep their shape regardless.
  */
-function StageMedia({ step }: { step: SessionStep }) {
+function StageMedia({
+  step,
+  ref,
+}: {
+  step: SessionStep;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   const t = useTranslations("Studio.session");
   const frame =
     "relative order-3 min-h-[10rem] w-full flex-1 overflow-hidden rounded-[1.5rem] bg-cream/[0.06] ring-1 ring-cream/10 md:order-none md:aspect-square md:min-h-0 md:flex-none md:self-start";
+  const videoUrl = step.item.videoUrl;
+  const id = videoUrl ? youtubeId(videoUrl) : null;
+
+  if (id) {
+    return (
+      <div ref={ref} data-stage="identity" className={frame}>
+        <iframe
+          title={step.item.exerciseName}
+          src={youtubeEmbed(id)}
+          allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
+          className="h-full w-full"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div data-stage="identity" className={cn(frame, "grid place-items-center")}>
+    <div ref={ref} data-stage="identity" className={cn(frame, "grid place-items-center")}>
       <Icon name="dumbbell" className="h-14 w-14 text-cream/10 md:h-16 md:w-16" />
-      {step.item.videoUrl && (
+      {videoUrl && (
         <a
-          href={step.item.videoUrl}
+          href={videoUrl}
           target="_blank"
           rel="noreferrer"
           className="absolute bottom-4 left-4 font-sans text-xs text-cream/60 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream"
@@ -235,6 +361,77 @@ function StageMedia({ step }: { step: SessionStep }) {
           {t("watchDemo")}
         </a>
       )}
+    </div>
+  );
+}
+
+/**
+ * The coach's cues, behind one bar instead of a wall of text. Closed is the
+ * default: a phone leads with the exercise and its demo, not a paragraph to
+ * scroll past first. `panelRef` is the growing/shrinking element the parent
+ * animates — this component only ever renders it fully expanded; the parent
+ * clips it to `detailsOpen` in a `useGSAP` effect so the open state is one
+ * clean height tween instead of a CSS transition fighting an `auto` value.
+ */
+function ExerciseDetails({
+  open,
+  onToggle,
+  panelRef,
+  notes,
+  cueLines,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  panelRef: React.Ref<HTMLDivElement>;
+  notes: string;
+  cueLines: string[];
+}) {
+  const t = useTranslations("Studio.session");
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 rounded-[0.75rem] bg-cream/[0.05] px-4 py-2.5 text-left transition-colors hover:bg-cream/[0.08]"
+      >
+        <span className="font-sans text-xs font-semibold uppercase tracking-[0.08em] text-cream/55">
+          {t("cues")}
+        </span>
+        <Icon
+          name="chevron"
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-cream/45 transition-transform duration-200",
+            open ? "rotate-90" : "",
+          )}
+        />
+      </button>
+
+      <div ref={panelRef} className="overflow-hidden" style={{ height: 0, opacity: 0 }}>
+        <div className="space-y-2 pt-3 md:space-y-3">
+          {notes && (
+            <p className="text-xs leading-relaxed text-cream/55 md:text-base md:text-cream/75">
+              {notes}
+            </p>
+          )}
+          {cueLines.length > 0 && (
+            // Side by side for as long as the width allows: three short cues
+            // read as three things at a glance, where a stacked list reads as
+            // a paragraph to work through.
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 md:gap-x-7 md:gap-y-3">
+              {cueLines.map((line, index) => (
+                <p
+                  key={index}
+                  className="max-w-[18rem] text-xs leading-snug text-cream/50 md:text-sm md:text-cream/65"
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

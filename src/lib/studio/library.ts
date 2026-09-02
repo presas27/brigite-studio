@@ -153,7 +153,6 @@ export async function workoutFocuses(): Promise<{ tag: string; count: number }[]
 export async function createWorkout(input: {
   name: string;
   focus?: string;
-  notes?: string;
   instructions?: string;
   workoutType?: WorkoutType;
   coachId?: string | null;
@@ -176,7 +175,6 @@ export async function updateWorkout(
   patch: {
     name?: string;
     focus?: string;
-    notes?: string;
     instructions?: string;
     workoutType?: WorkoutType;
     estimatedMinutes?: number | null;

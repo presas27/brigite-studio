@@ -129,7 +129,7 @@ export async function createPhaseWorkout(
   input: {
     name: string;
     focus?: string;
-    notes?: string;
+    instructions?: string;
     workoutType?: WorkoutType;
     estimatedMinutes?: number | null;
   },
@@ -139,7 +139,7 @@ export async function createPhaseWorkout(
       phaseId: phaseId as Id<"trainingPhases">,
       name: input.name,
       ...(input.focus === undefined ? {} : { focus: input.focus }),
-      ...(input.notes === undefined ? {} : { notes: input.notes }),
+      ...(input.instructions === undefined ? {} : { instructions: input.instructions }),
       ...(input.workoutType === undefined ? {} : { workoutType: input.workoutType }),
       ...(input.estimatedMinutes === undefined
         ? {}

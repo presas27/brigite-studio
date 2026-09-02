@@ -332,7 +332,6 @@ async function freezeAssignment(
     snapshot: {
       name: workout.name,
       focus: workout.focus,
-      notes: workout.notes,
       instructions: workout.instructions,
       estimatedMinutes: workout.estimatedMinutes,
       blocks: workout.blocks,
@@ -464,7 +463,6 @@ export const rescheduleWorkout = mutation({
     const snapshot = {
       name: workout.name,
       focus: workout.focus,
-      notes: workout.notes,
       instructions: workout.instructions,
       estimatedMinutes: workout.estimatedMinutes,
       blocks: workout.blocks,

@@ -185,12 +185,12 @@ export function AddWorkoutToPhaseModal({
                   className={field}
                 />
               </Field>
-              <Field label={tWorkouts("notesLabel")} htmlFor="phase-workout-notes">
+              <Field label={tWorkouts("instructionsLabel")} htmlFor="phase-workout-instructions">
                 <textarea
-                  id="phase-workout-notes"
-                  name="notes"
+                  id="phase-workout-instructions"
+                  name="instructions"
                   rows={2}
-                  placeholder={tWorkouts("notesPlaceholder")}
+                  placeholder={tWorkouts("instructionsPlaceholder")}
                   className={field}
                 />
               </Field>

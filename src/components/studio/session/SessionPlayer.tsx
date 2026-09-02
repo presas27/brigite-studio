@@ -203,9 +203,10 @@ export function SessionPlayer({
       }, 0),
     [steps, entries],
   );
-  // Sara's note belongs to the session, not to any one set, so it lives in the
-  // list — reachable all session instead of only on the first screen.
-  const coachNote = [assignment.snapshot.notes, assignment.note]
+  // The session's own instructions, plus whatever Sara wrote for this one day.
+  // Neither belongs to any single set, so they live in the list — reachable all
+  // session instead of only on the first screen.
+  const coachNote = [assignment.snapshot.instructions, assignment.note]
     .map((line) => line.trim())
     .filter(Boolean)
     .join("\n\n");
@@ -338,7 +339,10 @@ export function SessionPlayer({
         aria-label={t("previousStep")}
         className={cn(
           buttonGhost,
-          "shrink-0 px-5 py-3.5 text-base md:max-w-[13rem] md:flex-1 md:px-6",
+          // `h-14` pins the height explicitly: on mobile this button is icon-only
+          // (the label is `md:inline`), so with no text line-box to size against
+          // it would otherwise render shorter than "Next" beside it.
+          "h-14 shrink-0 rounded-[0.9rem] px-5 text-base md:h-auto md:max-w-[13rem] md:flex-1 md:px-6 md:py-3.5",
         )}
       >
         <Icon name="chevron" className="h-4 w-4 rotate-180" />
@@ -347,7 +351,10 @@ export function SessionPlayer({
       <button
         type="button"
         onClick={handleNext}
-        className={cn(buttonPrimary, "flex-1 py-4 text-base md:py-3.5 md:max-w-[13rem]")}
+        className={cn(
+          buttonPrimary,
+          "h-14 flex-1 rounded-[0.9rem] text-base md:h-auto md:max-w-[13rem] md:py-3.5",
+        )}
       >
         {index >= steps.length - 1 ? t("lastSet") : t("nextStep")}
         <Icon name="chevron" className="h-4 w-4" />

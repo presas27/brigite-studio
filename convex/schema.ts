@@ -227,7 +227,13 @@ export default defineSchema({
   workouts: defineTable({
     name: v.string(),
     focus: v.string(),
-    notes: v.string(),
+    /**
+     * Transitional, and read by nothing. The workout's one free-text preamble
+     * is `instructions`; this column stays declared only until
+     * `library:collapseWorkoutNotes` has stripped it from every row, after
+     * which the line goes.
+     */
+    notes: v.optional(v.string()),
     /** Free-text preamble the client reads before starting. */
     instructions: v.string(),
     /** Which construction screen the workout uses. */
@@ -362,7 +368,8 @@ export default defineSchema({
     snapshot: v.object({
       name: v.string(),
       focus: v.string(),
-      notes: v.string(),
+      /** Transitional twin of `notes` on `workouts`. See the note there. */
+      notes: v.optional(v.string()),
       /** The preamble the client reads before starting, frozen with the rest. */
       instructions: v.string(),
       estimatedMinutes: v.optional(v.union(v.null(), v.number())),

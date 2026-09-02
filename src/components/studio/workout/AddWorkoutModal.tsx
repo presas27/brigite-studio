@@ -37,12 +37,12 @@ export async function AddWorkoutModal({ compact = false }: { compact?: boolean }
             className={field}
           />
         </Field>
-        <Field label={t("notesLabel")} htmlFor="new-workout-notes">
+        <Field label={t("instructionsLabel")} htmlFor="new-workout-instructions">
           <textarea
-            id="new-workout-notes"
-            name="notes"
+            id="new-workout-instructions"
+            name="instructions"
             rows={2}
-            placeholder={t("notesPlaceholder")}
+            placeholder={t("instructionsPlaceholder")}
             className={field}
           />
         </Field>

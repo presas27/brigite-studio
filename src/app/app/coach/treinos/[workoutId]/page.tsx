@@ -38,7 +38,6 @@ export default async function WorkoutBuilderPage({
       <PageHeader
         backHref="/app/coach/treinos"
         title={`${workout.name} · ${t(`type.${workout.workoutType}`)}`}
-        lead={workout.notes || undefined}
         action={<WorkoutSettings workout={workout} />}
       />
       <WorkoutBuilder workout={workout} exercises={exercises} />

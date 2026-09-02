@@ -161,7 +161,6 @@ export function workoutMeta(doc: Doc<"workouts">): Omit<Workout, "blocks"> {
     id: doc._id,
     name: doc.name,
     focus: doc.focus,
-    notes: doc.notes,
     instructions: doc.instructions,
     workoutType: doc.workoutType,
     coachId: doc.coachId,
@@ -340,7 +339,6 @@ export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<Wo
 export type WorkoutInput = {
   name: string;
   focus: string;
-  notes: string;
   instructions: string;
   workoutType: WorkoutType;
   /** Owning coach. Null only on rows written before phases existed. */
@@ -370,7 +368,6 @@ export async function insertWorkout(
   return ctx.db.insert("workouts", {
     name: input.name.trim(),
     focus: input.focus,
-    notes: input.notes,
     instructions: input.instructions,
     workoutType: input.workoutType,
     coachId: input.coachId,
@@ -425,7 +422,6 @@ export async function copyWorkout(
   const copyId = await insertWorkout(ctx, {
     name: target.name ?? source.name,
     focus: source.focus,
-    notes: source.notes,
     instructions: source.instructions,
     workoutType: source.workoutType,
     coachId: target.coachId,

@@ -142,9 +142,10 @@ export type Workout = {
   id: string;
   name: string;
   focus: string;
-  /** Shown to the client with the workout. */
-  notes: string;
-  /** The coach's description of how the session is structured. */
+  /**
+   * The session's one free-text preamble: written at the top of the builder,
+   * printed on the sheet, and read to the client before they start.
+   */
   instructions: string;
   workoutType: WorkoutType;
   /** Owning coach. NULL only on rows written before phases existed. */
@@ -360,7 +361,6 @@ export type ScheduledAssignment = Assignment & { date: string };
 export type WorkoutSnapshot = {
   name: string;
   focus: string;
-  notes: string;
   /** The preamble the client reads before starting, frozen with the rest. */
   instructions: string;
   estimatedMinutes?: number | null;

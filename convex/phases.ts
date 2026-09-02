@@ -66,7 +66,6 @@ const workoutSummaryValidator = v.object({
   id: v.string(),
   name: v.string(),
   focus: v.string(),
-  notes: v.string(),
   instructions: v.string(),
   workoutType: v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval")),
   coachId: v.union(v.null(), v.string()),
@@ -366,7 +365,7 @@ export const createWorkout = mutation({
     phaseId: v.id("trainingPhases"),
     name: v.string(),
     focus: v.optional(v.string()),
-    notes: v.optional(v.string()),
+    instructions: v.optional(v.string()),
     workoutType: v.optional(
       v.union(v.literal("regular"), v.literal("circuit"), v.literal("interval")),
     ),
@@ -381,8 +380,7 @@ export const createWorkout = mutation({
     const workoutId = await insertWorkout(ctx, {
       name: args.name,
       focus: args.focus ?? "",
-      notes: args.notes ?? "",
-      instructions: "",
+      instructions: args.instructions ?? "",
       workoutType: args.workoutType ?? "regular",
       coachId: phase.coachId,
       clientId: phase.clientId,

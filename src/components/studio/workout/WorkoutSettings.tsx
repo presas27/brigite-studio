@@ -12,14 +12,15 @@ import type { Workout } from "@/lib/studio/types";
 import { EstimatedDurationField } from "./EstimatedDurationField";
 
 /**
- * Name, focus and notes for the workout itself. A dialog rather than a panel on
- * the page: it is filled in once and read never — the builder below is what
- * Sara actually works in.
+ * Name, focus and duration for the workout itself. A dialog rather than a panel
+ * on the page: it is filled in once and read never — the builder below is what
+ * Sara actually works in, and the session's instructions live there, in the
+ * one editable place, rather than being asked for twice.
  */
 export function WorkoutSettings({
   workout,
 }: {
-  workout: Pick<Workout, "id" | "name" | "focus" | "notes" | "estimatedMinutes">;
+  workout: Pick<Workout, "id" | "name" | "focus" | "estimatedMinutes">;
 }) {
   const t = useTranslations("Studio.workouts");
   const common = useTranslations("Studio.common");
@@ -60,16 +61,6 @@ export function WorkoutSettings({
               name="focus"
               defaultValue={workout.focus}
               placeholder={t("focusPlaceholder")}
-              className={field}
-            />
-          </Field>
-          <Field label={t("notesLabel")} htmlFor="workout-notes">
-            <textarea
-              id="workout-notes"
-              name="notes"
-              rows={3}
-              defaultValue={workout.notes}
-              placeholder={t("notesPlaceholder")}
               className={field}
             />
           </Field>

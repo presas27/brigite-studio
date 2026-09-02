@@ -61,7 +61,7 @@ export function SessionReportView({
     },
   ].filter(Boolean) as { label: string; value: string }[];
 
-  const coachNote = [assignment.snapshot.notes, assignment.note]
+  const coachNote = [assignment.snapshot.instructions, assignment.note]
     .map((line) => line.trim())
     .filter(Boolean)
     .join("\n\n");

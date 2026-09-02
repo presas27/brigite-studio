@@ -110,7 +110,6 @@ const workoutFields = {
   id: v.string(),
   name: v.string(),
   focus: v.string(),
-  notes: v.string(),
   instructions: v.string(),
   workoutType,
   coachId: v.union(v.null(), v.string()),
@@ -480,7 +479,6 @@ export const createWorkout = mutation({
   args: {
     name: v.string(),
     focus: v.optional(v.string()),
-    notes: v.optional(v.string()),
     instructions: v.optional(v.string()),
     workoutType: v.optional(workoutType),
     coachId: v.optional(v.union(v.null(), v.id("users"))),
@@ -496,7 +494,6 @@ export const createWorkout = mutation({
     return insertWorkout(ctx, {
       name: args.name,
       focus: args.focus ?? "",
-      notes: args.notes ?? "",
       instructions: args.instructions ?? "",
       workoutType: args.workoutType ?? "regular",
       coachId: args.coachId ?? null,
@@ -515,7 +512,6 @@ export const updateWorkout = mutation({
     patch: v.object({
       name: v.optional(v.string()),
       focus: v.optional(v.string()),
-      notes: v.optional(v.string()),
       instructions: v.optional(v.string()),
       workoutType: v.optional(workoutType),
       estimatedMinutes: v.optional(v.union(v.null(), v.number())),
@@ -531,7 +527,6 @@ export const updateWorkout = mutation({
     const patch: WorkoutPatch = {};
     if (args.patch.name !== undefined) patch.name = args.patch.name.trim();
     if (args.patch.focus !== undefined) patch.focus = args.patch.focus;
-    if (args.patch.notes !== undefined) patch.notes = args.patch.notes;
     if (args.patch.instructions !== undefined) patch.instructions = args.patch.instructions;
     if (args.patch.workoutType !== undefined) patch.workoutType = args.patch.workoutType;
     if (args.patch.estimatedMinutes !== undefined)
@@ -906,6 +901,63 @@ export const backfillLibraryCategory = internalMutation({
       moved += 1;
     }
     return moved;
+  },
+});
+
+/**
+ * One-off: collapse the workout's two free-text preambles into one.
+ *
+ * A workout used to carry both `notes` — written in the settings dialog, shown
+ * under the title and read to the client mid-session — and `instructions`,
+ * written at the top of the builder and only ever printed. They said the same
+ * thing twice, in two places, and only one of them was editable where the
+ * coach works. `instructions` is now the only one; this merges the other into
+ * it and strips the column.
+ *
+ * `instructions` wins where both have text: it is the longer, prescriptive one
+ * the print sheet already used. Where it is empty the notes move across intact,
+ * so nothing the coach typed is lost.
+ *
+ * Assignments are walked too: their snapshot froze both fields, and the session
+ * player reads the snapshot rather than the workout.
+ *
+ * Internal, idempotent, and it must run before the `notes` lines come out of
+ * `convex/schema.ts` — a document with a field the schema does not declare
+ * fails validation on deploy:
+ *
+ * ```
+ * bunx convex run library:collapseWorkoutNotes
+ * bunx convex run --prod library:collapseWorkoutNotes
+ * ```
+ */
+export const collapseWorkoutNotes = internalMutation({
+  args: {},
+  returns: v.object({ workouts: v.number(), assignments: v.number() }),
+  handler: async (ctx) => {
+    let workouts = 0;
+    for (const doc of await ctx.db.query("workouts").collect()) {
+      if (doc.notes === undefined) continue;
+      const merged = doc.instructions.trim() ? doc.instructions : doc.notes;
+      // `undefined` is how Convex removes a field, and the merge and the
+      // removal are one patch: a half-applied row would lose the text.
+      await ctx.db.patch("workouts", doc._id, { instructions: merged, notes: undefined });
+      workouts += 1;
+    }
+
+    let assignments = 0;
+    for (const doc of await ctx.db.query("assignments").collect()) {
+      const { notes, ...rest } = doc.snapshot;
+      if (notes === undefined) continue;
+      const merged = rest.instructions.trim() ? rest.instructions : notes;
+      // The snapshot is one value, so the whole object is rewritten without
+      // the key rather than patched field by field.
+      await ctx.db.patch("assignments", doc._id, {
+        snapshot: { ...rest, instructions: merged },
+      });
+      assignments += 1;
+    }
+
+    return { workouts, assignments };
   },
 });
 

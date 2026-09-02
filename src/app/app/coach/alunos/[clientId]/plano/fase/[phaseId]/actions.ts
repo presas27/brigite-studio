@@ -74,7 +74,7 @@ export async function buildWorkoutAction(
   const workoutId = await createPhaseWorkout(phaseId, {
     name,
     focus: String(formData.get("focus") ?? ""),
-    notes: String(formData.get("notes") ?? ""),
+    instructions: String(formData.get("instructions") ?? ""),
     workoutType: WORKOUT_TYPES.includes(rawType) ? rawType : "regular",
     estimatedMinutes: parseMinutesInput(String(formData.get("estimatedMinutes") ?? "")),
   });

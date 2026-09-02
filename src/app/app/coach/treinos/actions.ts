@@ -92,7 +92,7 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
   const id = await createWorkout({
     name,
     focus: textField(formData, "focus"),
-    notes: textField(formData, "notes"),
+    instructions: textField(formData, "instructions"),
     workoutType: workoutTypeField(formData),
     coachId: coach.id,
     estimatedMinutes: parseMinutesInput(textField(formData, "estimatedMinutes")),
@@ -101,6 +101,12 @@ export async function createWorkoutAction(formData: FormData): Promise<void> {
   redirect(await workoutPath(id));
 }
 
+/**
+ * Name, focus and duration, from the settings dialog. The instructions are
+ * deliberately absent: they are the builder's field, saved by
+ * `updateInstructionsAction`, and a dialog that posted an empty textarea it
+ * never showed would wipe them.
+ */
 export async function updateWorkoutAction(formData: FormData): Promise<void> {
   await requireCoach();
   const workoutId = idField(formData, "workoutId");
@@ -110,7 +116,6 @@ export async function updateWorkoutAction(formData: FormData): Promise<void> {
   await updateWorkout(workoutId, {
     name: name || undefined,
     focus: textField(formData, "focus"),
-    notes: textField(formData, "notes"),
     estimatedMinutes: parseMinutesInput(textField(formData, "estimatedMinutes")),
   });
   refresh();

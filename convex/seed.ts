@@ -276,7 +276,7 @@ export const masterWorkouts = internalMutation({
     async function template(
       name: string,
       focus: string,
-      notes: string,
+      instructions: string,
       blocks: {
         kind: "normal" | "circuit";
         label: string;
@@ -297,8 +297,7 @@ export const masterWorkouts = internalMutation({
       const workoutId = await insertWorkout(ctx, {
         name,
         focus,
-        notes,
-        instructions: "",
+        instructions,
         workoutType: "regular",
         coachId,
         clientId: null,
