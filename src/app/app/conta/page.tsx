@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Field } from "@/components/studio/Field";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
+import { InstallApp } from "@/components/studio/InstallApp";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { chip, chipAccent, eyebrow, field, muted, surface } from "@/components/studio/theme";
 import { currentUser } from "@/lib/studio/auth";
@@ -93,6 +94,8 @@ export default async function AccountPage({
         </div>
         <ThemeToggle initial={theme} />
       </section>
+
+      <InstallApp className={cn(surface, "p-5")} />
 
       {client && (
         <section className={cn(surface, "space-y-3 p-5")}>

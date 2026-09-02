@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { DemoSignIn } from "@/components/studio/DemoSignIn";
+import { InstallApp } from "@/components/studio/InstallApp";
 import { SignInForm } from "@/components/studio/SignInForm";
 import { SignUpForm } from "@/components/studio/SignUpForm";
 import { heading, muted } from "@/components/studio/theme";
@@ -74,6 +75,7 @@ export default async function SignInPage({
               <SignInForm next={safeNext} email={email} />
             </div>
             {process.env.STUDIO_DEMO === "1" && <DemoSignIn />}
+            <InstallApp className="mt-6 border-t border-cream/10 pt-6" />
           </>
         )}
 

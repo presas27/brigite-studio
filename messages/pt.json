@@ -1173,6 +1173,18 @@
       "empty": "Ainda não tens programas",
       "emptyHint": "Um programa é a forma de um bloco de treino — as fases e os treinos dentro delas — guardada para reutilizar.",
       "noResults": "Nada corresponde"
+    },
+    "install": {
+      "title": "No telemóvel",
+      "lead": "Instala a app no ecrã inicial: abre como qualquer outra, sem barra do browser.",
+      "install": "Instalar a app",
+      "installed": "A app está instalada. Abre-a a partir do ecrã inicial.",
+      "ios": {
+        "share": "No Safari, toca em Partilhar (o quadrado com a seta, em baixo).",
+        "add": "Escolhe “Adicionar ao ecrã principal”.",
+        "confirm": "Confirma em “Adicionar”. Pronto — o ícone fica ao lado das outras apps.",
+        "close": "Fechar"
+      }
     }
   },
   "Error": {

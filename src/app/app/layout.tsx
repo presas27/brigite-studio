@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { StudioConvexProvider } from "@/components/studio/ConvexProvider";
 import { getToken } from "@/lib/studio/auth-server";
 
@@ -22,6 +22,19 @@ import { getToken } from "@/lib/studio/auth-server";
 export const metadata: Metadata = {
   title: "Studio",
   robots: { index: false, follow: false, nocache: true },
+  // iOS reads these when the page is added to the home screen: no Safari
+  // chrome, a translucent status bar over the ink, and the short name under
+  // the icon. Android reads the manifest (`src/app/manifest.ts`) instead.
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Brigite's" },
+  // Next emits the standard `mobile-web-app-capable`; older iOS only reads
+  // the Apple-prefixed one, and it costs nothing to say both.
+  other: { "apple-mobile-web-app-capable": "yes" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#121114",
+  // Paint under the notch and the home indicator; the chrome pads itself.
+  viewportFit: "cover",
 };
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {

@@ -1173,6 +1173,18 @@
       "empty": "No programs yet",
       "emptyHint": "A program is the shape of a block of training — its phases and their workouts — kept to reuse.",
       "noResults": "Nothing matches"
+    },
+    "install": {
+      "title": "On your phone",
+      "lead": "Install the app on your home screen: it opens like any other, without the browser bar.",
+      "install": "Install the app",
+      "installed": "The app is installed. Open it from your home screen.",
+      "ios": {
+        "share": "In Safari, tap Share (the square with the arrow, at the bottom).",
+        "add": "Choose “Add to Home Screen”.",
+        "confirm": "Confirm with “Add”. Done — the icon sits next to your other apps.",
+        "close": "Close"
+      }
     }
   },
   "Error": {
