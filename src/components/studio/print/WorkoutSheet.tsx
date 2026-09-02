@@ -89,14 +89,22 @@ export async function WorkoutSheet({
       {blocks.map((block, blockIndex) => {
         const circuit = block.kind === "circuit" || block.kind === "interval";
         const grouped = block.kind !== "normal";
+        // The block's own name when it has one, and what it is when it has not.
+        // A named plain block ("Alongamentos") is a section on paper too; an
+        // unnamed one is just the next few exercises and needs no heading.
+        const name = block.label.trim();
+        const kind = circuit
+          ? `${tWorkouts("blockKind.circuit")} · ${tWorkouts("rounds", { count: block.rounds })}`
+          : grouped
+            ? tWorkouts("blockKind.superset")
+            : "";
+        const title = [name, kind].filter(Boolean).join(" · ");
 
         return (
           <section key={block.id} className={grouped ? "border-l-2 border-neutral-300 pl-3" : ""}>
-            {grouped && (
+            {title && (
               <h2 className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                {circuit
-                  ? `${tWorkouts("blockKind.circuit")} · ${tWorkouts("rounds", { count: block.rounds })}`
-                  : tWorkouts("blockKind.superset")}
+                {title}
               </h2>
             )}
 

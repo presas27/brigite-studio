@@ -54,15 +54,10 @@ export default async function PrintWorkoutPage({
 
   const format: PrintFormat = isPrintFormat(query.formato) ? query.formato : "completo";
   const sections = sectionsFor(format, query.secoes);
-  // The builder shows the groups first and the ungrouped list last, whatever
-  // positions those blocks happen to hold — the loose block is pushed past
-  // every new group as it is created. The sheet reads in the same order, or it
-  // is a different workout on paper than the one on screen.
-  const ordered = [...workout.blocks].sort((a, b) => a.position - b.position);
-  const blocks = [
-    ...ordered.filter((block) => block.kind !== "normal"),
-    ...ordered.filter((block) => block.kind === "normal"),
-  ];
+  // Position is the running order, and the builder shows nothing outside a
+  // block: the sheet reads top to bottom in the same order, or it is a
+  // different workout on paper than the one on screen.
+  const blocks = [...workout.blocks].sort((a, b) => a.position - b.position);
   const subtitle = `${client.name} · ${tWorkouts(`type.${workout.workoutType}`)}`;
 
   if (format === "progresso") {

@@ -12,7 +12,7 @@ type Props = {
   workoutId: string;
   rows: ExerciseSlot[];
   view: View;
-  /** Grid columns, `list` ignores it. Groups sit inside a card and get fewer. */
+  /** Grid columns, `list` ignores it. A block sits inside a card and gets fewer. */
   dense?: boolean;
   circuit: boolean;
   selectedIds: Set<string>;
@@ -33,8 +33,8 @@ type Props = {
  *
  * Both views carry the same behaviour — selection, drag, keyboard nudge, the
  * details dialog — because they are the same list read two ways, not two
- * features. Keeping the choice here rather than in `GroupCard` and the loose
- * section separately is what stops the two from drifting apart.
+ * features. Keeping the choice here rather than in every `BlockCard` is what
+ * stops the two from drifting apart.
  *
  * **Grid** lays the pictures out horizontally: the view for reading the shape
  * of a session. **List** stacks them: the view for reading its numbers, and

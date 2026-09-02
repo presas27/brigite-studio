@@ -1,6 +1,6 @@
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { addExerciseAction, addLooseExerciseAction } from "@/app/app/coach/treinos/actions";
+import { addExerciseAction, appendExerciseAction } from "@/app/app/coach/treinos/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Modal } from "@/components/studio/Modal";
@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 
 /**
  * Add exercises without leaving the builder: type two letters, click the
- * picture. The dialog stays open after each pick, because a group is almost
+ * picture. The dialog stays open after each pick, because a block is almost
  * never one exercise and reopening it four times is the slow way to build a
  * circuit.
  *
- * With a `blockId` the picks land in that group; without one they land in the
- * loose list — the same picker serves both, since adding an exercise is the
- * same gesture everywhere in the builder.
+ * With a `blockId` the picks land in that block; without one — the toolbar's
+ * copy of the picker — they land at the end of the workout. The same picker
+ * serves both, since adding an exercise is the same gesture everywhere in the
+ * builder.
  */
 export function ExercisePicker({
   workoutId,
@@ -60,7 +61,7 @@ export function ExercisePicker({
     setAdded((current) => [...current, exerciseId]);
     startTransition(async () => {
       if (blockId) await addExerciseAction(workoutId, blockId, exerciseId);
-      else await addLooseExerciseAction(workoutId, exerciseId);
+      else await appendExerciseAction(workoutId, exerciseId);
     });
   }
 

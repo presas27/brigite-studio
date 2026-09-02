@@ -231,60 +231,46 @@ async function appendBlock(
 }
 
 /**
- * Exercises that belong to no group. Every workout has exactly one of these:
- * the `normal` block, kept after every group so the builder reads "groups, then
- * whatever is still loose".
+ * Where a loose add lands: the workout's last block when that block is a plain
+ * one, and a new plain block appended after it otherwise.
  *
- * Created on demand, and consolidated when it has to be: the block-first builder
- * this replaced let a coach add several plain blocks to one workout, and an
- * exercise-first list has one place for ungrouped work, not three. The extra
- * blocks' exercises are folded into the survivor rather than dropped.
+ * Every block is first-class — a plain block is "these exercises in this order,
+ * each with its own sets", a superset or circuit is the same list read a
+ * different way — so there is no single ungrouped bucket any more. What is left
+ * is the question "an exercise arrived with no block named: where does it go?",
+ * and the answer is the end of the workout, without ever appending into
+ * somebody's circuit.
  */
-async function looseBlock(
+async function tailBlock(
   ctx: MutationCtx,
   workoutId: Id<"workouts">,
 ): Promise<Id<"workoutBlocks">> {
-  const blocks = await ctx.db
+  const last = await ctx.db
     .query("workoutBlocks")
     .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
-    .collect();
-  // `kind` is not part of the index and does not need to be: a workout's blocks
-  // are a handful of rows, already ordered by position.
-  const normals = blocks.filter((block) => block.kind === "normal");
+    .order("desc")
+    .first();
+  if (last && last.kind === "normal") return last._id;
 
-  if (normals.length === 0) {
-    const blockId = await appendBlock(ctx, workoutId, { kind: "normal" });
-    await touchWorkout(ctx, workoutId);
-    return blockId;
-  }
-  if (normals.length === 1) return normals[0]._id;
-
-  const [keeper, ...extras] = normals;
-  const merged: Id<"workoutItems">[] = [];
-  for (const block of normals) merged.push(...(await itemIdsOf(ctx, block._id)));
-  await renumber(ctx, keeper._id, merged);
-  for (const extra of extras) await ctx.db.delete("workoutBlocks", extra._id);
+  const blockId = await appendBlock(ctx, workoutId, { kind: "normal" });
   await touchWorkout(ctx, workoutId);
-  return keeper._id;
+  return blockId;
 }
 
 /**
- * Groups left empty by a regroup are noise, not structure — a "Super set 2" with
- * nothing in it would still take a number. The loose block survives empty
- * because `looseBlock` would only recreate it.
+ * Write `0, 1, 2…` onto the blocks in the order given, touching only the rows
+ * that actually move. Position is the only thing on-screen order is derived
+ * from, so an insertion in the middle is expressed as a full renumber rather
+ * than as fractional positions.
  */
-async function dropEmptyGroups(ctx: MutationCtx, workoutId: Id<"workouts">): Promise<void> {
-  const blocks = await ctx.db
-    .query("workoutBlocks")
-    .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
-    .collect();
-  for (const block of blocks) {
-    if (block.kind === "normal") continue;
-    const first = await ctx.db
-      .query("workoutItems")
-      .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
-      .first();
-    if (!first) await ctx.db.delete("workoutBlocks", block._id);
+async function orderBlocks(
+  ctx: MutationCtx,
+  ordered: Id<"workoutBlocks">[],
+): Promise<void> {
+  for (const [position, blockId] of ordered.entries()) {
+    const block = await ctx.db.get("workoutBlocks", blockId);
+    if (!block || block.position === position) continue;
+    await ctx.db.patch("workoutBlocks", blockId, { position });
   }
 }
 
@@ -923,23 +909,34 @@ export const backfillLibraryCategory = internalMutation({
   },
 });
 
-/* --------------------------------------------------- supersets and circuits */
+/* --------------------------------------------------------- blocks, grouped */
 
-/** The workout's one ungrouped block, created or consolidated as needed. */
-export const looseBlockId = mutation({
+/**
+ * The block an exercise added with no block named lands in. See `tailBlock`:
+ * the last plain block, or a new one appended after whatever is there.
+ */
+export const tailBlockId = mutation({
   args: { workoutId: v.id("workouts") },
   returns: v.string(),
   handler: async (ctx, args) => {
     await requireCoach(ctx);
-    return looseBlock(ctx, args.workoutId);
+    return tailBlock(ctx, args.workoutId);
   },
 });
 
 /**
- * Pull `itemIds` out of wherever they sit and into one new group, in the order
- * given. The group is appended after every existing block and the loose block is
- * then pushed past it, which keeps two things true at once: groups stay in the
- * order they were created, and the ungrouped list stays last.
+ * Turn `itemIds` into one new superset or circuit block, in the order given.
+ *
+ * The new block is placed **where the selection already was**, not at the end
+ * of the workout: the block holding the first selected exercise is split at
+ * that exercise, what came before it stays put, what came after it moves into a
+ * plain block of its own, and the group goes between the two. Appending was
+ * what made a circuit impossible to place — it landed below the stretches it
+ * was meant to precede and no amount of moving could fix it, because the
+ * ungrouped exercises were not blocks and could not move at all.
+ *
+ * Blocks the selection emptied are deleted; a block that was already empty is
+ * left alone, because the coach put it there to fill.
  *
  * `null` when fewer than two exercises were selected: a group of one is just an
  * exercise.
@@ -956,14 +953,36 @@ export const groupItems = mutation({
     await requireCoach(ctx);
     if (args.itemIds.length < 2) return null;
 
-    // Order matters: the loose block may not exist yet, and creating it moves
-    // the last position the new group is placed after.
-    const loose = await looseBlock(ctx, args.workoutId);
-    const last = await lastBlockPosition(ctx, args.workoutId);
+    const blocks = await ctx.db
+      .query("workoutBlocks")
+      .withIndex("by_workout_and_position", (q) => q.eq("workoutId", args.workoutId))
+      .collect();
+    // Every list is read before anything is written: the writes below move items
+    // between these very blocks, so a second read would see them half-moved.
+    const itemsByBlock = new Map<Id<"workoutBlocks">, Id<"workoutItems">[]>();
+    for (const block of blocks) itemsByBlock.set(block._id, await itemIdsOf(ctx, block._id));
 
-    const blockId = await ctx.db.insert("workoutBlocks", {
+    const chosen = new Set<string>(args.itemIds);
+    let anchorIndex = -1;
+    let splitAt = 0;
+    for (const [index, block] of blocks.entries()) {
+      const at = (itemsByBlock.get(block._id) ?? []).findIndex((id) => chosen.has(id));
+      if (at < 0) continue;
+      anchorIndex = index;
+      splitAt = at;
+      break;
+    }
+    if (anchorIndex < 0) return null;
+
+    const anchorItems = itemsByBlock.get(blocks[anchorIndex]._id) ?? [];
+    const head = anchorItems.slice(0, splitAt);
+    const tail = anchorItems.slice(splitAt).filter((id) => !chosen.has(id));
+
+    // Positions here are provisional — `orderBlocks` writes the real ones once
+    // the whole sequence is known.
+    const groupId = await ctx.db.insert("workoutBlocks", {
       workoutId: args.workoutId,
-      position: last + 1,
+      position: (await lastBlockPosition(ctx, args.workoutId)) + 1,
       kind: args.kind,
       label: "",
       // Rounds are a circuit's idea. A superset is one pass through its
@@ -971,50 +990,50 @@ export const groupItems = mutation({
       rounds: args.kind === "circuit" ? whole(args.rounds ?? 3, 1) : 1,
       restSeconds: 60,
     });
-    await ctx.db.patch("workoutBlocks", loose, { position: last + 2 });
-    await renumber(ctx, blockId, args.itemIds);
-    await dropEmptyGroups(ctx, args.workoutId);
-    await touchWorkout(ctx, args.workoutId);
-    return blockId;
-  },
-});
+    await renumber(ctx, groupId, args.itemIds);
 
-/**
- * Break a group up: its exercises go back to the loose list, in order, and the
- * group itself goes away. The inverse of `groupItems`.
- */
-export const ungroupBlock = mutation({
-  args: { blockId: v.id("workoutBlocks") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await requireCoach(ctx);
-    const workoutId = await workoutIdForBlock(ctx, args.blockId);
-    if (!workoutId) return null;
+    // The remainder of the split block is the same section as the block it came
+    // from, so it keeps its name — but only when the original is going away
+    // with the selection, or the workout would show the name twice.
+    const tailId =
+      tail.length > 0
+        ? await appendBlock(ctx, args.workoutId, {
+            kind: "normal",
+            label: head.length === 0 ? blocks[anchorIndex].label : "",
+            restSeconds: blocks[anchorIndex].restSeconds,
+          })
+        : null;
+    if (tailId) await renumber(ctx, tailId, tail);
 
-    // Consolidating the loose list can itself delete a block, so the target is
-    // re-read afterwards: a `DELETE … WHERE id = ?` on a row that is already
-    // gone was a no-op in SQLite and throws here.
-    const loose = await looseBlock(ctx, workoutId);
-    if (loose !== args.blockId && (await ctx.db.get("workoutBlocks", args.blockId))) {
-      const looseItems = await itemIdsOf(ctx, loose);
-      const moving = await itemIdsOf(ctx, args.blockId);
-      await renumber(ctx, loose, [...looseItems, ...moving]);
-      await ctx.db.delete("workoutBlocks", args.blockId);
+    const ordered: Id<"workoutBlocks">[] = [];
+    for (const [index, block] of blocks.entries()) {
+      const before = itemsByBlock.get(block._id) ?? [];
+      const kept = index === anchorIndex ? head : before.filter((id) => !chosen.has(id));
+      if (kept.length === 0 && before.length > 0) {
+        await ctx.db.delete("workoutBlocks", block._id);
+      } else {
+        if (kept.length < before.length) await renumber(ctx, block._id, kept);
+        ordered.push(block._id);
+      }
+      if (index === anchorIndex) {
+        ordered.push(groupId);
+        if (tailId) ordered.push(tailId);
+      }
     }
-    await touchWorkout(ctx, workoutId);
-    return null;
+    await orderBlocks(ctx, ordered);
+    await touchWorkout(ctx, args.workoutId);
+    return groupId;
   },
 });
 
 /**
- * Move a group one slot up or down among the workout's other groups, exercises
- * and all: a superset or circuit is one thing on the screen, so it reorders as
- * one thing.
+ * Move a block one slot up or down, exercises and all: a block is one thing on
+ * the screen, so it reorders as one thing.
  *
- * Only groups take part. The loose block is the tail of the list by
- * construction — `groupItems` pushes it past every new group — so it is
- * filtered out before the neighbour is chosen rather than swapped into the
- * middle, which would strand the ungrouped exercises above a circuit.
+ * Every block takes part, plain ones included. That is the difference between
+ * this builder and the one before it — an exercise sequence is a block like any
+ * other, so a warm-up can be dragged under the stretches it belongs after
+ * without regrouping anything.
  */
 export const moveBlock = mutation({
   args: {
@@ -1027,20 +1046,26 @@ export const moveBlock = mutation({
   handler: async (ctx, args) => {
     await requireCoach(ctx);
     const block = await ctx.db.get("workoutBlocks", args.blockId);
-    if (!block || block.kind === "normal") return null;
+    if (!block) return null;
 
-    // Already ordered by the index, so the groups are in screen order.
-    const blocks = await ctx.db
-      .query("workoutBlocks")
-      .withIndex("by_workout_and_position", (q) => q.eq("workoutId", block.workoutId))
-      .collect();
-    const groups = blocks.filter((candidate) => candidate.kind !== "normal");
+    // The nearest neighbour on the chosen side, straight off the position index.
+    const neighbour =
+      args.direction < 0
+        ? await ctx.db
+            .query("workoutBlocks")
+            .withIndex("by_workout_and_position", (q) =>
+              q.eq("workoutId", block.workoutId).lt("position", block.position),
+            )
+            .order("desc")
+            .first()
+        : await ctx.db
+            .query("workoutBlocks")
+            .withIndex("by_workout_and_position", (q) =>
+              q.eq("workoutId", block.workoutId).gt("position", block.position),
+            )
+            .first();
+    if (!neighbour) return null;
 
-    const index = groups.findIndex((candidate) => candidate._id === block._id);
-    const target = index + args.direction;
-    if (index < 0 || target < 0 || target >= groups.length) return null;
-
-    const neighbour = groups[target];
     await ctx.db.patch("workoutBlocks", neighbour._id, { position: block.position });
     await ctx.db.patch("workoutBlocks", block._id, { position: neighbour.position });
     await touchWorkout(ctx, block.workoutId);

@@ -336,27 +336,21 @@ export async function setWorkoutLibraryCategory(
   });
 }
 
-/* --------------------------------------------------- supersets and circuits */
+/* --------------------------------------------------------- blocks, grouped */
 
 /**
- * Exercises that belong to no group. Every workout has exactly one of these:
- * the `normal` block, kept after every group so the builder reads "groups,
- * then whatever is still loose".
- *
- * Created on demand, and consolidated when it has to be: the block-first
- * builder this replaced let a coach add several plain blocks to one workout,
- * and an exercise-first list has one place for ungrouped work, not three. The
- * extra blocks' exercises are folded into the survivor rather than dropped.
+ * The block an exercise added with no block named lands in: the workout's last
+ * plain block, or a new one appended after whatever is there — never somebody's
+ * circuit.
  */
-export async function looseBlockId(workoutId: string): Promise<string> {
-  return sm(api.library.looseBlockId, { workoutId: workoutId as Id<"workouts"> });
+export async function tailBlockId(workoutId: string): Promise<string> {
+  return sm(api.library.tailBlockId, { workoutId: workoutId as Id<"workouts"> });
 }
 
 /**
- * Pull `itemIds` out of wherever they sit and into one new group, in the order
- * given. The group is appended after every existing block and the loose block
- * is then pushed past it, which keeps two things true at once: groups stay in
- * the order they were created, and the ungrouped list stays last.
+ * Turn `itemIds` into one new superset or circuit block, in the order given and
+ * in the place the selection already occupied: the block holding the first
+ * selected exercise is split at it, and the group goes into the gap.
  *
  * Returns the new block id, or `undefined` when fewer than two exercises were
  * selected: a group of one is just an exercise.
@@ -377,16 +371,8 @@ export async function groupItems(
 }
 
 /**
- * Break a group up: its exercises go back to the loose list, in order, and the
- * group itself goes away. The inverse of `groupItems`.
- */
-export async function ungroupBlock(blockId: string): Promise<void> {
-  await sm(api.library.ungroupBlock, { blockId: blockId as Id<"workoutBlocks"> });
-}
-
-/**
- * Move a group one slot up or down among the workout's other groups, exercises
- * and all. The loose block never takes part: it stays last.
+ * Move a block one slot up or down, exercises and all. Every block takes part,
+ * plain exercise sequences included.
  */
 export async function moveBlock(blockId: string, direction: -1 | 1): Promise<void> {
   await sm(api.library.moveBlock, { blockId: blockId as Id<"workoutBlocks">, direction });

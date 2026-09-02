@@ -13,13 +13,12 @@ import {
   duplicateWorkout,
   findWorkout,
   groupItems,
-  looseBlockId,
   moveBlock,
   moveItem,
   removeBlock,
   removeItem,
   reorderItems,
-  ungroupBlock,
+  tailBlockId,
   updateBlock,
   updateItem,
   updateWorkout,
@@ -150,52 +149,35 @@ export async function duplicateWorkoutAction(formData: FormData): Promise<void> 
   refresh();
 }
 
-export async function addBlockAction(formData: FormData): Promise<void> {
+/**
+ * Append an empty plain block. Blocks are the unit the builder works in — a
+ * plain one is an exercise sequence, a superset or circuit is the same list
+ * read a different way — so "new block" is how a coach starts a section.
+ */
+export async function addBlockAction(workoutId: string): Promise<void> {
   await requireCoach();
-  const workoutId = idField(formData, "workoutId");
   if (!workoutId) return;
-
-  await addBlock(workoutId, {
-    kind: textField(formData, "kind") as BlockKind,
-    label: textField(formData, "label"),
-    rounds: intField(formData, "rounds"),
-    restSeconds: intField(formData, "restSeconds"),
-  });
+  await addBlock(workoutId, { kind: "normal" });
   refresh();
 }
 
-export async function updateBlockAction(formData: FormData): Promise<void> {
+/** The block's own name — "Aquecimento", "Alongamentos". Blank is fine. */
+export async function setBlockLabelAction(
+  workoutId: string,
+  blockId: string,
+  label: string,
+): Promise<void> {
   await requireCoach();
-  const workoutId = idField(formData, "workoutId");
-  const blockId = idField(formData, "blockId");
   if (!workoutId || !blockId) return;
-
-  await updateBlock(blockId, {
-    kind: textField(formData, "kind") as BlockKind,
-    label: textField(formData, "label"),
-    rounds: intField(formData, "rounds"),
-    restSeconds: intField(formData, "restSeconds"),
-  });
+  await updateBlock(blockId, { label });
   refresh();
 }
 
-export async function removeBlockAction(formData: FormData): Promise<void> {
+/** Remove a block and, with it, the exercises inside it. */
+export async function removeBlockAction(workoutId: string, blockId: string): Promise<void> {
   await requireCoach();
-  const workoutId = idField(formData, "workoutId");
-  const blockId = idField(formData, "blockId");
   if (!workoutId || !blockId) return;
   await removeBlock(blockId);
-  refresh();
-}
-
-export async function addItemAction(formData: FormData): Promise<void> {
-  await requireCoach();
-  const workoutId = idField(formData, "workoutId");
-  const blockId = idField(formData, "blockId");
-  const exerciseId = idField(formData, "exerciseId");
-  if (!workoutId || !blockId || !exerciseId) return;
-
-  await addItem(blockId, { exerciseId });
   refresh();
 }
 
@@ -296,35 +278,36 @@ export async function moveItemDownAction(formData: FormData): Promise<void> {
   refresh();
 }
 
-/* ----------------------------------------------- supersets and circuits */
+/* ------------------------------------------------------- grouping and order */
 
 /**
- * Add an exercise to the ungrouped list. The builder's "Add exercise" button
- * sits outside every group, so this is where a new exercise lands until the
- * coach combines it with another one.
+ * Add an exercise with no block named — the toolbar's "Add exercise", as
+ * opposed to a block's own picker. It lands at the end of the workout, in the
+ * last plain block or in a new one, never inside somebody's circuit.
  */
-export async function addLooseExerciseAction(
+export async function appendExerciseAction(
   workoutId: string,
   exerciseId: string,
 ): Promise<void> {
   await requireCoach();
   if (!workoutId || !exerciseId) return;
-  await addItem(await looseBlockId(workoutId), { exerciseId });
+  await addItem(await tailBlockId(workoutId), { exerciseId });
   refresh();
 }
 
-/** Insert a rest row at the end of the ungrouped list. */
+/** Insert a rest row at the end of the workout, same rule as above. */
 export async function addRestAction(workoutId: string): Promise<void> {
   await requireCoach();
   if (!workoutId) return;
-  await addItem(await looseBlockId(workoutId), { kind: "rest", seconds: 60 });
+  await addItem(await tailBlockId(workoutId), { kind: "rest", seconds: 60 });
   refresh();
 }
 
 /**
  * Combine the selected exercises into a super set (two exercises back to back)
- * or a circuit (three or more, repeated for a number of rounds). Fewer than two
- * selected is a no-op — `groupItems` refuses it.
+ * or a circuit (three or more, repeated for a number of rounds). The new block
+ * takes the place the selection held. Fewer than two selected is a no-op —
+ * `groupItems` refuses it.
  */
 export async function groupItemsAction(
   workoutId: string,
@@ -338,20 +321,12 @@ export async function groupItemsAction(
   refresh();
 }
 
-/** Break a group up, returning its exercises to the ungrouped list. */
-export async function ungroupBlockAction(workoutId: string, blockId: string): Promise<void> {
-  await requireCoach();
-  if (!workoutId || !blockId) return;
-  await ungroupBlock(blockId);
-  refresh();
-}
-
 /**
- * Move a whole group one slot up or down. Typed rather than form-encoded for
- * the same reason as `reorderItemsAction`: it is fired from a transition after
- * the group has already moved on screen.
+ * Move a whole block one slot up or down, plain blocks included. Typed rather
+ * than form-encoded for the same reason as `reorderItemsAction`: it is fired
+ * from a transition after the block has already moved on screen.
  */
-export async function moveGroupAction(
+export async function moveBlockAction(
   workoutId: string,
   blockId: string,
   direction: -1 | 1,

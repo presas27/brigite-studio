@@ -3,9 +3,10 @@
 import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import {
+  addBlockAction,
   addRestAction,
   groupItemsAction,
-  moveGroupAction,
+  moveBlockAction,
   reorderItemsAction,
   updateInstructionsAction,
 } from "@/app/app/coach/treinos/actions";
@@ -16,27 +17,32 @@ import { usePersistedView } from "@/components/studio/usePersistedView";
 import { ViewToggle } from "@/components/studio/ViewToggle";
 import { isRestItem, type Exercise, type Workout, type WorkoutBlock } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
-import { ExerciseList } from "./ExerciseList";
+import { BlockCard } from "./BlockCard";
 import { ExercisePicker } from "./ExercisePicker";
-import { GroupCard } from "./GroupCard";
 
 /**
- * The construction screen for a `regular` workout: instructions, then a flat,
- * checkbox-selectable list of exercises that the coach groups into supersets
- * and circuits two or more at a time. There is no "add block" any more —
- * every exercise starts loose and joins a group only when the coach asks.
+ * The construction screen for a workout: instructions, then the workout's
+ * blocks, top to bottom, in the order they are performed.
  *
- * Two views, same list and same behaviour: the horizontal picture grid, for
+ * Everything is a block. A plain block is a sequence — three sets of this, then
+ * three sets of that; a superset or circuit is the same list read a different
+ * way, with the round count replacing the per-exercise sets. Nothing floats
+ * outside a block any more, which is what makes the running order editable at
+ * all: a block moves as one thing, and the ungrouped list this replaced could
+ * not move, so a circuit typed first was stuck above the stretches it belonged
+ * after.
+ *
+ * Two views, same blocks and same behaviour: the horizontal picture grid, for
  * reading the shape of a session, and the stacked rows, for reading its
  * numbers. The choice is the coach's and it sticks — see `usePersistedView`,
  * the same preference the libraries keep.
  *
- * The drag machinery lives here rather than in a child because a drag can
- * cross groups: the order of every block is one piece of state, so a card
- * dropped into a neighbouring group is a single move rather than a remove
- * plus an add. The drop is applied on screen first and posted inside a
- * transition — the server answer arrives as new props and overwrites the
- * draft, so a rejected move snaps back instead of lying.
+ * The drag machinery lives here rather than in a child because a drag can cross
+ * blocks: the order of every block is one piece of state, so a card dropped
+ * into a neighbouring block is a single move rather than a remove plus an add.
+ * The drop is applied on screen first and posted inside a transition — the
+ * server answer arrives as new props and overwrites the draft, so a rejected
+ * move snaps back instead of lying.
  */
 export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exercises: Exercise[] }) {
   const t = useTranslations("Studio.workouts");
@@ -48,34 +54,15 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
   const [view, setView] = usePersistedView("studio.workout.builder.view");
   const [, startTransition] = useTransition();
 
-  const groups = useMemo(
-    () => draft.filter((block) => block.kind !== "normal").sort((a, b) => a.position - b.position),
-    [draft],
-  );
-
-  /**
-   * The ungrouped list. Plural `normal` blocks are possible on a workout built
-   * with the old block-first builder, and their exercises must all show up
-   * here or they would simply vanish from the screen. The first one is the
-   * drop target; the data layer folds the rest into it on the next write.
-   */
-  const looseRows = useMemo(
-    () =>
-      draft
-        .filter((block) => block.kind === "normal")
-        .sort((a, b) => a.position - b.position)
-        .flatMap((block) => block.items.map((item) => ({ item, blockId: block.id }))),
-    [draft],
-  );
-  const looseTargetId = looseRows[0]?.blockId ?? draft.find((b) => b.kind === "normal")?.id ?? null;
+  const blocks = useMemo(() => [...draft].sort((a, b) => a.position - b.position), [draft]);
   const total = draft.reduce((sum, block) => sum + block.items.length, 0);
 
-  // The order a grouping action posts ids in: groups first, then the loose
-  // list, each in on-screen order — not the order the coach happened to click.
-  const orderedItemIds = useMemo(() => {
-    const ids = groups.flatMap((block) => block.items.map((item) => item.id));
-    return [...ids, ...looseRows.map((row) => row.item.id)];
-  }, [groups, looseRows]);
+  // The order a grouping action posts ids in: on-screen order, block by block —
+  // not the order the coach happened to click.
+  const orderedItemIds = useMemo(
+    () => blocks.flatMap((block) => block.items.map((item) => item.id)),
+    [blocks],
+  );
 
   /** Show a new arrangement at once, then persist the target block's order. */
   function commit(next: WorkoutBlock[], targetBlockId: string) {
@@ -123,18 +110,17 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
   }
 
   /**
-   * Move a whole group one slot among the groups — the card and every exercise
-   * in it, as one move. Two positions are swapped rather than the list
-   * renumbered, because position is the only thing on-screen order is derived
-   * from; the loose block keeps its own and therefore stays last.
+   * Move a whole block one slot — the card and every exercise in it, as one
+   * move. Two positions are swapped rather than the list renumbered, because
+   * position is the only thing on-screen order is derived from.
    */
-  function moveGroup(blockId: string, delta: -1 | 1) {
-    const index = groups.findIndex((block) => block.id === blockId);
+  function moveBlock(blockId: string, delta: -1 | 1) {
+    const index = blocks.findIndex((block) => block.id === blockId);
     const target = index + delta;
-    if (index < 0 || target < 0 || target >= groups.length) return;
+    if (index < 0 || target < 0 || target >= blocks.length) return;
 
-    const from = groups[index];
-    const to = groups[target];
+    const from = blocks[index];
+    const to = blocks[target];
     const next = draft.map((block) => {
       if (block.id === from.id) return { ...block, position: to.position };
       if (block.id === to.id) return { ...block, position: from.position };
@@ -142,7 +128,7 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
     });
     startTransition(async () => {
       applyDraft(next);
-      await moveGroupAction(workout.id, blockId, delta);
+      await moveBlockAction(workout.id, blockId, delta);
     });
   }
 
@@ -157,7 +143,10 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
     });
   }
 
-  /** Combine the current selection and clear it — the selection never survives past the click. */
+  /**
+   * Combine the current selection into a block of its own, where the selection
+   * already sits, and clear it — the selection never survives past the click.
+   */
   function groupSelection(kind: "superset" | "circuit") {
     const restIds = new Set(
       draft.flatMap((block) => block.items).filter(isRestItem).map((item) => item.id),
@@ -206,19 +195,18 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
           </div>
         </div>
 
-        {total === 0 && <Empty title={t("noExercises")} hint={t("noExercisesHint")} />}
+        {blocks.length === 0 && <Empty title={t("noExercises")} hint={t("noExercisesHint")} />}
 
         <div className="space-y-3">
-          {groups.map((block, index) => (
-            <GroupCard
+          {blocks.map((block, index) => (
+            <BlockCard
               key={block.id}
               workoutId={workout.id}
               block={block}
-              rounds={block.rounds}
               exercises={exercises}
               canMoveUp={index > 0}
-              canMoveDown={index < groups.length - 1}
-              onMoveAction={(delta) => moveGroup(block.id, delta)}
+              canMoveDown={index < blocks.length - 1}
+              onMoveAction={(delta) => moveBlock(block.id, delta)}
               selection={{ selected: selectedIds, onToggleAction: toggleSelected }}
               view={view}
               draggingId={dragging?.itemId ?? null}
@@ -234,64 +222,48 @@ export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exerc
               onNudgeAction={nudge}
             />
           ))}
-
-          {looseTargetId && looseRows.length > 0 && (
-            <div
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                drop(looseTargetId, "end");
-              }}
-              className={cn(groups.length > 0 && "border-t border-cream/10 pt-3")}
-            >
-              <ExerciseList
-                workoutId={workout.id}
-                rows={looseRows}
-                view={view}
-                circuit={false}
-                selectedIds={selectedIds}
-                onToggleAction={toggleSelected}
-                draggingId={dragging?.itemId ?? null}
-                overId={overId}
-                onDragStartAction={(itemId, blockId) => setDragging({ itemId, blockId })}
-                onDragEndAction={() => {
-                  setDragging(null);
-                  setOverId(null);
-                }}
-                onDragOverAction={setOverId}
-                onDropOnAction={(blockId, index) => drop(blockId, index)}
-                onNudgeAction={nudge}
-              />
-            </div>
-          )}
         </div>
 
-        {selectedIds.size < 2 ? (
-          <p className={muted}>{t("groupHint")}</p>
-        ) : (
-          <div className={cn(surface, "sticky bottom-4 z-10 flex items-center gap-2 p-3")}>
-            <span className="font-sans text-sm font-semibold text-cream">
-              {t("groupSelected", { count: selectedIds.size })}
-            </span>
-            <button
-              type="button"
-              onClick={() => groupSelection("superset")}
-              className={cn(buttonGhost, "px-4 py-2 text-xs")}
-            >
-              {t("groupAsSuperset")}
-            </button>
-            <button
-              type="button"
-              onClick={() => groupSelection("circuit")}
-              className={cn(buttonGhost, "px-4 py-2 text-xs")}
-            >
-              {t("groupAsCircuit")}
-            </button>
-            <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonQuiet}>
-              {t("clearSelection")}
-            </button>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => startTransition(() => addBlockAction(workout.id))}
+          className={cn(buttonGhost, "w-full gap-1.5 px-4 py-3 text-xs")}
+        >
+          <Icon name="plus" className="h-4 w-4" />
+          {t("addBlock")}
+        </button>
+
+        {total > 0 &&
+          (selectedIds.size < 2 ? (
+            <p className={muted}>{t("groupHint")}</p>
+          ) : (
+            <div className={cn(surface, "sticky bottom-4 z-10 flex items-center gap-2 p-3")}>
+              <span className="font-sans text-sm font-semibold text-cream">
+                {t("groupSelected", { count: selectedIds.size })}
+              </span>
+              <button
+                type="button"
+                onClick={() => groupSelection("superset")}
+                className={cn(buttonGhost, "px-4 py-2 text-xs")}
+              >
+                {t("groupAsSuperset")}
+              </button>
+              <button
+                type="button"
+                onClick={() => groupSelection("circuit")}
+                className={cn(buttonGhost, "px-4 py-2 text-xs")}
+              >
+                {t("groupAsCircuit")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className={buttonQuiet}
+              >
+                {t("clearSelection")}
+              </button>
+            </div>
+          ))}
       </div>
     </div>
   );
