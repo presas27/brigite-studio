@@ -2,7 +2,6 @@ import { CoachChrome } from "@/components/studio/coach/CoachChrome";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { requireCoach } from "@/lib/studio/auth";
 import { coachAlerts, unreadTotal } from "@/lib/studio/coaching";
-import { listLeads } from "@/lib/studio/leads";
 import { getThemeMode } from "@/lib/studio/theme-mode";
 
 /**
@@ -15,16 +14,14 @@ import { getThemeMode } from "@/lib/studio/theme-mode";
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const coach = await requireCoach();
 
-  const [unreadMessages, newLeads, alerts, themeMode] = await Promise.all([
+  const [unreadMessages, alerts, themeMode] = await Promise.all([
     unreadTotal(),
-    listLeads("new").then((leads) => leads.length),
     coachAlerts(),
     getThemeMode(),
   ]);
 
   const badges: Record<string, number> = {};
   if (unreadMessages > 0) badges["/app/coach/mensagens"] = unreadMessages;
-  if (newLeads > 0) badges["/app/coach/leads"] = newLeads;
 
   return (
     <CoachChrome

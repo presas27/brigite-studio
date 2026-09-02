@@ -139,7 +139,6 @@
     "nav": {
       "today": "Today",
       "clients": "Clients",
-      "leads": "Leads",
       "workouts": "Workouts",
       "plan": "Plan",
       "calendar": "Calendar",
@@ -153,7 +152,6 @@
       "sections": {
         "coaching": "Coaching",
         "library": "Library",
-        "business": "Business",
         "training": "Training",
         "progress": "Numbers"
       },
@@ -400,35 +398,6 @@
         "edit": "Edit workout",
         "note": "Any workout, any day. The plan shows the suggested day for each one."
       }
-    },
-    "leads": {
-      "title": "Leads",
-      "all": "All",
-      "statusLabel": "Status",
-      "status": {
-        "new": "New",
-        "talking": "Talking",
-        "won": "Won",
-        "lost": "Lost"
-      },
-      "source": {
-        "site": "Site",
-        "instagram": "Instagram",
-        "referral": "Referral",
-        "walkin": "Walk-in"
-      },
-      "message": "What they wrote",
-      "noMessage": "No message.",
-      "notesLabel": "Notes",
-      "notesHint": "Only you see this.",
-      "reply": "Reply by email",
-      "convert": "Create client",
-      "convertHint": "Creates the account on the plan they asked about and emails them their sign-in link.",
-      "openClient": "Open client",
-      "empty": "No leads yet.",
-      "emptyHint": "Anyone who fills in the site's form shows up here.",
-      "emptyFiltered": "No leads in this state.",
-      "mock": "Sample leads. Not wired to the site's form yet."
     },
     "clients": {
       "title": "Clients",

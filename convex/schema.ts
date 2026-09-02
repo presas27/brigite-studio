@@ -511,34 +511,4 @@ export default defineSchema({
   })
     .index("by_client_and_date", ["clientId", "date"])
     .index("by_client_and_kind", ["clientId", "kind"]),
-
-  /**
-   * An enquiry from the marketing site, and where it went.
-   *
-   * `coachId` is who the enquiry is for. The site belongs to the studio, so
-   * `capture` files every lead under the studio's owner — the first coach
-   * account ever created — and no other coach can list them.
-   */
-  leads: defineTable({
-    coachId: v.union(v.null(), v.id("users")),
-    name: v.string(),
-    email: v.string(),
-    phone: v.string(),
-    message: v.string(),
-    interest: v.union(v.null(), v.string()),
-    source: v.string(),
-    status: v.union(
-      v.literal("new"),
-      v.literal("talking"),
-      v.literal("won"),
-      v.literal("lost"),
-    ),
-    notes: v.string(),
-    /** Set once a lead becomes a client. */
-    clientId: v.union(v.null(), v.id("users")),
-    updatedAt: v.number(),
-  })
-    .index("by_status", ["status"])
-    .index("by_email", ["email"])
-    .index("by_coach_and_status", ["coachId", "status"]),
 });

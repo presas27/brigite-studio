@@ -139,7 +139,6 @@
     "nav": {
       "today": "Hoje",
       "clients": "Alunos",
-      "leads": "Leads",
       "workouts": "Treinos",
       "plan": "Plano",
       "calendar": "Calendário",
@@ -153,7 +152,6 @@
       "sections": {
         "coaching": "Acompanhamento",
         "library": "Biblioteca",
-        "business": "Negócio",
         "training": "Treinar",
         "progress": "Números"
       },
@@ -400,35 +398,6 @@
         "edit": "Editar treino",
         "note": "Qualquer treino, qualquer dia. O plano mostra o dia sugerido para cada um."
       }
-    },
-    "leads": {
-      "title": "Leads",
-      "all": "Todas",
-      "statusLabel": "Estado",
-      "status": {
-        "new": "Novas",
-        "talking": "Em conversa",
-        "won": "Ganhas",
-        "lost": "Perdidas"
-      },
-      "source": {
-        "site": "Site",
-        "instagram": "Instagram",
-        "referral": "Recomendação",
-        "walkin": "Presencial"
-      },
-      "message": "O que escreveram",
-      "noMessage": "Sem mensagem.",
-      "notesLabel": "Notas",
-      "notesHint": "Só tu vês isto.",
-      "reply": "Responder por email",
-      "convert": "Criar aluno",
-      "convertHint": "Cria a conta com o plano que pediram e envia-lhes o link de acesso.",
-      "openClient": "Ver aluno",
-      "empty": "Ainda não há leads.",
-      "emptyHint": "Quando alguém preencher o formulário do site aparece aqui.",
-      "emptyFiltered": "Nenhuma lead neste estado.",
-      "mock": "Leads de exemplo. Ainda não estão ligadas ao formulário do site."
     },
     "clients": {
       "title": "Alunos",

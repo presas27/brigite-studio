@@ -10,7 +10,6 @@
 const PATHS: Record<string, string> = {
   overview: "M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5M9.5 20v-6h5v6",
   message: "M4 5h16v11H8l-4 3.5V5Z",
-  leads: "M4 13h4.5l1.3 2.5h4.4L15.5 13H20M4.4 12.7 7 5.5h10l2.6 7.2M4 13v5.5h16V13",
   clients: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2.1.7 3.5 2.4 3.5 5.2",
   calendar: "M4 6h16v14H4V6ZM8 3v4M16 3v4M4 11h16M9 15h2M14 15h2",
   video: "M3 6h11v12H3V6Zm11 4 6-3.5v11L14 14",

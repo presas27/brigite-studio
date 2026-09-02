@@ -12,7 +12,6 @@ import type * as auth from "../auth.js";
 import type * as coaching from "../coaching.js";
 import type * as email from "../email.js";
 import type * as http from "../http.js";
-import type * as leads from "../leads.js";
 import type * as library from "../library.js";
 import type * as model_authz from "../model/authz.js";
 import type * as model_library from "../model/library.js";
@@ -36,7 +35,6 @@ declare const fullApi: ApiFromModules<{
   coaching: typeof coaching;
   email: typeof email;
   http: typeof http;
-  leads: typeof leads;
   library: typeof library;
   "model/authz": typeof model_authz;
   "model/library": typeof model_library;

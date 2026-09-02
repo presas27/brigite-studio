@@ -36,10 +36,6 @@ const SECTIONS: ChromeSection[] = [
       { href: "/app/coach/exercicios", labelKey: "exercises", icon: "dumbbell" },
     ],
   },
-  {
-    titleKey: "sections.business",
-    items: [{ href: "/app/coach/leads", labelKey: "leads", icon: "leads" }],
-  },
 ];
 
 /**

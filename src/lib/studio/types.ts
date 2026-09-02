@@ -486,31 +486,3 @@ export type CoachAlert =
   | { kind: "message"; clientId: string; clientName: string; preview: string; at: number }
   | { kind: "inactive"; clientId: string; clientName: string; days: number; at: number }
   | { kind: "missed"; clientId: string; clientName: string; date: string; at: number };
-
-/* ------------------------------------------------------------------- leads */
-
-/** Where a lead came in from. `site` is the contact form on brigitestudio.com. */
-export type LeadSource = "site" | "instagram" | "referral" | "walkin";
-
-/** The four states a lead can be in. Won means it became a client. */
-export type LeadStatus = "new" | "talking" | "won" | "lost";
-
-export type Lead = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  /** What they wrote in the form, in their words. */
-  message: string;
-  /** The plan they came in asking about, when the form knows it. */
-  interest: PlanId | null;
-  source: LeadSource;
-  status: LeadStatus;
-  /** Coach-only. The lead never sees this. */
-  notes: string;
-  /** Set when the lead was turned into a client account. */
-  clientId: string | null;
-  createdAt: number;
-  /** Last time the status moved. Drives "waiting since". */
-  updatedAt: number;
-};
