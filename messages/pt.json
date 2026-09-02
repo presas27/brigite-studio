@@ -1175,15 +1175,22 @@
       "noResults": "Nada corresponde"
     },
     "install": {
-      "title": "No telemóvel",
-      "lead": "Instala a app no ecrã inicial: abre como qualquer outra, sem barra do browser.",
+      "eyebrow": "Leva o estúdio contigo",
+      "title": "Instala a app no telemóvel",
+      "lead": "Fica no ecrã inicial como qualquer outra app: abre num toque, sem barra do browser, em ecrã inteiro.",
       "install": "Instalar a app",
       "installed": "A app está instalada. Abre-a a partir do ecrã inicial.",
       "ios": {
-        "share": "No Safari, toca em Partilhar (o quadrado com a seta, em baixo).",
-        "add": "Escolhe “Adicionar ao ecrã principal”.",
-        "confirm": "Confirma em “Adicionar”. Pronto — o ícone fica ao lado das outras apps.",
-        "close": "Fechar"
+        "title": "Três toques e está no teu iPhone",
+        "lead": "O Safari é que instala; é assim que se faz.",
+        "shareTitle": "Toca em Partilhar",
+        "share": "É o quadrado com a seta para cima, na barra de baixo do Safari.",
+        "addTitle": "“Adicionar ao ecrã principal”",
+        "add": "Desce um pouco na lista até veres esta opção e toca nela.",
+        "confirmTitle": "Toca em “Adicionar”",
+        "confirm": "No canto superior direito. O ícone do estúdio fica ao lado das outras apps.",
+        "after": "A partir daí abre sempre pelo ícone — entras direto na tua área de treino.",
+        "done": "Entendi"
       }
     }
   },

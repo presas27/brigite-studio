@@ -88,6 +88,13 @@ const PATHS: Record<string, string> = {
   // multi-week plan has when you look at it end-on. Deliberately not the
   // `library` books glyph, which the workout library already owns.
   program: "M4 5h13M4 12h9M4 19h16M20 3.5v3M20 10.5v3M20 17.5v3",
+  // iOS's own Share glyph — a box open at the top with the arrow leaving it —
+  // drawn so the install tutorial can point at the exact button on the bar.
+  share: "M12 3v12M8 7l4-4 4 4M7 11H5v9h14v-9h-2",
+  // A rounded square with a plus: the "Add to Home Screen" row's icon.
+  addToHome: "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM12 8.5v7M8.5 12h7",
+  // A phone, for the install card.
+  phone: "M8 2.5h8a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2ZM10.5 18.5h3",
 };
 
 export type IconName = keyof typeof PATHS;

@@ -1175,15 +1175,22 @@
       "noResults": "Nothing matches"
     },
     "install": {
-      "title": "On your phone",
-      "lead": "Install the app on your home screen: it opens like any other, without the browser bar.",
+      "eyebrow": "Take the studio with you",
+      "title": "Install the app on your phone",
+      "lead": "It sits on your home screen like any other app: opens in a tap, full screen, no browser bar.",
       "install": "Install the app",
       "installed": "The app is installed. Open it from your home screen.",
       "ios": {
-        "share": "In Safari, tap Share (the square with the arrow, at the bottom).",
-        "add": "Choose “Add to Home Screen”.",
-        "confirm": "Confirm with “Add”. Done — the icon sits next to your other apps.",
-        "close": "Close"
+        "title": "Three taps and it's on your iPhone",
+        "lead": "Safari does the installing; here is how.",
+        "shareTitle": "Tap Share",
+        "share": "The square with the arrow pointing up, on Safari's bottom bar.",
+        "addTitle": "“Add to Home Screen”",
+        "add": "Scroll the list a little until you see this option, then tap it.",
+        "confirmTitle": "Tap “Add”",
+        "confirm": "Top right corner. The studio's icon lands next to your other apps.",
+        "after": "From then on open it from the icon — you land straight in your training area.",
+        "done": "Got it"
       }
     }
   },

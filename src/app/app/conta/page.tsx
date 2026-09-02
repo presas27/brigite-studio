@@ -95,7 +95,7 @@ export default async function AccountPage({
         <ThemeToggle initial={theme} />
       </section>
 
-      <InstallApp className={cn(surface, "p-5")} />
+      <InstallApp />
 
       {client && (
         <section className={cn(surface, "space-y-3 p-5")}>
