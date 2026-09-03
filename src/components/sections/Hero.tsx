@@ -101,6 +101,24 @@ export function Hero() {
   return (
     <section ref={scope}>
       <div className="gradient-hero grain relative flex min-h-svh flex-col overflow-hidden">
+        {/* Wide studio frame, `xl` and up. Below that the hero is too tall
+            for its width: `object-cover` scales the photo by height and
+            crops so much off the left that Sara lands in the headline, so
+            the cut-out composition stays. The brand wash over the left half
+            is what keeps the cream copy legible on the light backdrop; it
+            fades out before it reaches her. */}
+        <div className="pointer-events-none absolute inset-0 hidden xl:block">
+          <Image
+            src="/images/sara/hero-wide.webp"
+            alt={t("alt")}
+            fill
+            sizes="100vw"
+            fetchPriority="high"
+            className="object-cover object-right-bottom"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(97deg,var(--brown-deep)_0%,var(--caramel-deep)_34%,color-mix(in_oklab,var(--caramel-deep),transparent_38%)_52%,transparent_70%)]" />
+        </div>
+
         <div className="relative mx-auto flex w-full max-w-[100rem] grow flex-col px-6 pt-28 md:px-10 md:pt-36 lg:px-16">
           {/* Text block centers in the space below the nav pill on lg;
               on mobile it flows from the top as before. */}
@@ -108,7 +126,7 @@ export function Hero() {
             <h1
               key={locale}
               ref={titleRef}
-              className="relative z-10 max-w-[14ch] font-display text-[clamp(3.5rem,10.5vw,9rem)] uppercase leading-[0.95] tracking-tight text-cream"
+              className="hero-title-wide relative z-10 max-w-[14ch] font-display text-[clamp(3.5rem,10.5vw,9rem)] uppercase leading-[0.95] tracking-tight text-cream"
             >
               {t.rich("title", {
                 i: (chunks) => (
@@ -152,18 +170,18 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Figure — anchored to the card bottom so the rounded edge crops
-              her cleanly. */}
+          {/* Cut-out figure — up to `lg`; from `xl` the wide frame takes
+              over. */}
           <div
             ref={figureRef}
-            className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_var(--hero-figure-shadow)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:right-16"
+            className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_var(--hero-figure-shadow)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:hidden"
           >
             <Image
               src="/images/sara/hero-cutout-v7.webp"
               alt={t("alt")}
               width={1200}
               height={1739}
-              preload
+              fetchPriority="high"
               sizes="(min-width: 1024px) 40rem, 70vw"
               className="relative h-[min(52svh,28rem)] w-auto lg:h-[min(84vh,54rem)]"
             />

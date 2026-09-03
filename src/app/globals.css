@@ -236,6 +236,34 @@ body {
   background: linear-gradient(170deg, var(--caramel), var(--caramel-deep));
 }
 
+/*
+ * Hero headline over the wide studio frame (`xl` and up, where the photo
+ * replaces the cut-out). Its size is derived, not picked: the photo is
+ * `object-cover` on a viewport-height hero, so it is always scaled by
+ * height — every pixel of hero height widens it by two and crops 0.74 off
+ * the left, sliding Sara that much further into the text column. Her
+ * silhouette therefore stands at `100vw - 0.74 * 100svh`. Subtract the text
+ * column's own left edge (the 4rem gutter, plus half of whatever the
+ * `100rem` container leaves over on wide screens) and a 6rem gap — that gap
+ * is not decoration, it is the room the brand wash needs to fade out before
+ * it reaches her, without which cream type ends up on the light backdrop.
+ * Anton sets this string at 6.9em per line, hence the divisor: the largest
+ * two-line setting that stays legible at any desktop width or height.
+ */
+@media (min-width: 80rem) {
+  .hero-title-wide {
+    font-size: clamp(
+      3.25rem,
+      calc(
+        (
+            100vw - 0.74 * 100svh - (100vw - min(100vw, 100rem)) / 2 - 10rem
+          ) / 6.9
+      ),
+      8rem
+    );
+  }
+}
+
 /* Underline that grows from the left on hover. */
 .link-grow {
   background-image: linear-gradient(currentColor, currentColor);
