@@ -36,7 +36,7 @@ async function formOfCoach(ctx: QueryCtx | MutationCtx, coachId: Id<"users">) {
   return ctx.db
     .query("intakeForms")
     .withIndex("by_coach", (q) => q.eq("coachId", coachId))
-    .unique();
+    .first();
 }
 
 function mapForm(doc: NonNullable<Awaited<ReturnType<typeof formOfCoach>>>) {
@@ -133,7 +133,7 @@ export const myPendingIntake = query({
     const existing = await ctx.db
       .query("intakeResponses")
       .withIndex("by_form_and_client", (q) => q.eq("formId", form._id).eq("clientId", user._id))
-      .unique();
+      .first();
     if (existing) return null;
 
     const coach = await ctx.db.get("users", pending.coachId);
@@ -224,7 +224,7 @@ export const submitAndAccept = mutation({
       const existing = await ctx.db
         .query("intakeResponses")
         .withIndex("by_form_and_client", (q) => q.eq("formId", form._id).eq("clientId", user._id))
-        .unique();
+        .first();
       const answers = args.answers.map((answer) => ({
         fieldId: answer.fieldId,
         value: answer.value.trim().slice(0, 4000),

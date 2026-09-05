@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  */
 export default async function AlunoLayout({ children }: { children: React.ReactNode }) {
   const client = await requireClient();
-  const pending = await myPendingIntake();
+  const pending = await myPendingIntake().catch(() => null);
   if (pending) redirect(`/app/convite/${pending.token}`);
   const t = await getTranslations("Studio.session");
 
