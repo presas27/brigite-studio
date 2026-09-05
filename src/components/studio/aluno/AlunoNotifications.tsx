@@ -5,13 +5,10 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ClientAlert } from "@/lib/studio/clientConsole";
-import { cn } from "@/lib/utils";
 import { relativeTime } from "../chat/relative-time";
 import { formatDayKey } from "../format";
 import { Icon } from "../coach/icons";
 import { clientAlertHref, clientAlertKey, clientAlertLabel, CLIENT_ALERT_ICON } from "./alerts";
-
-const VISIBLE = 6;
 
 /**
  * The aluna's bell — the same control Sara has, pointed the other way.
@@ -26,6 +23,11 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
+  // Where the panel hangs from on a phone: the bell's bottom edge, measured
+  // when it opens. The bell sits mid-toolbar, so a panel anchored to its right
+  // edge ran off the left of the screen; on a phone the panel is anchored to
+  // the viewport instead, and only needs to know how far down to start.
+  const [top, setTop] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +51,10 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
     <div ref={container} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setTop((container.current?.getBoundingClientRect().bottom ?? 0) + 8);
+          setOpen((value) => !value);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={tNav("notifications")}
@@ -71,7 +76,8 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 z-50 mt-2 w-[min(90vw,22rem)] origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)]"
+            style={{ "--pop-top": `${top}px` } as React.CSSProperties}
+            className="fixed inset-x-3 top-[var(--pop-top)] z-50 origin-top overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem] sm:origin-top-right"
           >
             <p className="border-b border-cream/10 px-4 py-3 font-sans text-sm font-semibold text-cream">
               {t("needsYou")}
@@ -85,8 +91,10 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
                 </p>
               </div>
             ) : (
+              // Every alert, in a list that scrolls: there is no fuller page to
+              // send her to — the overview stopped carrying this panel.
               <ol className="max-h-[70vh] divide-y divide-cream/8 overflow-y-auto">
-                {alerts.slice(0, VISIBLE).map((alert) => (
+                {alerts.map((alert) => (
                   <li key={clientAlertKey(alert)}>
                     <Link
                       href={clientAlertHref(alert)}
@@ -110,18 +118,6 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
                   </li>
                 ))}
               </ol>
-            )}
-
-            {alerts.length > 0 && (
-              <Link
-                href="/app/aluno"
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "block border-t border-cream/10 px-4 py-2.5 text-center font-sans text-xs text-accent-ink transition-colors hover:text-cream",
-                )}
-              >
-                {t("viewAll")}
-              </Link>
             )}
           </motion.div>
         )}

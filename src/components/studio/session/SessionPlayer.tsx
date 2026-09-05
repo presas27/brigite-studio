@@ -509,70 +509,28 @@ export function SessionPlayer({
 
   return (
     <Shell>
-      {/* Sticky, not fixed: the exercise name lives in this row on a phone and
-          a long one wraps to a second line, so the band's height is not a
-          number the content below it can be padded past — it has to take its
-          own room in the flow. */}
-      {/* The top inset is what keeps the close button and the exercise name
-          clear of the clock and the battery when the app runs installed. */}
+      {/* Sticky, not fixed: the band takes its own room in the flow, so the
+          content below it never has to guess its height. */}
+      {/* The top inset is what keeps the controls clear of the clock and the
+          battery when the app runs installed. */}
       <header className="sticky top-0 z-20 bg-background/90 px-[max(1.25rem,env(safe-area-inset-left))] pt-[calc(1rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm md:px-8 lg:px-10">
-        {/* One row, two orders. On a phone it reads title · exercise actions ·
-            sync · close. On a wide screen the actions live in the stage beside
-            the exercise, and the row becomes close · view · map · count · sync,
-            with the way out first, where a toolbar puts it. */}
+        {/* Chrome only: the view switch, the sync dot and the way out. What the
+            screen is about — the exercise, the workout — heads the content
+            below, with its own actions on its own line, instead of being
+            wedged into the toolbar between a toggle and a cross. On a phone the
+            row reads view · sync · close; a wide screen adds the map and the
+            count and puts the way out first, where a toolbar keeps it. */}
         <div
-          className={cn(FRAME, "flex items-start justify-end gap-4 md:items-center md:justify-start")}
+          className={cn(FRAME, "flex items-center justify-end gap-4 md:justify-start")}
         >
-          {/* The exercise, on the line with the way out of it. A phone has no
-              room for a title band of its own — the stage's own `h1` is
-              `md:block` for exactly this reason — and the name is what the
-              screen is about, so it takes this row's spare width and wraps
-              inside it rather than running under the close button. */}
-          {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
-            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
-              {step.item.exerciseName}
-            </h1>
-          )}
-          {phase === "exercise" && view === "sheet" && (
-            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
-              {current.snapshot.name}
-            </h1>
-          )}
-          {phase === "preview" && (
-            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
-              {current.snapshot.name}
-            </h1>
-          )}
-
-          {/* Swap and note, as icons, on a phone only: the stage carries the
-              labelled pair on a wide screen, and a control that appears twice
-              on one screen is a control the eye has to reconcile. */}
-          {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
-            <div className="flex shrink-0 items-center md:hidden">
-              <SwapExerciseButton
-                compact
-                assignmentId={assignment.id}
-                itemId={step.itemId}
-                exerciseName={step.item.exerciseName}
-                replaces={step.item.replaces}
-                coached={coached}
-                onSwapAction={async (input) => {
-                  await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
-                  setEnterAs("exercise");
-                }}
-              />
-              <ExerciseNoteButton
-                compact
-                coached={coached}
-                exerciseName={step.item.exerciseName}
-                note={notes[step.itemId] ?? ""}
-                onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
-              />
+          {phase === "exercise" && (
+            <div className="order-1 mr-auto shrink-0 md:order-2 md:mr-0">
+              <SessionViewToggle value={view} onChange={switchView} />
             </div>
           )}
 
           {syncStatus && (
-            <span className="flex h-9 shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-5">
+            <span className="order-2 flex h-9 shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-5">
               <span
                 aria-hidden
                 className={cn(
@@ -588,16 +546,10 @@ export function SessionPlayer({
             type="button"
             onClick={() => setExitOpen(true)}
             aria-label={t("stopSession")}
-            className="-m-2 shrink-0 p-2 text-cream/55 transition-colors hover:text-cream md:order-1"
+            className="-m-2 order-3 shrink-0 p-2 text-cream/55 transition-colors hover:text-cream md:order-1"
           >
             <Icon name="close" className="h-5 w-5" />
           </button>
-
-          {phase === "exercise" && (
-            <div className="hidden shrink-0 md:order-2 md:block">
-              <SessionViewToggle value={view} onChange={switchView} />
-            </div>
-          )}
 
           {/* The map of the session is the obvious thing to press when you want
               to see the map of the session — so the bar opens the list, and
@@ -653,11 +605,6 @@ export function SessionPlayer({
                   : "justify-center",
           )}
         >
-          {phase === "exercise" && (
-            <div className="mb-3 flex justify-center md:hidden">
-              <SessionViewToggle value={view} onChange={switchView} />
-            </div>
-          )}
 
           {phase === "preview" && (
             <SessionPreview
@@ -696,6 +643,11 @@ export function SessionPlayer({
 
           {phase === "exercise" && view === "sheet" && (
             <div ref={viewRootRef}>
+              {/* The workout's name heads the sheet on a phone; a wide screen
+                  has the map in the toolbar and needs no heading. */}
+              <h1 className={cn(heading, "mb-4 text-[1.6rem] leading-[1.05] md:hidden")}>
+                {current.snapshot.name}
+              </h1>
               <SessionSheet
                 steps={steps}
                 currentKey={step?.key}
@@ -779,17 +731,42 @@ export function SessionPlayer({
                     }
                   : undefined
               }
+              quickActions={
+                <>
+                  <SwapExerciseButton
+                    compact
+                    eager
+                    assignmentId={assignment.id}
+                    itemId={step.itemId}
+                    exerciseName={step.item.exerciseName}
+                    replaces={step.item.replaces}
+                    coached={coached}
+                    onSwapAction={async (input) => {
+                      await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
+                      setEnterAs("exercise");
+                    }}
+                  />
+                  <ExerciseNoteButton
+                    compact
+                    coached={coached}
+                    exerciseName={step.item.exerciseName}
+                    note={notes[step.itemId] ?? ""}
+                    onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
+                  />
+                </>
+              }
               note={
                 <ExerciseNoteButton
                   coached={coached}
                   exerciseName={step.item.exerciseName}
                   note={notes[step.itemId] ?? ""}
                   onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
-                  // The header carries these two as icons on a phone; here
+                  // The name's line carries these two as icons on a phone; here
                   // they are the labelled pair a wide screen has room for.
                   triggerClassName="hidden md:flex"
                   aside={
                     <SwapExerciseButton
+                      eager
                       assignmentId={assignment.id}
                       itemId={step.itemId}
                       exerciseName={step.item.exerciseName}

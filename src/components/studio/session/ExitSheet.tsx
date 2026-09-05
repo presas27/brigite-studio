@@ -71,6 +71,11 @@ export function ExitSheet({
   // centred by its margins, and only a real height change lets it re-centre
   // frame by frame instead of jumping to its new middle. Same pattern as the
   // cues panel in `ExerciseStage`.
+  //
+  // The row clips only while it moves. Left on, `overflow: hidden` trims the
+  // buttons' 1px ring along their bottom edge — the pills are outline-only, so
+  // on paper that read as the buttons being cut off — and would swallow the
+  // focus ring too. Cleared with the height when the tween lands.
   useGSAP(
     () => {
       const row = rowRef.current;
@@ -78,12 +83,17 @@ export function ExitSheet({
       if (!row || from == null) return;
       fromHeightRef.current = null;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      gsap.set(row, { height: "auto" });
+      gsap.set(row, { clearProps: "height,overflow" });
       const to = row.getBoundingClientRect().height;
       gsap.fromTo(
         row,
-        { height: from },
-        { height: to, duration: 0.24, ease: "power2.out", onComplete: () => gsap.set(row, { height: "auto" }) },
+        { height: from, overflow: "hidden" },
+        {
+          height: to,
+          duration: 0.24,
+          ease: "power2.out",
+          onComplete: () => gsap.set(row, { clearProps: "height,overflow" }),
+        },
       );
       gsap.fromTo(
         row.firstElementChild,
@@ -138,7 +148,7 @@ export function ExitSheet({
           </p>
         )}
 
-        <div ref={rowRef} className="overflow-hidden border-t border-cream/10">
+        <div ref={rowRef} className="border-t border-cream/10">
           {confirmingDiscard ? (
             <div className="space-y-2 pt-4">
               <p className="text-center text-sm text-cream/70">{t("discardConfirm")}</p>

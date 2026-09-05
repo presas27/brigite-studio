@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useRef, useState, useTransition } from "react";
 import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { api } from "@convex/_generated/api";
@@ -31,6 +31,7 @@ export function SwapExerciseButton({
   coached,
   onSwapAction,
   compact = false,
+  eager = false,
 }: {
   assignmentId: string;
   itemId: string;
@@ -42,6 +43,14 @@ export function SwapExerciseButton({
   onSwapAction: (input: { exerciseId: string; exerciseName: string; note: string }) => Promise<void>;
   /** Icon-only trigger, for the player's header. */
   compact?: boolean;
+  /**
+   * Subscribe to the suggestions before the picker opens. On for the exercise
+   * in front of her — the one she is likely to swap — so the picker opens
+   * already filled instead of animating in around a "searching…" line and
+   * then reflowing when the grid lands. Off in the sheet, where one
+   * subscription per exercise would be paid for pickers nobody opens.
+   */
+  eager?: boolean;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
@@ -51,14 +60,24 @@ export function SwapExerciseButton({
   const [note, setNote] = useState("");
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Typing runs ahead of the subscription: the field stays responsive and the
   // list catches up, rather than a new query being opened per keystroke.
   const search = useDeferredValue(query);
   const options = useQuery(
     api.plan.swapOptions,
-    open ? { assignmentId: assignmentId as Id<"assignments">, itemId, search } : "skip",
+    open || eager ? { assignmentId: assignmentId as Id<"assignments">, itemId, search } : "skip",
   );
+
+  // The search field takes focus only where focusing it costs nothing. On a
+  // phone, focus means the keyboard, and the keyboard sliding up under a
+  // modal that is still animating in — covering the suggestions she came
+  // for — is the single worst frame of the whole picker.
+  useEffect(() => {
+    if (!open) return;
+    if (window.matchMedia("(pointer: fine)").matches) searchRef.current?.focus();
+  }, [open]);
 
   function openPicker() {
     setQuery("");
@@ -109,7 +128,7 @@ export function SwapExerciseButton({
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cream/40"
           />
           <input
-            autoFocus
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}

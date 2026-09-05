@@ -28,6 +28,9 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
+  // See `AlunoNotifications`: on a phone the panel hangs from the viewport,
+  // below the bell, instead of from the bell's right edge.
+  const [top, setTop] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +67,10 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
     <div ref={container} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setTop((container.current?.getBoundingClientRect().bottom ?? 0) + 8);
+          setOpen((value) => !value);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={tNav("notifications")}
@@ -86,7 +92,8 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 z-50 mt-2 w-[min(90vw,22rem)] origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)]"
+            style={{ "--pop-top": `${top}px` } as React.CSSProperties}
+            className="fixed inset-x-3 top-[var(--pop-top)] z-50 origin-top overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem] sm:origin-top-right"
           >
             <p className="border-b border-cream/10 px-4 py-3 font-sans text-sm font-semibold text-cream">
               {tOverview("needsYou")}

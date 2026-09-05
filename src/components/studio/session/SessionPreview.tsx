@@ -91,10 +91,7 @@ export function SessionPreview({
 
   return (
     <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-6 pb-8">
-      {/* On a phone the name already heads the screen, in the player's own
-          header on the line with the close button; printing it again here put
-          the same words twice within a thumb's reach of each other. */}
-      <div className="hidden space-y-2 md:block">
+      <div className="space-y-2">
         <p className={eyebrow}>{t("previewEyebrow")}</p>
         <h1 className={cn(heading, "text-[1.75rem] leading-[1.05] sm:text-[2.25rem]")}>{title}</h1>
       </div>

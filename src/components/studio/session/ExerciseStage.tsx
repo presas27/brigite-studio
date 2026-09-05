@@ -39,6 +39,7 @@ export function ExerciseStage({
   previous,
   enterAs,
   actions,
+  quickActions,
   progress,
   onOpenList,
   note,
@@ -52,6 +53,11 @@ export function ExerciseStage({
   enterAs: "set" | "exercise";
   /** Previous/next. In the bottom panel on a phone, in the column above it. */
   actions: React.ReactNode;
+  /**
+   * Swap and note as icons, on the line with the name — a phone only. A wide
+   * screen has room for the labelled pair, which arrives through `note`.
+   */
+  quickActions?: React.ReactNode;
   /** The session's progress, shown in the panel where the header has none. */
   progress: React.ReactNode;
   onOpenList: () => void;
@@ -224,22 +230,26 @@ export function ExerciseStage({
 
       <div className="contents md:flex md:flex-col md:gap-6">
         <div data-stage="identity" className="order-1 space-y-2 md:order-none">
-          {/* The name, at the size a title deserves — on a screen with room for
-              one. A phone has none: there the name rides in the header, on the
-              line with the close button, so the top of the screen is the
-              exercise and not a heading pushing everything below the fold.
-              See `SessionPlayer`'s header. */}
-          <h1
-            // Anton set tight enough to look right in English drops the tilde of
-            // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
-            // and Ó, so the leading is set to clear a diacritic.
-            className={cn(
-              heading,
-              "hidden leading-[1.05] md:block md:text-[2.25rem] lg:text-[3.25rem] xl:text-[3.75rem]",
+          {/* The name heads the content at every width, with its own actions
+              on its line on a phone: what the screen is about, and what she
+              can do to it, together — not split between a toolbar and a
+              body. */}
+          <div className="flex items-start justify-between gap-3 md:block">
+            <h1
+              // Anton set tight enough to look right in English drops the tilde of
+              // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
+              // and Ó, so the leading is set to clear a diacritic.
+              className={cn(
+                heading,
+                "min-w-0 text-[1.6rem] leading-[1.05] md:text-[2.25rem] lg:text-[3.25rem] xl:text-[3.75rem]",
+              )}
+            >
+              {step.item.exerciseName}
+            </h1>
+            {quickActions && (
+              <div className="-mr-2 -mt-1 flex shrink-0 items-center md:hidden">{quickActions}</div>
             )}
-          >
-            {step.item.exerciseName}
-          </h1>
+          </div>
 
           {/* One line, one truth: which set she is on and what it asks for.
               The dots keep it a sentence instead of three floating chips. */}

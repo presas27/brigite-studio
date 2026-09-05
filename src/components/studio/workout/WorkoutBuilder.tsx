@@ -185,9 +185,11 @@ export function WorkoutBuilder({
       </form>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        {/* On a phone the controls drop under the heading rather than being
+            squeezed beside it until "Add exercise" breaks across two lines. */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cn(heading, "text-lg")}>{t("exercisesTitle")}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 whitespace-nowrap">
             <ViewToggle view={view} onChangeAction={setView} />
             <button
               type="button"
