@@ -566,6 +566,20 @@ export function SessionPlayer({
             {index + 1}/{steps.length}
           </span>
         </div>
+
+        {/* The sheet is the one screen that scrolls, and the two things she
+            reaches for while it does — the workout's name and the way back
+            to the focused view — stay pinned with the cross instead of
+            scrolling off with the first block. A wide screen has the switch
+            in the row above and no heading. */}
+        {phase === "exercise" && view === "sheet" && (
+          <div className={cn(FRAME, "mt-2 flex items-center justify-between gap-3 md:hidden")}>
+            <h1 className={cn(heading, "min-w-0 text-[1.6rem] leading-[1.05]")}>
+              {current.snapshot.name}
+            </h1>
+            <SessionViewToggle value={view} onChange={switchView} />
+          </div>
+        )}
       </header>
 
       <div
@@ -641,14 +655,6 @@ export function SessionPlayer({
 
           {phase === "exercise" && view === "sheet" && (
             <div ref={viewRootRef}>
-              {/* The workout's name and the view switch, on one line, on a
-                  phone; a wide screen has both in the toolbar. */}
-              <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
-                <h1 className={cn(heading, "min-w-0 text-[1.6rem] leading-[1.05]")}>
-                  {current.snapshot.name}
-                </h1>
-                <SessionViewToggle value={view} onChange={switchView} />
-              </div>
               <SessionSheet
                 steps={steps}
                 currentKey={step?.key}

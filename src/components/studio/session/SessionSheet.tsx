@@ -217,7 +217,7 @@ export function SessionSheet({
                       const done = !isFullyEmpty(value);
                       const current = step.key === currentKey;
                       return (
-                        <li key={step.key} data-sheet-row={step.key}>
+                        <li key={step.key} data-sheet-row={step.key} className="scroll-mt-32 md:scroll-mt-20">
                           <SheetSetRow
                             step={step}
                             value={value}
