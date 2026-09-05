@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Modal } from "../Modal";
 import { buttonDanger, buttonGhost, buttonPrimary, muted } from "../theme";
@@ -42,6 +44,11 @@ export function ExitSheet({
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const [busy, setBusy] = useState<"discard" | "skip" | null>(null);
   const [failed, setFailed] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+  // The row's height the moment before it swaps content, so the tween starts
+  // from where the eye was. `null` outside a swap: the first render and the
+  // reset on re-open must not animate.
+  const fromHeightRef = useRef<number | null>(null);
 
   // Re-opening the sheet must never land on the armed destructive state. This
   // is React's "adjust state when a prop changes" pattern rather than an
@@ -54,6 +61,42 @@ export function ExitSheet({
     setFailed(false);
   }
 
+  function arm(next: boolean) {
+    fromHeightRef.current = rowRef.current?.getBoundingClientRect().height ?? null;
+    setConfirmingDiscard(next);
+  }
+
+  // The bottom row swaps between the two quiet links and the armed pair. Its
+  // height is tweened for real — not with a transform — because the dialog is
+  // centred by its margins, and only a real height change lets it re-centre
+  // frame by frame instead of jumping to its new middle. Same pattern as the
+  // cues panel in `ExerciseStage`.
+  useGSAP(
+    () => {
+      const row = rowRef.current;
+      const from = fromHeightRef.current;
+      if (!row || from == null) return;
+      fromHeightRef.current = null;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      gsap.set(row, { height: "auto" });
+      const to = row.getBoundingClientRect().height;
+      gsap.fromTo(
+        row,
+        { height: from },
+        { height: to, duration: 0.24, ease: "power2.out", onComplete: () => gsap.set(row, { height: "auto" }) },
+      );
+      gsap.fromTo(
+        row.firstElementChild,
+        { autoAlpha: 0, y: 4 },
+        { autoAlpha: 1, y: 0, duration: 0.2, delay: 0.06, ease: "power2.out" },
+      );
+    },
+    { dependencies: [confirmingDiscard] },
+  );
+
+  // Busy is released only on failure. Success means the player is on its way
+  // out — to the summary, or off the route — and the sheet's job is to hold
+  // still until it goes, not to hand the buttons back for the last frames.
   async function run(kind: "discard" | "skip", action: () => Promise<void>) {
     setBusy(kind);
     setFailed(false);
@@ -61,7 +104,6 @@ export function ExitSheet({
       await action();
     } catch {
       setFailed(true);
-    } finally {
       setBusy(null);
     }
   }
@@ -72,10 +114,20 @@ export function ExitSheet({
         <p className={muted}>{t("exitLead", { done: doneCount, total: totalCount })}</p>
 
         <div className="flex flex-col gap-2">
-          <button type="button" onClick={onSubmit} className={cn(buttonPrimary, "w-full")}>
+          <button
+            type="button"
+            disabled={busy != null}
+            onClick={onSubmit}
+            className={cn(buttonPrimary, "w-full")}
+          >
             {t("submitWorkout")}
           </button>
-          <button type="button" onClick={onLeave} className={cn(buttonGhost, "w-full")}>
+          <button
+            type="button"
+            disabled={busy != null}
+            onClick={onLeave}
+            className={cn(buttonGhost, "w-full")}
+          >
             {t("leaveForLater")}
           </button>
         </div>
@@ -86,9 +138,9 @@ export function ExitSheet({
           </p>
         )}
 
-        <div className="space-y-3 border-t border-cream/10 pt-4">
+        <div ref={rowRef} className="overflow-hidden border-t border-cream/10">
           {confirmingDiscard ? (
-            <div className="space-y-2">
+            <div className="space-y-2 pt-4">
               <p className="text-center text-sm text-cream/70">{t("discardConfirm")}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 <button
@@ -101,7 +153,8 @@ export function ExitSheet({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfirmingDiscard(false)}
+                  disabled={busy != null}
+                  onClick={() => arm(false)}
                   className={cn(buttonGhost, "px-5 py-2.5 text-sm")}
                 >
                   {t("keepLogs")}
@@ -109,11 +162,12 @@ export function ExitSheet({
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4">
               <button
                 type="button"
-                onClick={() => setConfirmingDiscard(true)}
-                className="font-sans text-xs text-cream/55 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream"
+                disabled={busy != null}
+                onClick={() => arm(true)}
+                className="font-sans text-xs text-cream/55 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream disabled:opacity-50"
               >
                 {t("discardWorkout")}
               </button>

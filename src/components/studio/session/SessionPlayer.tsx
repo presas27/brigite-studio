@@ -183,18 +183,26 @@ export function SessionPlayer({
   const beganRef = useRef(false);
   const viewRootRef = useRef<HTMLDivElement>(null);
   const viewKey = `studio:session:view`;
-  const [view, setView] = useState<SessionView>(() => {
-    if (typeof window === "undefined") return "focus";
-    return window.localStorage.getItem(viewKey) === "sheet" ? "sheet" : "focus";
-  });
+  // Starts as "focus" on the server and the client alike, and only then reads
+  // the stored choice — the same rule as `usePersistedView`. Reading
+  // localStorage in the initialiser made the first client render disagree
+  // with the HTML (the header names the exercise in one view and the workout
+  // in the other), and a hydration mismatch is a thrown error in development
+  // and a full client re-render in production, on every session opened with
+  // the sheet remembered.
+  const [view, setView] = useState<SessionView>("focus");
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(viewKey, view);
-    } catch {
-      // Private browsing: the choice lasts this tab only.
-    }
-  }, [view]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from localStorage after mount, see above
+    if (window.localStorage.getItem(viewKey) === "sheet") setView("sheet");
+  }, [viewKey]);
+
+  // Every way out of the player lands on the same screen. Fetching it while
+  // she trains means leaving — discard, "leave and come back", the summary's
+  // button — is a swap and not a wait.
+  useEffect(() => {
+    router.prefetch("/app/aluno");
+  }, [router]);
 
   // The two views cross-fade and nothing else. A slide would leave a
   // `transform` on this wrapper, and a transformed ancestor becomes the
@@ -203,6 +211,11 @@ export function SessionPlayer({
   // bottom of the phone. Opacity carries no such rule.
   const switchView = useCallback((next: SessionView) => {
     if (next === view) return;
+    try {
+      window.localStorage.setItem(viewKey, next);
+    } catch {
+      // Private browsing: the choice lasts this tab only.
+    }
     const root = viewRootRef.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!root || reduced) {
@@ -215,7 +228,7 @@ export function SessionPlayer({
       ease: "power2.in",
       onComplete: () => setView(next),
     });
-  }, [view]);
+  }, [view, viewKey]);
 
   useGSAP(
     () => {
@@ -373,6 +386,10 @@ export function SessionPlayer({
     setPhase("summary");
   }
 
+  // The sheet stays open, in its busy state, until this route is gone. Closing
+  // it first showed the workout again for the length of the navigation — a
+  // discard that looked like it had put her back in the session. The player
+  // unmounts with the route; nothing here needs to run after `push`.
   async function handleDiscard() {
     await discardAction();
     clearLocal();
@@ -382,7 +399,6 @@ export function SessionPlayer({
     } catch {
       // See `addExtraRest`.
     }
-    setExitOpen(false);
     router.push("/app/aluno");
   }
 

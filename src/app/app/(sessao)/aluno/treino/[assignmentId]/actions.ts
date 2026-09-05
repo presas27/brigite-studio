@@ -169,9 +169,13 @@ export async function skipSession(assignmentId: string): Promise<void> {
  * `startedAt` cleared, status back to scheduled. Deliberately distinct from
  * skipping — "I opened this by mistake" and "I could not train this week" are
  * different facts, and only the second one is Sara's business.
+ *
+ * No `refresh()` here, unlike its siblings: the player leaves this route the
+ * moment the discard lands, and refreshing the page on the way out re-rendered
+ * it as an untouched session for one frame under the sheet — the workout
+ * flashing back before the exit. `/app/aluno` is dynamic and renders fresh.
  */
 export async function discardSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await discardAssignment(assignment.id);
-  refresh();
 }
