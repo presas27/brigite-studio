@@ -21,6 +21,7 @@ import {
 } from "@/components/studio/theme";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { weekKey } from "@/lib/studio/dates";
+import { intakeResponseForClient } from "@/lib/studio/intake";
 import { adherence, assignmentHistory, nextAssignment } from "@/lib/studio/plan";
 import { cn } from "@/lib/utils";
 
@@ -61,15 +62,17 @@ export default async function ClientOverviewPage({
   const { viewer, client } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
-  const [t, common, tPlan, tProgress, locale, next, history, { done, total }] = await Promise.all([
+  const [t, common, tPlan, tProgress, tIntake, locale, next, history, { done, total }, intake] = await Promise.all([
     getTranslations("Studio.clients"),
     getTranslations("Studio.common"),
     getTranslations("Studio.plan"),
     getTranslations("Studio.progress"),
+    getTranslations("Studio.intake"),
     getLocale(),
     nextAssignment(client.id),
     assignmentHistory(client.id, 5),
     adherence(client.id),
+    intakeResponseForClient(client.id),
   ]);
   const [lastSession] = history;
   const planHref = `/app/coach/alunos/${client.id}/plano`;
@@ -143,6 +146,24 @@ export default async function ClientOverviewPage({
           </p>
         </article>
       </div>
+
+      <section className={cn(surface, "space-y-3 p-5")}>
+        <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
+        {intake ? (
+          <dl className="space-y-3">
+            {intake.answers.map((answer) => (
+              <div key={answer.label}>
+                <dt className="font-sans text-xs font-medium text-cream/50">{answer.label}</dt>
+                <dd className="mt-1 text-sm leading-relaxed whitespace-pre-line text-cream/80">
+                  {answer.value || common("none")}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="text-sm text-cream/40">{tIntake("responseEmpty")}</p>
+        )}
+      </section>
 
       <section className={cn(surface, "space-y-3 p-5 ring-1 ring-caramel/25 sm:p-6")}>
         <div>

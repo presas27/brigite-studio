@@ -528,4 +528,58 @@ export default defineSchema({
   })
     .index("by_client_and_date", ["clientId", "date"])
     .index("by_client_and_kind", ["clientId", "kind"]),
+
+  /**
+   * The coach's intake form. One per coach: what a new client has to answer
+   * before the invite is accepted. Unpublished means invites work as they did
+   * — a form with no questions must not block anyone.
+   */
+  intakeForms: defineTable({
+    coachId: v.id("users"),
+    title: v.string(),
+    intro: v.string(),
+    published: v.boolean(),
+    updatedAt: v.number(),
+    fields: v.array(
+      v.object({
+        id: v.string(),
+        position: v.number(),
+        type: v.union(
+          v.literal("text"),
+          v.literal("textarea"),
+          v.literal("number"),
+          v.literal("date"),
+          v.literal("yesno"),
+          v.literal("select"),
+          v.literal("multiselect"),
+        ),
+        label: v.string(),
+        hint: v.string(),
+        required: v.boolean(),
+        options: v.array(v.string()),
+      }),
+    ),
+  }).index("by_coach", ["coachId"]),
+
+  /**
+   * One submission per client per form. The invite may not be accepted until
+   * this row exists, when the coach has a published form with fields.
+   */
+  intakeResponses: defineTable({
+    formId: v.id("intakeForms"),
+    coachId: v.id("users"),
+    clientId: v.id("users"),
+    inviteId: v.union(v.null(), v.id("invites")),
+    answers: v.array(
+      v.object({
+        fieldId: v.string(),
+        value: v.string(),
+      }),
+    ),
+    submittedAt: v.number(),
+  })
+    .index("by_client", ["clientId"])
+    .index("by_coach", ["coachId"])
+    .index("by_form_and_client", ["formId", "clientId"]),
 });
+

@@ -28,7 +28,7 @@ const copy = {
     invite: {
       subject: (coach: string) => `${coach} convidou-te para o Brigite's Studio`,
       lead: (coach: string) =>
-        `${coach} quer treinar-te no Brigite's Studio. Abre o link para criares a tua conta — ou, se já tens uma, para aceitares.`,
+        `${coach} quer treinar-te no Brigite's Studio. Abre o link para criares a tua conta e responderes ao formulário — só depois ficas associado.`,
       cta: "Aceitar o convite",
       note: (days: number) => `O link é válido durante ${days} dias.`,
     },
@@ -44,7 +44,7 @@ const copy = {
     invite: {
       subject: (coach: string) => `${coach} invited you to Brigite's Studio`,
       lead: (coach: string) =>
-        `${coach} wants to train you on Brigite's Studio. Open the link to create your account — or, if you already have one, to accept.`,
+        `${coach} wants to train you on Brigite's Studio. Open the link to create your account and fill in the form — you only join after that.`,
       cta: "Accept the invite",
       note: (days: number) => `The link is valid for ${days} days.`,
     },

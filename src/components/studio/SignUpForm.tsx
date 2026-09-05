@@ -83,7 +83,9 @@ export function SignUpForm({
           setFailure(result.code);
           return;
         }
-        window.location.assign(next ?? (result.role === "coach" ? "/app/coach" : "/app/aluno"));
+        window.location.assign(
+          inviteToken ? `/app/convite/${inviteToken}` : (next ?? (result.role === "coach" ? "/app/coach" : "/app/aluno")),
+        );
       }}
     >
       {!fromInvite && (

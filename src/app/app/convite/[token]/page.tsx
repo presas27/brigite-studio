@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { api } from "@convex/_generated/api";
+import { IntakeForm } from "@/components/studio/intake/IntakeForm";
 import { AcceptInvite, SwitchAccount } from "@/components/studio/AcceptInvite";
 import { OnboardingForm } from "@/components/studio/OnboardingForm";
 import { SignUpForm } from "@/components/studio/SignUpForm";
@@ -9,6 +10,7 @@ import { buttonGhost, buttonPrimary, heading, muted } from "@/components/studio/
 import { SolMark } from "@/components/ui/SolMark";
 import { session } from "@/lib/studio/auth";
 import { sq } from "@/lib/studio/convexServer";
+import { intakeFormForInvite } from "@/lib/studio/intake";
 
 export const metadata: Metadata = {
   title: "Convite",
@@ -27,10 +29,11 @@ export const metadata: Metadata = {
  */
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const [invite, current, t] = await Promise.all([
+  const [invite, current, t, form] = await Promise.all([
     sq(api.users.inviteByToken, { token }),
     session(),
     getTranslations("Studio.invite"),
+    intakeFormForInvite(token),
   ]);
 
   const here = `/app/convite/${token}`;
@@ -107,7 +110,14 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     body = (
       <div className="space-y-4">
         <p className={muted}>{t("lead", { coach: invite.coachName })}</p>
-        <AcceptInvite token={token} />
+        {form ? (
+          <>
+            <p className={muted}>{t("fillForm")}</p>
+            <IntakeForm token={token} title={form.title} intro={form.intro} fields={form.fields} />
+          </>
+        ) : (
+          <AcceptInvite token={token} />
+        )}
       </div>
     );
   }

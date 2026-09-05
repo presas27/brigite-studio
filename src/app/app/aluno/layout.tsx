@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AlunoChrome } from "@/components/studio/aluno/AlunoChrome";
@@ -8,6 +9,7 @@ import { findCheckin, unreadCount } from "@/lib/studio/coaching";
 import { dayKey, weekKey } from "@/lib/studio/dates";
 import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
 import { getThemeMode } from "@/lib/studio/theme-mode";
+import { myPendingIntake } from "@/lib/studio/intake";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +25,8 @@ import { cn } from "@/lib/utils";
  */
 export default async function AlunoLayout({ children }: { children: React.ReactNode }) {
   const client = await requireClient();
+  const pending = await myPendingIntake();
+  if (pending) redirect(`/app/convite/${pending.token}`);
   const t = await getTranslations("Studio.session");
 
   const today = dayKey();

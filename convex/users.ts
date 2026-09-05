@@ -236,8 +236,16 @@ export const completeSignup = mutation({
       if (invited.authId) throw new ConvexError({ code: "INVITE_ALREADY_CLAIMED" });
 
       await ctx.db.patch("users", invited._id, { authId: login._id, name, status: "active" });
-      await ctx.db.patch("clientProfiles", profile._id, { coachId: invite.coachId });
-      await ctx.db.patch("invites", invite._id, { status: "accepted" });
+
+      const form = await ctx.db
+        .query("intakeForms")
+        .withIndex("by_coach", (q) => q.eq("coachId", invite.coachId))
+        .unique();
+      const needsForm = Boolean(form && form.published && form.fields.length > 0);
+      if (!needsForm) {
+        await ctx.db.patch("clientProfiles", profile._id, { coachId: invite.coachId });
+        await ctx.db.patch("invites", invite._id, { status: "accepted" });
+      }
 
       const user = await ctx.db.get("users", invited._id);
       return mapUser(user!);
@@ -368,6 +376,18 @@ export const acceptInvite = mutation({
     if (!profile) throw new Error("No profile");
     if (profile.coachId && profile.coachId !== invite.coachId) {
       throw new ConvexError({ code: "ALREADY_COACHED" });
+    }
+
+    const form = await ctx.db
+      .query("intakeForms")
+      .withIndex("by_coach", (q) => q.eq("coachId", invite.coachId))
+      .unique();
+    if (form && form.published && form.fields.length > 0) {
+      const response = await ctx.db
+        .query("intakeResponses")
+        .withIndex("by_form_and_client", (q) => q.eq("formId", form._id).eq("clientId", user._id))
+        .unique();
+      if (!response) throw new ConvexError({ code: "INTAKE_REQUIRED" });
     }
 
     await ctx.db.patch("clientProfiles", profile._id, { coachId: invite.coachId });

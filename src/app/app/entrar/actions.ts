@@ -3,6 +3,7 @@
 import { ConvexError } from "convex/values";
 import { api } from "@convex/_generated/api";
 import { sm } from "@/lib/studio/convexServer";
+import { submitIntake } from "@/lib/studio/intake";
 import type { Role } from "@/lib/studio/types";
 
 /**
@@ -22,6 +23,8 @@ export type AuthFailure =
   | "INVITE_ALREADY_CLAIMED"
   | "ALREADY_COACHED"
   | "COACH_CANNOT_ACCEPT"
+  | "INTAKE_REQUIRED"
+  | "INTAKE_INCOMPLETE"
   | "UNKNOWN";
 
 export type RegisterResult = { ok: true; role: Role } | { ok: false; code: AuthFailure };
@@ -63,4 +66,17 @@ export async function acceptInvite(token: string): Promise<{ ok: true } | { ok: 
 /** Mail the pending invite for an address again. Always answers the same. */
 export async function resendPendingInvite(email: string): Promise<void> {
   await sm(api.users.resendPendingInvite, { email }).catch(() => undefined);
+}
+
+/** Fill the coach's intake form and accept the invite in one write. */
+export async function submitIntakeAndAccept(
+  token: string,
+  answers: { fieldId: string; value: string }[],
+): Promise<{ ok: true } | { ok: false; code: AuthFailure }> {
+  try {
+    await submitIntake({ token, answers });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, code: failureCode(error) };
+  }
 }

@@ -161,7 +161,8 @@
       "notifications": "Notifications",
       "expand": "Expand",
       "collapse": "Collapse",
-      "programs": "Programs"
+      "programs": "Programs",
+      "intake": "Form"
     },
     "signIn": {
       "title": "Training area",
@@ -236,7 +237,46 @@
       "coachAccount": "You are signed in with a coach account. An invite is for a client account.",
       "haveAccount": "Already have an account with this email?",
       "signInToAccept": "Sign in to accept",
-      "emailLocked": "The invite is for this email."
+      "emailLocked": "The invite is for this email.",
+      "fillForm": "Before you join, answer your coach's form."
+    },
+    "intake": {
+      "builderTitle": "Intake form",
+      "builderLead": "Anyone you invite has to answer this before they become your client. Leave it unpublished and invites work as they do now.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Before we start",
+      "introLabel": "Opening text",
+      "introHint": "Shown at the top of the form, on the invite and in the email.",
+      "introPlaceholder": "Take your time. This is how I build the right plan.",
+      "published": "Required on every invite",
+      "typeLabel": "Question type",
+      "required": "Required",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "questionPlaceholder": "The question",
+      "hintPlaceholder": "Hint (optional)",
+      "optionsPlaceholder": "Options, comma separated",
+      "addField": "Add question",
+      "emptyFields": "No questions yet. Add the first one.",
+      "saved": "Form saved.",
+      "saveFailed": "Could not save. Try again.",
+      "submit": "Send and accept the invite",
+      "submitting": "Sending…",
+      "incomplete": "Required questions are still empty.",
+      "choose": "Choose",
+      "yes": "Yes",
+      "no": "No",
+      "responseTitle": "Intake form",
+      "responseEmpty": "They have not answered the form yet.",
+      "types": {
+        "text": "Short text",
+        "textarea": "Long text",
+        "number": "Number",
+        "date": "Date",
+        "yesno": "Yes / No",
+        "select": "Single choice",
+        "multiselect": "Multiple choice"
+      }
     },
     "common": {
       "save": "Save",

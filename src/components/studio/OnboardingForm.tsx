@@ -30,7 +30,9 @@ export function OnboardingForm({ email, inviteToken }: { email: string; inviteTo
           setFailure(result.code);
           return;
         }
-        window.location.assign(result.role === "coach" ? "/app/coach" : "/app/aluno");
+        window.location.assign(
+          inviteToken ? `/app/convite/${inviteToken}` : result.role === "coach" ? "/app/coach" : "/app/aluno",
+        );
       }}
     >
       <p className={muted}>{tOnboarding("signedInAs", { email })}</p>

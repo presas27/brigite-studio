@@ -161,7 +161,8 @@
       "notifications": "Notificações",
       "expand": "Expandir",
       "collapse": "Fechar",
-      "programs": "Programas"
+      "programs": "Programas",
+      "intake": "Formulário"
     },
     "signIn": {
       "title": "Área de treino",
@@ -236,7 +237,46 @@
       "coachAccount": "Estás a entrar com uma conta de treinador. Um convite é para uma conta de aluno.",
       "haveAccount": "Já tens conta com este email?",
       "signInToAccept": "Entrar para aceitar",
-      "emailLocked": "O convite é para este email."
+      "emailLocked": "O convite é para este email.",
+      "fillForm": "Antes de ficares associado, responde ao formulário da treinadora."
+    },
+    "intake": {
+      "builderTitle": "Formulário de entrada",
+      "builderLead": "Quem recebe um convite tem de responder a isto antes de ficar teu aluno. Sem publicar, o convite funciona como até agora.",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Antes de começarmos",
+      "introLabel": "Texto de abertura",
+      "introHint": "Aparece no topo do formulário, no convite e no email.",
+      "introPlaceholder": "Responde com calma. Serve para eu montar o plano certo.",
+      "published": "Obrigatório em cada convite",
+      "typeLabel": "Tipo de pergunta",
+      "required": "Obrigatória",
+      "moveUp": "Subir",
+      "moveDown": "Descer",
+      "questionPlaceholder": "A pergunta",
+      "hintPlaceholder": "Ajuda (opcional)",
+      "optionsPlaceholder": "Opções, separadas por vírgula",
+      "addField": "Adicionar pergunta",
+      "emptyFields": "Ainda sem perguntas. Adiciona a primeira.",
+      "saved": "Formulário guardado.",
+      "saveFailed": "Não deu para guardar. Tenta outra vez.",
+      "submit": "Enviar e aceitar o convite",
+      "submitting": "A enviar…",
+      "incomplete": "Falta responder às perguntas obrigatórias.",
+      "choose": "Escolher",
+      "yes": "Sim",
+      "no": "Não",
+      "responseTitle": "Formulário de entrada",
+      "responseEmpty": "Ainda não respondeu ao formulário.",
+      "types": {
+        "text": "Texto curto",
+        "textarea": "Texto longo",
+        "number": "Número",
+        "date": "Data",
+        "yesno": "Sim / Não",
+        "select": "Escolha única",
+        "multiselect": "Várias escolhas"
+      }
     },
     "common": {
       "save": "Guardar",

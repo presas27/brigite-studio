@@ -25,6 +25,7 @@ const SECTIONS: ChromeSection[] = [
       { href: "/app/coach/calendario", labelKey: "calendar", icon: "calendar" },
       { href: "/app/coach/checkins", labelKey: "checkin", icon: "checkin" },
       { href: "/app/coach/mensagens", labelKey: "messages", icon: "message", urgentBadge: true },
+      { href: "/app/coach/formulario", labelKey: "intake", icon: "checkin" },
     ],
   },
   {
