@@ -326,12 +326,28 @@ export async function lastLogsForExercise(
   return sq(api.plan.lastLogsForExercise, {
     clientId: clientId as Id<"users">,
     exerciseId,
-    // Left out entirely rather than sent as null: the argument means "there is
-    // a session in progress", and there usually is not.
     ...(excludeAssignmentId
       ? { excludeAssignmentId: excludeAssignmentId as Id<"assignments"> }
       : {}),
   });
+}
+
+/** Previous numbers for every exercise in one session, one round trip. */
+export async function lastLogsForExercises(
+  clientId: string,
+  exerciseIds: string[],
+  excludeAssignmentId?: string,
+): Promise<Record<string, SetLog[]>> {
+  const rows = await sq(api.plan.lastLogsForExercises, {
+    clientId: clientId as Id<"users">,
+    exerciseIds,
+    ...(excludeAssignmentId
+      ? { excludeAssignmentId: excludeAssignmentId as Id<"assignments"> }
+      : {}),
+  });
+  const byExercise: Record<string, SetLog[]> = {};
+  for (const row of rows) byExercise[row.exerciseId] = row.logs;
+  return byExercise;
 }
 
 /** Heaviest set and longest hold ever logged, per exercise. */

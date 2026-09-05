@@ -440,37 +440,41 @@ export async function copyWorkout(
     .withIndex("by_workout_and_position", (q) => q.eq("workoutId", sourceWorkoutId))
     .collect();
 
-  for (const block of blocks) {
-    const blockId = await ctx.db.insert("workoutBlocks", {
-      workoutId: copyId,
-      position: block.position,
-      kind: block.kind,
-      label: block.label,
-      rounds: block.rounds,
-      restSeconds: block.restSeconds,
-    });
-
-    const items = await ctx.db
-      .query("workoutItems")
-      .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
-      .collect();
-
-    for (const item of items) {
-      await ctx.db.insert("workoutItems", {
-        blockId,
-        position: item.position,
-        kind: item.kind,
-        exerciseId: item.exerciseId,
-        sets: item.sets,
-        reps: item.reps,
-        seconds: item.seconds,
-        tempo: item.tempo,
-        restSeconds: item.restSeconds,
-        rpe: item.rpe,
-        notes: item.notes,
+  await Promise.all(
+    blocks.map(async (block) => {
+      const blockId = await ctx.db.insert("workoutBlocks", {
+        workoutId: copyId,
+        position: block.position,
+        kind: block.kind,
+        label: block.label,
+        rounds: block.rounds,
+        restSeconds: block.restSeconds,
       });
-    }
-  }
+
+      const items = await ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
+        .collect();
+
+      await Promise.all(
+        items.map((item) =>
+          ctx.db.insert("workoutItems", {
+            blockId,
+            position: item.position,
+            kind: item.kind,
+            exerciseId: item.exerciseId,
+            sets: item.sets,
+            reps: item.reps,
+            seconds: item.seconds,
+            tempo: item.tempo,
+            restSeconds: item.restSeconds,
+            rpe: item.rpe,
+            notes: item.notes,
+          }),
+        ),
+      );
+    }),
+  );
 
   return copyId;
 }
@@ -497,22 +501,22 @@ export async function deleteWorkoutCascade(
     .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
     .collect();
 
-  for (const block of blocks) {
-    const items = await ctx.db
-      .query("workoutItems")
-      .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
-      .collect();
-    for (const item of items) await ctx.db.delete("workoutItems", item._id);
-    await ctx.db.delete("workoutBlocks", block._id);
-  }
+  const itemsByBlock = await Promise.all(
+    blocks.map((block) =>
+      ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
+        .collect(),
+    ),
+  );
+  await Promise.all(itemsByBlock.flat().map((item) => ctx.db.delete("workoutItems", item._id)));
+  await Promise.all(blocks.map((block) => ctx.db.delete("workoutBlocks", block._id)));
 
   const assignments = await ctx.db
     .query("assignments")
     .withIndex("by_workout", (q) => q.eq("workoutId", workoutId))
     .collect();
-  for (const assignment of assignments) {
-    await ctx.db.patch("assignments", assignment._id, { workoutId: null });
-  }
+  await Promise.all(assignments.map((assignment) => ctx.db.patch("assignments", assignment._id, { workoutId: null })));
 }
 
 /**

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireClientAccess } from "@/lib/studio/auth";
-import { exerciseNotesFor, findAssignment, lastLogsForExercise, logsFor } from "@/lib/studio/plan";
-import type { SetLog } from "@/lib/studio/types";
+import { exerciseNotesFor, findAssignment, lastLogsForExercises, logsFor } from "@/lib/studio/plan";
 import { SessionPlayer } from "@/components/studio/session/SessionPlayer";
 import {
   beginSession,
@@ -37,20 +36,18 @@ export default async function TreinoPage({
   const { client } = await requireClientAccess(assignment.clientId);
 
   const exerciseIds = Array.from(
-    new Set(assignment.snapshot.blocks.flatMap((block) => block.items.map((item) => item.exerciseId))),
+    new Set(
+      assignment.snapshot.blocks.flatMap((block) =>
+        block.items.map((item) => item.exerciseId).filter((id) => id.length > 0),
+      ),
+    ),
   );
 
-  const [initialLogs, noteRows, previousLogsList] = await Promise.all([
+  const [initialLogs, noteRows, previousByExercise] = await Promise.all([
     logsFor(assignment.id),
     exerciseNotesFor(assignment.id),
-    Promise.all(
-      exerciseIds.map((exerciseId) => lastLogsForExercise(client.id, exerciseId, assignment.id)),
-    ),
+    lastLogsForExercises(client.id, exerciseIds, assignment.id),
   ]);
-  const previousByExercise: Record<string, SetLog[]> = {};
-  exerciseIds.forEach((exerciseId, index) => {
-    previousByExercise[exerciseId] = previousLogsList[index];
-  });
 
   // Keyed by `itemId` — the exercise's identity inside this session's frozen
   // snapshot — which is the same key the player already indexes its steps by.

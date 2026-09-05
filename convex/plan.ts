@@ -731,25 +731,22 @@ export const studioAssignmentsBetween = query({
       .query("clientProfiles")
       .withIndex("by_coach", (q) => q.eq("coachId", coach._id))
       .collect();
-    const clients: Doc<"users">[] = [];
-    for (const profile of profiles) {
-      const client = await ctx.db.get("users", profile.userId);
-      if (client) clients.push(client);
-    }
+    const clients = (
+      await Promise.all(profiles.map((profile) => ctx.db.get("users", profile.userId)))
+    ).filter((client): client is Doc<"users"> => client != null && client.status !== "archived");
 
-    const rows: (ScheduledAssignment & { clientName: string })[] = [];
-    for (const client of clients) {
-      if (client.status === "archived") continue;
-      const docs = await ctx.db
-        .query("assignments")
-        .withIndex("by_client_and_date", (q) =>
-          q.eq("clientId", client._id).gte("date", args.from).lte("date", args.to),
-        )
-        .collect();
-      for (const assignment of scheduledOnly(docs)) {
-        rows.push({ ...assignment, clientName: client.name });
-      }
-    }
+    const perClient = await Promise.all(
+      clients.map(async (client) => {
+        const docs = await ctx.db
+          .query("assignments")
+          .withIndex("by_client_and_date", (q) =>
+            q.eq("clientId", client._id).gte("date", args.from).lte("date", args.to),
+          )
+          .collect();
+        return scheduledOnly(docs).map((assignment) => ({ ...assignment, clientName: client.name }));
+      }),
+    );
+    const rows = perClient.flat();
 
     // `ORDER BY a.date, u.name COLLATE NOCASE, a.created_at`.
     rows.sort(
@@ -807,38 +804,25 @@ export const nextAssignment = query({
 /**
  * Finished or missed sessions, newest first.
  *
- * `by_client_and_status` is read once per closed status and the two lists are
- * merged, because the index orders inside a status by creation and the history
- * is read by day. `ORDER BY date DESC` in SQLite puts the undated rows last,
- * which is what the comparator below reproduces.
+ * Streamed off `by_client_and_date` rather than collecting every closed row:
+ * the callers ask for tens, not the whole training history, and the index
+ * already has the days in order.
  */
 async function historyDocs(
   ctx: Ctx,
   clientId: Id<"users">,
   limit: number,
 ): Promise<Doc<"assignments">[]> {
-  const closed = await Promise.all(
-    (["done", "skipped"] as const).map((status) =>
-      ctx.db
-        .query("assignments")
-        .withIndex("by_client_and_status", (q) =>
-          q.eq("clientId", clientId).eq("status", status),
-        )
-        .collect(),
-    ),
-  );
-
-  return closed
-    .flat()
-    .sort((a, b) => {
-      if (a.date !== b.date) {
-        if (a.date === null) return 1;
-        if (b.date === null) return -1;
-        return a.date < b.date ? 1 : -1;
-      }
-      return b._creationTime - a._creationTime;
-    })
-    .slice(0, limit);
+  const docs: Doc<"assignments">[] = [];
+  for await (const doc of ctx.db
+    .query("assignments")
+    .withIndex("by_client_and_date", (q) => q.eq("clientId", clientId))
+    .order("desc")) {
+    if (doc.status === "scheduled" || doc.date === null) continue;
+    docs.push(doc);
+    if (docs.length >= limit) break;
+  }
+  return docs;
 }
 
 export const assignmentHistory = query({
@@ -1054,14 +1038,17 @@ async function deleteSessionEntries(
   ctx: MutationCtx,
   assignmentId: Id<"assignments">,
 ): Promise<void> {
-  for (const log of await logDocs(ctx, assignmentId)) {
-    await ctx.db.delete("setLogs", log._id);
-  }
-  const notes = await ctx.db
-    .query("exerciseNotes")
-    .withIndex("by_assignment", (q) => q.eq("assignmentId", assignmentId))
-    .collect();
-  for (const note of notes) await ctx.db.delete("exerciseNotes", note._id);
+  const [logs, notes] = await Promise.all([
+    logDocs(ctx, assignmentId),
+    ctx.db
+      .query("exerciseNotes")
+      .withIndex("by_assignment", (q) => q.eq("assignmentId", assignmentId))
+      .collect(),
+  ]);
+  await Promise.all([
+    ...logs.map((log) => ctx.db.delete("setLogs", log._id)),
+    ...notes.map((note) => ctx.db.delete("exerciseNotes", note._id)),
+  ]);
 }
 
 export const logsFor = query({
@@ -1106,10 +1093,12 @@ export const recordSet = mutation({
       rpe: metric(args.rpe),
       notes: args.notes ?? "",
     };
-
-    const existing = (await logDocs(ctx, doc._id)).find(
-      (log) => log.itemId === args.itemId && log.setIndex === args.setIndex,
-    );
+    const existing = await ctx.db
+      .query("setLogs")
+      .withIndex("by_assignment_item_set", (q) =>
+        q.eq("assignmentId", doc._id).eq("itemId", args.itemId).eq("setIndex", args.setIndex),
+      )
+      .unique();
     if (existing) {
       await ctx.db.patch("setLogs", existing._id, values);
       return null;
@@ -1131,11 +1120,13 @@ export const clearSet = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const doc = await writable(ctx, args.assignmentId);
-    for (const log of await logDocs(ctx, doc._id)) {
-      if (log.itemId === args.itemId && log.setIndex === args.setIndex) {
-        await ctx.db.delete("setLogs", log._id);
-      }
-    }
+    const existing = await ctx.db
+      .query("setLogs")
+      .withIndex("by_assignment_item_set", (q) =>
+        q.eq("assignmentId", doc._id).eq("itemId", args.itemId).eq("setIndex", args.setIndex),
+      )
+      .unique();
+    if (existing) await ctx.db.delete("setLogs", existing._id);
     return null;
   },
 });
@@ -1455,14 +1446,49 @@ export const swapExercise = mutation({
 });
 
 /**
- * The client's previous numbers for an exercise, so the logger can pre-fill
+ * The client's previous numbers for each exercise, so the logger can pre-fill
  * instead of asking them to remember. Excludes the session in progress.
  *
- * `by_exercise` narrows to the one movement across the studio, which is a much
- * smaller set than everything this client has ever logged; the walk stops at
- * the first log that belongs to her, newest first, and that log's session is
- * the one to read in full.
+ * Walks this client's calendar newest-first and stops once every asked
+ * exercise has a session with logs. Cheaper than reading every log of those
+ * movements across the studio, and one query covers the whole player instead
+ * of one round trip per exercise.
  */
+async function previousLogsByExercise(
+  ctx: Ctx,
+  clientId: Id<"users">,
+  exerciseIds: string[],
+  excludeAssignmentId: Id<"assignments"> | undefined,
+): Promise<Map<string, SetLog[]>> {
+  const remaining = new Set(exerciseIds.filter((id) => id.length > 0));
+  const found = new Map<string, SetLog[]>();
+  if (remaining.size === 0) return found;
+
+  for await (const assignment of ctx.db
+    .query("assignments")
+    .withIndex("by_client_and_date", (q) => q.eq("clientId", clientId))
+    .order("desc")) {
+    if (excludeAssignmentId && assignment._id === excludeAssignmentId) continue;
+    if (assignment.status === "scheduled" && assignment.startedAt == null) continue;
+    const logs = await logDocs(ctx, assignment._id);
+    if (logs.length === 0) continue;
+    const byExercise = new Map<string, Doc<"setLogs">[]>();
+    for (const log of logs) {
+      if (!remaining.has(log.exerciseId)) continue;
+      const list = byExercise.get(log.exerciseId);
+      if (list) list.push(log);
+      else byExercise.set(log.exerciseId, [log]);
+    }
+    for (const [exerciseId, list] of byExercise) {
+      list.sort((a, b) => a.setIndex - b.setIndex);
+      found.set(exerciseId, list.map(mapLog));
+      remaining.delete(exerciseId);
+    }
+    if (remaining.size === 0) break;
+  }
+  return found;
+}
+
 export const lastLogsForExercise = query({
   args: {
     clientId: v.id("users"),
@@ -1472,34 +1498,30 @@ export const lastLogsForExercise = query({
   returns: v.array(setLogShape),
   handler: async (ctx, args) => {
     await requireClientAccess(ctx, args.clientId);
+    const found = await previousLogsByExercise(ctx, args.clientId, [args.exerciseId], args.excludeAssignmentId);
+    return found.get(args.exerciseId) ?? [];
+  },
+});
 
-    const logs = await ctx.db
-      .query("setLogs")
-      .withIndex("by_exercise", (q) => q.eq("exerciseId", args.exerciseId))
-      .order("desc")
-      .collect();
-
-    const owners = new Map<string, boolean>();
-    let previousId: Id<"assignments"> | null = null;
-    for (const log of logs) {
-      if (log.assignmentId === args.excludeAssignmentId) continue;
-      let mine = owners.get(log.assignmentId);
-      if (mine === undefined) {
-        const assignment = await ctx.db.get("assignments", log.assignmentId);
-        mine = assignment?.clientId === args.clientId;
-        owners.set(log.assignmentId, mine);
-      }
-      if (mine) {
-        previousId = log.assignmentId;
-        break;
-      }
-    }
-    if (!previousId) return [];
-
-    return logs
-      .filter((log) => log.assignmentId === previousId)
-      .sort((a, b) => a.setIndex - b.setIndex)
-      .map(mapLog);
+export const lastLogsForExercises = query({
+  args: {
+    clientId: v.id("users"),
+    exerciseIds: v.array(v.string()),
+    excludeAssignmentId: v.optional(v.id("assignments")),
+  },
+  returns: v.array(v.object({ exerciseId: v.string(), logs: v.array(setLogShape) })),
+  handler: async (ctx, args) => {
+    await requireClientAccess(ctx, args.clientId);
+    const found = await previousLogsByExercise(
+      ctx,
+      args.clientId,
+      args.exerciseIds,
+      args.excludeAssignmentId,
+    );
+    return args.exerciseIds.map((exerciseId) => ({
+      exerciseId,
+      logs: found.get(exerciseId) ?? [],
+    }));
   },
 });
 
@@ -1560,13 +1582,13 @@ export const personalRecords = query({
 
     const names = new Map<string, string>();
     for (const assignment of assignments) nameExercises(names, assignment.snapshot);
-
+    const logsByAssignment = await Promise.all(assignments.map((assignment) => logDocs(ctx, assignment._id)));
     const best = new Map<
       string,
       { bestLoadKg: number | null; bestSeconds: number | null; bestReps: number | null }
     >();
-    for (const assignment of assignments) {
-      for (const log of await logDocs(ctx, assignment._id)) {
+    for (const logs of logsByAssignment) {
+      for (const log of logs) {
         const current = best.get(log.exerciseId) ?? {
           bestLoadKg: null,
           bestSeconds: null,
@@ -1641,13 +1663,15 @@ export const exerciseProgression = query({
 
     const names = new Map<string, string>();
     const series = new Map<string, Infer<typeof exerciseProgressionShape>["points"]>();
-    for (const assignment of assignments) {
+    const logsByAssignment = await Promise.all(assignments.map((assignment) => logDocs(ctx, assignment._id)));
+    for (let i = 0; i < assignments.length; i++) {
+      const assignment = assignments[i];
       nameExercises(names, assignment.snapshot);
       const best = new Map<
         string,
         { loadKg: number | null; reps: number | null; seconds: number | null; rpe: number | null }
       >();
-      for (const log of await logDocs(ctx, assignment._id)) {
+      for (const log of logsByAssignment[i]) {
         const current = best.get(log.exerciseId) ?? { loadKg: null, reps: null, seconds: null, rpe: null };
         best.set(log.exerciseId, {
           loadKg: highest(current.loadKg, log.loadKg),
@@ -1685,11 +1709,10 @@ export const sessionHistory = query({
   handler: async (ctx, args) => {
     await requireClientAccess(ctx, args.clientId);
     const docs = await historyDocs(ctx, args.clientId, bounded(args.limit, 60, 500));
-
-    const rows: Infer<typeof sessionRowShape>[] = [];
-    for (const doc of docs) {
-      const logs = await logDocs(ctx, doc._id);
-      rows.push({
+    const logsByDoc = await Promise.all(docs.map((doc) => logDocs(ctx, doc._id)));
+    return docs.map((doc, index) => {
+      const logs = logsByDoc[index];
+      return {
         id: doc._id,
         date: doc.date,
         name: doc.snapshot.name,
@@ -1701,9 +1724,8 @@ export const sessionHistory = query({
         loggedSets: logs.length,
         durationMinutes: durationOf(doc),
         volumeKg: volumeOf(logs),
-      });
-    }
-    return rows;
+      };
+    });
   },
 });
 
@@ -1799,9 +1821,11 @@ export const workoutProgression = query({
     sessions.sort((a, b) => a.date.localeCompare(b.date));
 
     const points = new Map<string, Infer<typeof progressionPointShape>[]>();
-    for (const session of sessions) {
+    const logsBySession = await Promise.all(sessions.map((session) => logDocs(ctx, session.id)));
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
       const best = new Map<string, { loadKg: number | null; reps: number | null; seconds: number | null }>();
-      for (const log of await logDocs(ctx, session.id)) {
+      for (const log of logsBySession[i]) {
         const current = best.get(log.exerciseId) ?? { loadKg: null, reps: null, seconds: null };
         best.set(log.exerciseId, {
           loadKg: highest(current.loadKg, log.loadKg),

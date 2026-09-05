@@ -424,6 +424,7 @@ export default defineSchema({
     notes: v.string(),
   })
     .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_item_set", ["assignmentId", "itemId", "setIndex"])
     .index("by_exercise", ["exerciseId"]),
 
   /**

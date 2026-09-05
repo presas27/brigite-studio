@@ -8,7 +8,7 @@ import { chip, chipAccent, eyebrow, heading, surfaceLink } from "@/components/st
 import { requireCoach } from "@/lib/studio/auth";
 import { coachAlerts, recentActivity, unreadTotal } from "@/lib/studio/coaching";
 import { dayKey } from "@/lib/studio/dates";
-import { assignmentsOn } from "@/lib/studio/plan";
+import { studioAssignmentsBetween } from "@/lib/studio/plan";
 import { listClients } from "@/lib/studio/users";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
  * so a message that just landed does not wait on a reload.
  */
 export default async function OverviewPage() {
-  const [coach, t, locale, clients, alerts, activity, unreadMessages] = await Promise.all([
+  const today = dayKey();
+  const [coach, t, locale, clients, alerts, activity, unreadMessages, todaySessions] = await Promise.all([
     requireCoach(),
     getTranslations("Studio.overview"),
     getLocale(),
@@ -33,17 +34,8 @@ export default async function OverviewPage() {
     coachAlerts(),
     recentActivity(24),
     unreadTotal(),
+    studioAssignmentsBetween(today, today),
   ]);
-
-  const today = dayKey();
-  const todaySessions = (
-    await Promise.all(
-      clients.map(async (client) => {
-        const assignments = await assignmentsOn(client.id, today);
-        return assignments.map((assignment) => ({ client, assignment }));
-      }),
-    )
-  ).flat();
 
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_21rem]">
@@ -77,18 +69,18 @@ export default async function OverviewPage() {
             <Empty title={t("todaySessionsEmpty")} />
           ) : (
             <ul className="space-y-2">
-              {todaySessions.map(({ client, assignment }) => (
+              {todaySessions.map((assignment) => (
                 <li key={assignment.id}>
                   <Link
-                    href={`/app/coach/alunos/${client.id}/plano`}
+                    href={`/app/coach/alunos/${assignment.clientId}/plano`}
                     className={cn(surfaceLink, "flex flex-wrap items-center gap-3 p-4")}
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream/10 font-sans text-xs font-semibold text-cream/70 ring-1 ring-cream/10">
-                      {client.name.trim().charAt(0).toUpperCase()}
+                      {assignment.clientName.trim().charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-sans text-sm font-semibold text-cream">
-                        {client.name}
+                        {assignment.clientName}
                       </span>
                       <span className="block truncate text-xs text-cream/55">
                         {assignment.snapshot.name}
