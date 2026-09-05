@@ -41,6 +41,7 @@ export function ExerciseStage({
   progress,
   onOpenList,
   note,
+  onStartRest,
   onChange,
 }: {
   step: SessionStep;
@@ -59,6 +60,8 @@ export function ExerciseStage({
    * the player owns the assignment and the draft state.
    */
   note?: React.ReactNode;
+  /** Starts the prescribed rest without leaving this exercise. Hidden when rest is 0. */
+  onStartRest?: () => void;
   onChange: (value: SetValue) => void;
 }) {
   const t = useTranslations("Studio.session");
@@ -233,20 +236,20 @@ export function ExerciseStage({
 
           {/* One line, one truth: which set she is on and what it asks for.
               The dots keep it a sentence instead of three floating chips. */}
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 font-sans text-sm md:text-base">
-            <span className="font-semibold text-accent-ink">
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 font-sans">
+            <span className="text-lg font-semibold tabular-nums text-accent-ink md:text-xl">
               {step.round != null
                 ? t("roundShort", { round: step.round, total: step.roundCount ?? step.round })
                 : t("setShort", { set: step.setNumber, total: step.setCount })}
             </span>
             {target && (
-              <span className="text-cream/60">
+              <span className="text-base font-medium text-cream/80 md:text-lg">
                 <span aria-hidden className="pr-2 text-cream/30">·</span>
                 {target}
               </span>
             )}
             {step.item.tempo && (
-              <span className="text-cream/60">
+              <span className="text-sm text-cream/60 md:text-base">
                 <span aria-hidden className="pr-2 text-cream/30">·</span>
                 {common("tempo")} {step.item.tempo}
               </span>
@@ -289,6 +292,16 @@ export function ExerciseStage({
         <div className="fixed inset-x-0 bottom-0 z-30 space-y-3 rounded-t-[1.5rem] bg-rail px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-24px_48px_-28px_rgba(0,0,0,0.55)] ring-1 ring-cream/10 md:contents">
           <div data-stage="fields" className="md:order-2">
             <SetFields step={step} value={value} previous={previous} onChange={onChange} />
+            {onStartRest && step.item.restSeconds > 0 && (
+              <button
+                type="button"
+                onClick={onStartRest}
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-cream/[0.06] px-3 py-1.5 font-sans text-xs font-medium text-cream/70 ring-1 ring-cream/10 transition-colors hover:bg-cream/10 hover:text-cream"
+              >
+                <Icon name="clock" className="h-3.5 w-3.5" />
+                {t("startRest", { seconds: step.item.restSeconds })}
+              </button>
+            )}
           </div>
 
           {/* The line and the way into the list, on one row: the map of the
@@ -341,7 +354,7 @@ function StageMedia({
 }) {
   const t = useTranslations("Studio.session");
   const frame =
-    "relative aspect-video w-full overflow-hidden rounded-[1.5rem] bg-cream/[0.06] ring-1 ring-cream/10";
+    "relative aspect-video w-full max-h-[28vh] overflow-hidden rounded-[1.15rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-none";
   const videoUrl = step.item.videoUrl;
   const id = videoUrl ? youtubeId(videoUrl) : null;
 

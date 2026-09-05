@@ -159,6 +159,14 @@ export async function sessionReport(assignmentId: string): Promise<SessionReport
     }
   }
 
+  const sessionNote = noteByItem.get("__session");
+  if (sessionNote?.trim()) {
+    exerciseNotes.unshift({
+      exerciseName: assignment.snapshot.name,
+      body: sessionNote.trim(),
+    });
+  }
+
   return {
     assignment,
     blocks,

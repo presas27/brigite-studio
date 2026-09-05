@@ -653,7 +653,21 @@
         "emptyMonth": "No workouts this month.",
         "emptyWeek": "No workouts this week.",
         "dayEmpty": "Nothing scheduled.",
-        "dayEmptyHint": "Open a client to assign a workout."
+        "dayEmptyHint": "Open a client to assign a workout.",
+        "add": "Add",
+        "addTitle": "Log on this day",
+        "addLead": "What do you want to add to {date}.",
+        "addSoon": "Not available to log here yet.",
+        "addKind": {
+          "workout": "Workout",
+          "cardio": "Cardio",
+          "meal": "Meal",
+          "water": "Water",
+          "appointment": "Appointment",
+          "photos": "Photos",
+          "bodyStats": "Body stats",
+          "sleep": "Sleep"
+        }
       },
       "status": {
         "scheduled": "Scheduled",
@@ -748,6 +762,10 @@
     "session": {
       "title": "Session",
       "start": "Start session",
+      "startNow": "Start now",
+      "previewEyebrow": "Before you begin",
+      "startRest": "Rest {seconds}s",
+      "sessionNote": "Session note",
       "resume": "Resume session",
       "finish": "Finish session",
       "finishing": "Finishing…",

@@ -30,6 +30,7 @@ export function SwapExerciseButton({
   replaces,
   coached,
   onSwapAction,
+  compact = false,
 }: {
   assignmentId: string;
   itemId: string;
@@ -39,6 +40,8 @@ export function SwapExerciseButton({
   /** Whether a coach will hear about it: decides how the note is labelled. */
   coached: boolean;
   onSwapAction: (input: { exerciseId: string; exerciseName: string; note: string }) => Promise<void>;
+  /** Icon-only trigger, for the player's header. */
+  compact?: boolean;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
@@ -83,10 +86,14 @@ export function SwapExerciseButton({
       <button
         type="button"
         onClick={openPicker}
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream"
+        aria-label={t("swapExercise")}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream",
+          compact ? "p-2" : "px-2.5 py-1.5",
+        )}
       >
         <Icon name="swap" className="h-3.5 w-3.5" />
-        {t("swapExercise")}
+        {!compact && t("swapExercise")}
       </button>
 
       <Modal

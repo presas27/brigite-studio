@@ -653,7 +653,21 @@
         "emptyMonth": "Sem treinos este mês.",
         "emptyWeek": "Sem treinos esta semana.",
         "dayEmpty": "Nada marcado.",
-        "dayEmptyHint": "Abre um aluno para lhe atribuir um treino."
+        "dayEmptyHint": "Abre um aluno para lhe atribuir um treino.",
+        "add": "Adicionar",
+        "addTitle": "Registar neste dia",
+        "addLead": "O que queres acrescentar a {date}.",
+        "addSoon": "Ainda não dá para registar isto aqui.",
+        "addKind": {
+          "workout": "Treino",
+          "cardio": "Cardio",
+          "meal": "Refeição",
+          "water": "Água",
+          "appointment": "Consulta",
+          "photos": "Fotos",
+          "bodyStats": "Medidas",
+          "sleep": "Sono"
+        }
       },
       "status": {
         "scheduled": "Agendado",
@@ -748,6 +762,10 @@
     "session": {
       "title": "Treino",
       "start": "Começar treino",
+      "startNow": "Começar agora",
+      "previewEyebrow": "Antes de começares",
+      "startRest": "Descanso {seconds}s",
+      "sessionNote": "Nota do treino",
       "resume": "Continuar treino",
       "finish": "Terminar treino",
       "finishing": "A terminar…",

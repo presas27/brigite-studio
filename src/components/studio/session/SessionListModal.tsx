@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
+import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Modal } from "../Modal";
 import { Icon } from "../coach/icons";
 import { eyebrow } from "../theme";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 type Row = {
   itemId: string;
   name: string;
+  videoUrl: string | null;
   /** Every step of this exercise, in the order the session runs them. */
   indexes: number[];
   done: number;
@@ -47,8 +49,6 @@ export function SessionListModal({
   const common = useTranslations("Studio.common");
   const workoutsT = useTranslations("Studio.workouts");
 
-  // One pass, preserving queue order: blocks in the order they are trained,
-  // exercises in the order they first appear inside them.
   const blocks: { id: string; label: string; kind: string; rows: Row[] }[] = [];
   steps.forEach((step, index) => {
     let block = blocks.find((entry) => entry.id === step.blockId);
@@ -69,6 +69,7 @@ export function SessionListModal({
       row = {
         itemId: step.itemId,
         name: step.item.exerciseName,
+        videoUrl: step.item.videoUrl,
         indexes: [],
         done: 0,
         detail,
@@ -110,10 +111,11 @@ export function SessionListModal({
                         onCloseAction();
                       }}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-[0.85rem] px-3 py-2.5 text-left transition-colors",
+                        "flex w-full items-center gap-3 rounded-[0.85rem] px-2 py-2 text-left transition-colors",
                         row.current ? "bg-caramel/15 ring-1 ring-caramel/30" : "hover:bg-cream/5",
                       )}
                     >
+                      <ExerciseThumb videoUrl={row.videoUrl} className="h-11 w-14 shrink-0 rounded-[0.65rem]" />
                       <span
                         aria-hidden
                         className={cn(

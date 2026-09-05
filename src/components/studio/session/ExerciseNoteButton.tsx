@@ -26,6 +26,7 @@ export function ExerciseNoteButton({
   note,
   onSaveAction,
   aside,
+  compact = false,
 }: {
   exerciseName: string;
   /** The note as it stands. Empty means there is none yet. */
@@ -37,11 +38,14 @@ export function ExerciseNoteButton({
    * swap, today. The saved note keeps the full width under the row.
    */
   aside?: React.ReactNode;
+  /** Icon-only trigger, for the player's header where there is no room for a label. */
+  compact?: boolean;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(note);
+  const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   const scope = useRef<HTMLDivElement>(null);
 
@@ -49,8 +53,6 @@ export function ExerciseNoteButton({
     () => {
       if (!note) return;
       gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
-        // The block grows into place the first time it appears, so a note that
-        // has just been saved is visibly the thing that changed.
         gsap.fromTo(
           "[data-note-block]",
           { autoAlpha: 0, y: -6 },
@@ -69,21 +71,24 @@ export function ExerciseNoteButton({
           type="button"
           onClick={() => {
             setDraft(note);
+            setFailed(false);
             setOpen(true);
           }}
+          aria-label={note ? t("editNote") : t("addNote")}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium transition-colors",
+            "inline-flex items-center gap-1.5 rounded-full font-sans text-xs font-medium transition-colors",
+            compact ? "p-2" : "px-2.5 py-1.5",
             note
               ? "bg-caramel/15 text-accent-ink hover:bg-caramel/25"
               : "text-cream/50 hover:bg-cream/8 hover:text-cream",
           )}
         >
           <Icon name={note ? "checkin" : "message"} className="h-3.5 w-3.5" />
-          {note ? t("editNote") : t("addNote")}
+          {!compact && (note ? t("editNote") : t("addNote"))}
         </button>
       </div>
 
-      {note && (
+      {!compact && note && (
         <p
           data-note-block
           className="rounded-[0.85rem] border-l-2 border-accent-ink/60 bg-cream/5 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-cream/75 md:text-sm"
@@ -102,9 +107,14 @@ export function ExerciseNoteButton({
         <form
           onSubmit={(event) => {
             event.preventDefault();
+            setFailed(false);
             startTransition(async () => {
-              await onSaveAction(draft);
-              setOpen(false);
+              try {
+                await onSaveAction(draft);
+                setOpen(false);
+              } catch {
+                setFailed(true);
+              }
             });
           }}
           className="space-y-4"
@@ -118,6 +128,11 @@ export function ExerciseNoteButton({
             placeholder={t("notePlaceholder")}
             className={cn(field, "resize-y")}
           />
+          {failed && (
+            <p role="alert" className="text-sm text-silk">
+              {t("saveFailed")}
+            </p>
+          )}
           <div className="flex justify-end gap-2">
             <button
               type="button"

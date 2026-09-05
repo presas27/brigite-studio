@@ -14,6 +14,7 @@ import { ExerciseStage } from "./ExerciseStage";
 import { ExitSheet } from "./ExitSheet";
 import { RestScreen } from "./RestScreen";
 import { SessionListModal } from "./SessionListModal";
+import { SessionPreview } from "./SessionPreview";
 import { SessionSummary } from "./SessionSummary";
 import { StepProgress } from "./StepProgress";
 import { SwapExerciseButton } from "./SwapExerciseButton";
@@ -28,7 +29,9 @@ import { Icon } from "../coach/icons";
 import { buttonGhost, buttonPrimary, heading } from "../theme";
 import { cn } from "@/lib/utils";
 
-type Phase = "exercise" | "rest" | "effort" | "summary";
+type Phase = "preview" | "exercise" | "rest" | "effort" | "summary";
+
+const SESSION_NOTE_ITEM = "__session";
 
 /**
  * The width every band of the player lines up on. Wide enough that a demo and
@@ -122,13 +125,25 @@ export function SessionPlayer({
   const saveNote = useCallback(
     async (itemId: string, exerciseId: string, body: string) => {
       const trimmed = body.trim();
+      let previous = "";
       setNotes((current) => {
+        previous = current[itemId] ?? "";
         const next = { ...current };
         if (trimmed) next[itemId] = trimmed;
         else delete next[itemId];
         return next;
       });
-      await saveNoteAction({ assignmentId: assignment.id, itemId, exerciseId, body: trimmed });
+      try {
+        await saveNoteAction({ assignmentId: assignment.id, itemId, exerciseId, body: trimmed });
+      } catch (error) {
+        setNotes((current) => {
+          const next = { ...current };
+          if (previous) next[itemId] = previous;
+          else delete next[itemId];
+          return next;
+        });
+        throw error;
+      }
     },
     [assignment.id, saveNoteAction],
   );
@@ -152,9 +167,11 @@ export function SessionPlayer({
     });
     return firstOpen === -1 ? Math.max(0, steps.length - 1) : firstOpen;
   });
-  const [phase, setPhase] = useState<Phase>(
-    assignment.status === "scheduled" ? "exercise" : "summary",
-  );
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (assignment.status !== "scheduled") return "summary";
+    if (assignment.startedAt == null) return "preview";
+    return "exercise";
+  });
   const [enterAs, setEnterAs] = useState<"set" | "exercise">("exercise");
   const [restKey, setRestKey] = useState(0);
   const [restFrom, setRestFrom] = useState(0);
@@ -204,15 +221,22 @@ export function SessionPlayer({
     }
   }, [extraRest, extraRestKey]);
 
-  // The session counts as begun the moment the client actually opens it, not
-  // when the coach assigned it.
-  useEffect(() => {
-    if (beganRef.current) return;
-    if (current.status === "scheduled" && current.startedAt == null) {
-      beganRef.current = true;
-      void beginAction();
+  // The session counts as begun the moment she taps Start Now, not the
+  // moment the route opened — that is what the preview is for.
+  async function handleStart() {
+    if (beganRef.current) {
+      setPhase("exercise");
+      return;
     }
-  }, [current.status, current.startedAt, beginAction]);
+    beganRef.current = true;
+    try {
+      await beginAction();
+    } catch {
+      beganRef.current = false;
+    }
+    setPhase("exercise");
+    setEnterAs("exercise");
+  }
 
   const step = steps[index];
   const doneCount = useMemo(() => steps.filter(isLogged).length, [steps, isLogged]);
@@ -443,6 +467,34 @@ export function SessionPlayer({
               {step.item.exerciseName}
             </h1>
           )}
+          {phase === "preview" && (
+            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
+              {current.snapshot.name}
+            </h1>
+          )}
+
+          {phase === "exercise" && step && !isRestItem(step.item) && (
+            <div className="flex shrink-0 items-center">
+              <SwapExerciseButton
+                compact
+                assignmentId={assignment.id}
+                itemId={step.itemId}
+                exerciseName={step.item.exerciseName}
+                replaces={step.item.replaces}
+                coached={coached}
+                onSwapAction={async (input) => {
+                  await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
+                  setEnterAs("exercise");
+                }}
+              />
+              <ExerciseNoteButton
+                compact
+                exerciseName={step.item.exerciseName}
+                note={notes[step.itemId] ?? ""}
+                onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
+              />
+            </div>
+          )}
 
           {syncStatus && (
             <span className="mr-auto flex shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-2 md:mr-0">
@@ -494,7 +546,7 @@ export function SessionPlayer({
           // rest/effort bar. A reserve much bigger than the bar it clears
           // reads as the screen being shoved upwards, so it is measured, not
           // padded generously.
-          phase === "exercise" ? "pb-[15rem]" : "pb-[7.5rem]",
+          phase === "exercise" ? "pb-[15rem]" : phase === "preview" ? "pb-8" : "pb-[7.5rem]",
         )}
       >
         <main
@@ -504,6 +556,15 @@ export function SessionPlayer({
             phase === "exercise" ? "md:justify-center" : "justify-center",
           )}
         >
+          {phase === "preview" && (
+            <SessionPreview
+              title={current.snapshot.name}
+              note={coachNote}
+              steps={steps}
+              onStart={() => void handleStart()}
+            />
+          )}
+
           {phase === "exercise" && step && isRestItem(step.item) && (
             <RestScreen
               key={step.key}
@@ -557,6 +618,16 @@ export function SessionPlayer({
                 </div>
               }
               onOpenList={() => setListOpen(true)}
+              onStartRest={
+                step.item.restSeconds > 0
+                  ? () => {
+                      flushSet(step.itemId, step.setIndex);
+                      setRestFrom(index);
+                      setRestKey((key) => key + 1);
+                      setPhase("rest");
+                    }
+                  : undefined
+              }
               note={
                 <ExerciseNoteButton
                   exerciseName={step.item.exerciseName}
@@ -602,6 +673,11 @@ export function SessionPlayer({
                 </p>
               </div>
               <EffortDial value={effort} onChange={setEffort} />
+              <ExerciseNoteButton
+                exerciseName={current.snapshot.name}
+                note={notes[SESSION_NOTE_ITEM] ?? ""}
+                onSaveAction={(body) => saveNote(SESSION_NOTE_ITEM, SESSION_NOTE_ITEM, body)}
+              />
               {finishFailed && (
                 <p role="alert" className="text-center text-sm text-silk">
                   {t("saveFailed")}
@@ -616,7 +692,7 @@ export function SessionPlayer({
       {/* Rest and effort keep a bar pinned to the bottom of a phone; the
           exercise screen has its own panel down there and needs none. On a wide
           screen every phase carries its controls inside its own composition. */}
-      {phase !== "exercise" && (
+      {phase !== "exercise" && phase !== "preview" && (
         <footer className="fixed inset-x-0 bottom-0 z-20 bg-background/90 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm md:hidden">
           <div className={cn(FRAME, "flex items-center gap-3")}>
             {phase === "rest" && restActions}

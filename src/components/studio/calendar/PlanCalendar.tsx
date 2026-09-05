@@ -9,6 +9,7 @@ import { Icon } from "../coach/icons";
 import { formatDayRange, formatMonth, formatYear, shortWeekday } from "../format";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
+import { CalendarAddButton } from "./CalendarAddButton";
 import { DayAgenda } from "./DayAgenda";
 import type { CalendarSubject, CalendarView, SessionsByDay } from "./types";
 
@@ -187,6 +188,7 @@ export function PlanCalendar({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {subject === "workout" && <CalendarAddButton date={selected} />}
             <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
               <Link
                 href={hrefs.prev}

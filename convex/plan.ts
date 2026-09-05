@@ -1236,12 +1236,18 @@ export const saveExerciseNote = mutation({
     const doc = await writable(ctx, args.assignmentId);
     const body = args.body.trim().slice(0, NOTE_LIMIT);
 
-    const existing = await ctx.db
+    const existingRows = await ctx.db
       .query("exerciseNotes")
       .withIndex("by_assignment_and_item", (q) =>
         q.eq("assignmentId", doc._id).eq("itemId", args.itemId),
       )
-      .unique();
+      .collect();
+    const existing = existingRows[0];
+    // The index is not unique at the engine. A doubled write used to make
+    // `.unique()` throw and take the whole session page down with it.
+    for (const extra of existingRows.slice(1)) {
+      await ctx.db.delete("exerciseNotes", extra._id);
+    }
 
     if (!body) {
       if (existing) await ctx.db.delete("exerciseNotes", existing._id);
