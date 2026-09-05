@@ -44,6 +44,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
       "http://localhost:3000",
       "https://brigitestudio.com",
       "https://www.brigitestudio.com",
+      "https://test.brigitestudio.com",
+      "https://*.brigitestudio.com",
       "https://brigite-studio-test.vercel.app",
       "https://brigite-studio-test-git-test-guilherme-presas-projects.vercel.app",
       "https://*.vercel.app",
