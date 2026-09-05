@@ -1,7 +1,7 @@
 import { findCheckin, listCheckins, measurements, messagesFor } from "./coaching";
 import { dayKey, shiftDay, weekKey } from "./dates";
 import { assignmentsBetween, assignmentsOn } from "./plan";
-import { isRestItem, type AssignmentStatus, type ScheduledAssignment } from "./types";
+import { type AssignmentStatus, type ScheduledSummary } from "./types";
 
 /**
  * The aluna's side of the console — the mirror of `coachAlerts` /
@@ -58,7 +58,7 @@ export async function clientAlerts(clientId: string): Promise<ClientAlert[]> {
       kind: "session",
       at: atNoon(today),
       assignmentId: assignment.id,
-      name: assignment.snapshot.name,
+      name: assignment.name,
     });
   }
 
@@ -84,7 +84,7 @@ export async function clientAlerts(clientId: string): Promise<ClientAlert[]> {
       at: atNoon(assignment.date),
       assignmentId: assignment.id,
       date: assignment.date,
-      name: assignment.snapshot.name,
+      name: assignment.name,
     });
   }
 
@@ -125,7 +125,7 @@ export async function clientActivity(clientId: string, limit = 12): Promise<Clie
     items.push({
       id: `session-${assignment.id}`,
       kind: assignment.status === "done" ? "session" : "skipped",
-      subject: assignment.snapshot.name,
+      subject: assignment.name,
       href: `/app/aluno/treino/${assignment.id}`,
       actor: "client",
       at: assignment.doneAt ?? atNoon(assignment.date),
@@ -246,7 +246,7 @@ const STREAK_LIMIT = 52;
  * and the bell can never say different things about the same Tuesday.
  */
 function dayStatus(
-  sessions: ScheduledAssignment[],
+  sessions: ScheduledSummary[],
   date: string,
   today: string,
 ): AssignmentStatus | null {
@@ -257,28 +257,15 @@ function dayStatus(
   return "skipped";
 }
 
-/** First clip anywhere in a session — the plate for its row. */
-function firstVideoUrl(assignment: ScheduledAssignment): string | null {
-  for (const block of assignment.snapshot.blocks) {
-    for (const item of block.items) {
-      if (item.videoUrl) return item.videoUrl;
-    }
-  }
-  return null;
-}
-
-function toOverviewSession(assignment: ScheduledAssignment): OverviewSession {
+function toOverviewSession(assignment: ScheduledSummary): OverviewSession {
   return {
     id: assignment.id,
     date: assignment.date,
-    name: assignment.snapshot.name,
-    focus: assignment.snapshot.focus.trim(),
-    itemCount: assignment.snapshot.blocks.reduce(
-      (total, block) => total + block.items.filter((item) => !isRestItem(item)).length,
-      0,
-    ),
-    estimatedMinutes: assignment.snapshot.estimatedMinutes ?? null,
-    videoUrl: firstVideoUrl(assignment),
+    name: assignment.name,
+    focus: assignment.focus.trim(),
+    itemCount: assignment.itemCount,
+    estimatedMinutes: assignment.estimatedMinutes,
+    videoUrl: assignment.videoUrl,
     startedAt: assignment.startedAt,
   };
 }
@@ -323,7 +310,7 @@ export async function clientOverview(clientId: string): Promise<ClientOverview> 
     weekStreak(clientId, monday),
   ]);
 
-  const byDate = new Map<string, ScheduledAssignment[]>();
+  const byDate = new Map<string, ScheduledSummary[]>();
   for (const assignment of thisWeek) {
     byDate.set(assignment.date, [...(byDate.get(assignment.date) ?? []), assignment]);
   }
@@ -342,7 +329,7 @@ export async function clientOverview(clientId: string): Promise<ClientOverview> 
 
   const focusCounts = new Map<string, number>();
   for (const assignment of thisWeek) {
-    const tag = assignment.snapshot.focus.trim();
+    const tag = assignment.focus.trim();
     if (!tag) continue;
     focusCounts.set(tag, (focusCounts.get(tag) ?? 0) + 1);
   }

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { buildSessionQueue, type SessionStep } from "@/lib/studio/session-queue";
-import type { Assignment, AssignmentStatus, SetLog } from "@/lib/studio/types";
-import { isRestItem } from "@/lib/studio/types";
+import { isRestItem, type Assignment, type AssignmentStatus, type SetLog } from "@/lib/studio/types";
 import { EffortDial } from "./EffortDial";
 import { ExerciseNoteButton } from "./ExerciseNoteButton";
 import { ExerciseStage } from "./ExerciseStage";
@@ -91,8 +93,12 @@ export function SessionPlayer({
 }) {
   const t = useTranslations("Studio.session");
   const router = useRouter();
+  const live = useQuery(api.plan.findAssignment, {
+    assignmentId: assignment.id as Id<"assignments">,
+  });
+  const current = live ?? assignment;
 
-  const steps = useMemo(() => buildSessionQueue(assignment.snapshot), [assignment.snapshot]);
+  const steps = useMemo(() => buildSessionQueue(current.snapshot), [current.snapshot]);
   const exerciseByItem = useMemo(() => {
     const byItem: Record<string, string> = {};
     for (const step of steps) byItem[step.itemId] = step.exerciseId;
@@ -202,11 +208,11 @@ export function SessionPlayer({
   // when the coach assigned it.
   useEffect(() => {
     if (beganRef.current) return;
-    if (assignment.status === "scheduled" && assignment.startedAt == null) {
+    if (current.status === "scheduled" && current.startedAt == null) {
       beganRef.current = true;
       void beginAction();
     }
-  }, [assignment.status, assignment.startedAt, beginAction]);
+  }, [current.status, current.startedAt, beginAction]);
 
   const step = steps[index];
   const doneCount = useMemo(() => steps.filter(isLogged).length, [steps, isLogged]);
@@ -224,7 +230,7 @@ export function SessionPlayer({
   // The session's own instructions, plus whatever Sara wrote for this one day.
   // Neither belongs to any single set, so they live in the list — reachable all
   // session instead of only on the first screen.
-  const coachNote = [assignment.snapshot.instructions, assignment.note]
+  const coachNote = [current.snapshot.instructions, current.note]
     .map((line) => line.trim())
     .filter(Boolean)
     .join("\n\n");
@@ -273,8 +279,8 @@ export function SessionPlayer({
     try {
       await finishAction({ effort: withEffort, extraRestSeconds: extraRest });
       setReportedExtraRest(extraRest);
-      if (assignment.startedAt != null) {
-        setDurationMinutes(Math.max(1, Math.round((Date.now() - assignment.startedAt) / 60_000)));
+      if (current.startedAt != null) {
+        setDurationMinutes(Math.max(1, Math.round((Date.now() - current.startedAt) / 60_000)));
       }
       setFinalStatus("done");
       setPhase("summary");
@@ -313,7 +319,7 @@ export function SessionPlayer({
       <Shell>
         <Centred>
           <div className="mx-auto max-w-md space-y-4 text-center">
-            <h1 className={cn(heading, "text-2xl")}>{assignment.snapshot.name}</h1>
+            <h1 className={cn(heading, "text-2xl")}>{current.snapshot.name}</h1>
             <p className="text-sm text-cream/60">{t("emptyWorkout")}</p>
             <button type="button" onClick={() => router.push("/app/aluno")} className={buttonPrimary}>
               {t("backToApp")}
@@ -329,7 +335,7 @@ export function SessionPlayer({
       <Shell>
         <Centred>
           <SessionSummary
-            name={assignment.snapshot.name}
+            name={current.snapshot.name}
             status={finalStatus}
             doneCount={doneCount}
             totalCount={steps.length}
@@ -626,7 +632,7 @@ export function SessionPlayer({
         currentIndex={index}
         isLogged={isLogged}
         onJump={goTo}
-        title={assignment.snapshot.name}
+        title={current.snapshot.name}
         note={coachNote}
       />
 

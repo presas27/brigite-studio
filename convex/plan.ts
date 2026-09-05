@@ -13,7 +13,12 @@ import schema from "./schema";
 import { dayKey, shiftDay } from "../src/lib/studio/dates";
 import { searchKey } from "../src/lib/utils";
 import { buildSessionQueue } from "../src/lib/studio/session-queue";
-import type { Assignment, ScheduledAssignment, SetLog } from "../src/lib/studio/types";
+import type {
+  Assignment,
+  AssignmentSummary,
+  ScheduledSummary,
+  SetLog,
+} from "../src/lib/studio/types";
 
 /**
  * The training plan: workouts placed on a client's calendar, and what the
@@ -65,11 +70,33 @@ const assignmentShape = v.object({
   date: v.union(v.null(), v.string()),
 });
 
-/** `ScheduledAssignment`: the same row, but the date is known to be there. */
-const scheduledShape = v.object({ ...assignmentFields, date: v.string() });
+const assignmentSummaryFields = {
+  id: v.string(),
+  clientId: v.string(),
+  workoutId: v.union(v.null(), v.string()),
+  status: assignmentColumns.status,
+  note: v.string(),
+  startedAt: v.union(v.null(), v.number()),
+  doneAt: v.union(v.null(), v.number()),
+  effort: v.union(v.null(), v.number()),
+  extraRestSeconds: v.number(),
+  createdAt: v.number(),
+  name: v.string(),
+  focus: v.string(),
+  estimatedMinutes: v.union(v.null(), v.number()),
+  itemCount: v.number(),
+  videoUrl: v.union(v.null(), v.string()),
+};
 
-const studioShape = v.object({
-  ...assignmentFields,
+const assignmentSummaryShape = v.object({
+  ...assignmentSummaryFields,
+  date: v.union(v.null(), v.string()),
+});
+
+const scheduledSummaryShape = v.object({ ...assignmentSummaryFields, date: v.string() });
+
+const studioSummaryShape = v.object({
+  ...assignmentSummaryFields,
   date: v.string(),
   clientName: v.string(),
 });
@@ -175,6 +202,53 @@ function mapAssignment(doc: Doc<"assignments">): Assignment {
   };
 }
 
+function mapAssignmentSummary(doc: Doc<"assignments">): AssignmentSummary {
+  let itemCount = 0;
+  let videoUrl: string | null = null;
+  for (const block of doc.snapshot.blocks) {
+    for (const item of block.items) {
+      if (item.kind !== "rest") itemCount += 1;
+      if (videoUrl == null && item.videoUrl) videoUrl = item.videoUrl;
+    }
+  }
+  return {
+    id: doc._id,
+    clientId: doc.clientId,
+    workoutId: doc.workoutId,
+    date: doc.date,
+    status: doc.status,
+    note: doc.note,
+    startedAt: doc.startedAt,
+    doneAt: doc.doneAt,
+    effort: doc.effort,
+    extraRestSeconds: doc.extraRestSeconds,
+    createdAt: doc._creationTime,
+    name: doc.snapshot.name,
+    focus: doc.snapshot.focus,
+    estimatedMinutes: doc.snapshot.estimatedMinutes ?? null,
+    itemCount,
+    videoUrl,
+  };
+}
+
+/**
+ * Keep only the rows that have a day, and say so in the type.
+ *
+ * SQL got this for free: `date BETWEEN ? AND ?` and `date = ?` both drop
+ * `NULL` rows, which is why a dated summary can promise a `string`. A Convex
+ * index range does the same thing — `null` sorts before every string — but
+ * every date-ranged query below still runs its result through here so the
+ * promise the type makes is one the code actually keeps.
+ */
+function scheduledSummaries(docs: Doc<"assignments">[]): ScheduledSummary[] {
+  const rows: ScheduledSummary[] = [];
+  for (const doc of docs) {
+    if (doc.date === null) continue;
+    rows.push({ ...mapAssignmentSummary(doc), date: doc.date });
+  }
+  return rows;
+}
+
 /**
  * `loggedAt` is `_creationTime`: a set that is logged again is a patch of the
  * same row, and the order the sets first came in is the order every reader
@@ -194,26 +268,6 @@ function mapLog(doc: Doc<"setLogs">): SetLog {
     notes: doc.notes,
     loggedAt: doc._creationTime,
   };
-}
-
-/**
- * Keep only the rows that have a day, and say so in the type.
- *
- * SQL got this for free: `date BETWEEN ? AND ?` and `date = ?` both drop
- * `NULL` rows, which is why `ScheduledAssignment` can promise a `string`. A
- * Convex index range does the same thing — `null` sorts before every string,
- * so a range bounded by two date keys can never contain one — but that is a
- * property of the collation and not something a reader of this file can see.
- * Every date-ranged query below therefore runs its result through here, and
- * the promise the type makes is one the code actually keeps.
- */
-function scheduledOnly(docs: Doc<"assignments">[]): ScheduledAssignment[] {
-  const rows: ScheduledAssignment[] = [];
-  for (const doc of docs) {
-    if (doc.date === null) continue;
-    rows.push({ ...mapAssignment(doc), date: doc.date });
-  }
-  return rows;
 }
 
 /**
@@ -544,7 +598,7 @@ export const findAssignment = query({
 /** Assignments for a client between two `YYYY-MM-DD` keys, inclusive. */
 export const assignmentsBetween = query({
   args: { clientId: v.id("users"), from: v.string(), to: v.string() },
-  returns: v.array(scheduledShape),
+  returns: v.array(scheduledSummaryShape),
   handler: async (ctx, args) => {
     const { viewer } = await requireClientAccess(ctx, args.clientId);
     const [docs, hidden] = await Promise.all([
@@ -558,14 +612,14 @@ export const assignmentsBetween = query({
     ]);
     // The index orders by (clientId, date, _creationTime), which is the
     // `ORDER BY date, created_at` the calendar reads.
-    return scheduledOnly(visible(docs, hidden));
+    return scheduledSummaries(visible(docs, hidden));
   },
 });
 
 /** A client's workouts assigned with no day yet, oldest first. */
 export const unscheduledAssignments = query({
   args: { clientId: v.id("users") },
-  returns: v.array(assignmentShape),
+  returns: v.array(assignmentSummaryShape),
   handler: async (ctx, args) => {
     const { viewer } = await requireClientAccess(ctx, args.clientId);
     const [docs, hidden] = await Promise.all([
@@ -575,7 +629,7 @@ export const unscheduledAssignments = query({
         .collect(),
       hiddenFor(ctx, args.clientId, viewer),
     ]);
-    return visible(docs, hidden).map(mapAssignment);
+    return visible(docs, hidden).map(mapAssignmentSummary);
   },
 });
 
@@ -723,7 +777,7 @@ export const clientWorkouts = query({
  */
 export const studioAssignmentsBetween = query({
   args: { from: v.string(), to: v.string() },
-  returns: v.array(studioShape),
+  returns: v.array(studioSummaryShape),
   handler: async (ctx, args) => {
     const coach = await requireCoach(ctx);
 
@@ -743,7 +797,7 @@ export const studioAssignmentsBetween = query({
             q.eq("clientId", client._id).gte("date", args.from).lte("date", args.to),
           )
           .collect();
-        return scheduledOnly(docs).map((assignment) => ({ ...assignment, clientName: client.name }));
+        return scheduledSummaries(docs).map((assignment) => ({ ...assignment, clientName: client.name }));
       }),
     );
     const rows = perClient.flat();
@@ -761,7 +815,7 @@ export const studioAssignmentsBetween = query({
 
 export const assignmentsOn = query({
   args: { clientId: v.id("users"), date: v.string() },
-  returns: v.array(scheduledShape),
+  returns: v.array(scheduledSummaryShape),
   handler: async (ctx, args) => {
     const { viewer } = await requireClientAccess(ctx, args.clientId);
     const [docs, hidden] = await Promise.all([
@@ -773,14 +827,14 @@ export const assignmentsOn = query({
         .collect(),
       hiddenFor(ctx, args.clientId, viewer),
     ]);
-    return scheduledOnly(visible(docs, hidden));
+    return scheduledSummaries(visible(docs, hidden));
   },
 });
 
 /** The client's next unfinished session — today's if there is one, else the soonest ahead. */
 export const nextAssignment = query({
   args: { clientId: v.id("users"), from: v.optional(v.string()) },
-  returns: v.union(v.null(), scheduledShape),
+  returns: v.union(v.null(), scheduledSummaryShape),
   handler: async (ctx, args) => {
     const { viewer } = await requireClientAccess(ctx, args.clientId);
     const from = args.from ?? dayKey();
@@ -795,7 +849,7 @@ export const nextAssignment = query({
       )) {
       if (doc.date === null || doc.status !== "scheduled") continue;
       if (doc.workoutId && hidden.has(doc.workoutId as string)) continue;
-      return { ...mapAssignment(doc), date: doc.date };
+      return { ...mapAssignmentSummary(doc), date: doc.date };
     }
     return null;
   },
@@ -827,11 +881,11 @@ async function historyDocs(
 
 export const assignmentHistory = query({
   args: { clientId: v.id("users"), limit: v.optional(v.number()) },
-  returns: v.array(assignmentShape),
+  returns: v.array(assignmentSummaryShape),
   handler: async (ctx, args) => {
     await requireClientAccess(ctx, args.clientId);
     const docs = await historyDocs(ctx, args.clientId, bounded(args.limit, 30, 500));
-    return docs.map(mapAssignment);
+    return docs.map(mapAssignmentSummary);
   },
 });
 

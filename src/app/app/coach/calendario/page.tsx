@@ -49,8 +49,8 @@ export default async function CoachCalendarPage({
       clientName: assignment.clientName,
       date: assignment.date,
       status: assignment.status,
-      workoutName: assignment.snapshot.name,
-      focus: assignment.snapshot.focus,
+      workoutName: assignment.name,
+      focus: assignment.focus,
       // Straight into the week where that session can actually be moved or removed.
       href: `/app/coach/alunos/${assignment.clientId}/plano?semana=${weekKey(
         new Date(`${assignment.date}T12:00:00Z`),

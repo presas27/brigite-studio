@@ -8,7 +8,7 @@ import {
   heading,
   surfaceAccent,
 } from "@/components/studio/theme";
-import type { ScheduledAssignment } from "@/lib/studio/types";
+import type { ScheduledSummary } from "@/lib/studio/types";
 import { capitalize, cn } from "@/lib/utils";
 
 /**
@@ -35,7 +35,7 @@ export async function TodayCard({
   coachName,
   className,
 }: {
-  session: ScheduledAssignment | undefined;
+  session: ScheduledSummary | undefined;
   /** Whether `session` is today's, or the next one ahead. Changes only the label. */
   isToday: boolean;
   /** Who to ask when the plan is empty. `null` for someone training alone. */
@@ -99,7 +99,7 @@ export async function TodayCard({
           id="today-session"
           className={cn(heading, "text-[1.6rem] break-words sm:text-[2rem]")}
         >
-          {session.snapshot.name}
+          {session.name}
         </h2>
       </div>
 

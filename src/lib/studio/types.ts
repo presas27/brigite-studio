@@ -396,6 +396,32 @@ export type Assignment = {
  * callers that read from one of those don't have to null-check the date. */
 export type ScheduledAssignment = Assignment & { date: string };
 
+/**
+ * An assignment as lists draw it: who, when, status, and the snapshot's name
+ * plate — never the frozen blocks. A month of full snapshots is a month of
+ * cues and video URLs nobody on a calendar reads.
+ */
+export type AssignmentSummary = {
+  id: string;
+  clientId: string;
+  workoutId: string | null;
+  date: string | null;
+  status: AssignmentStatus;
+  note: string;
+  startedAt: number | null;
+  doneAt: number | null;
+  effort: number | null;
+  extraRestSeconds: number;
+  createdAt: number;
+  name: string;
+  focus: string;
+  estimatedMinutes: number | null;
+  itemCount: number;
+  videoUrl: string | null;
+};
+
+export type ScheduledSummary = AssignmentSummary & { date: string };
+
 export type WorkoutSnapshot = {
   name: string;
   focus: string;

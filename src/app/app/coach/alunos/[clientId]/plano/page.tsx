@@ -17,7 +17,7 @@ import { dayKey, shiftDay, weekKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
 import { listPhases } from "@/lib/studio/phases";
 import { assignmentsBetween, unscheduledAssignments } from "@/lib/studio/plan";
-import type { Assignment } from "@/lib/studio/types";
+import type { AssignmentSummary } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { captureFromClientAction } from "@/app/app/coach/programas/actions";
 import { assign, createPhaseAction, markSkipped, move, remove } from "./actions";
@@ -75,9 +75,9 @@ export default async function CoachPlanPage({
     unscheduledAssignments(clientId),
   ]);
 
-  const byDate: Record<string, Assignment[]> = {};
+  const byDate: Record<string, AssignmentSummary[]> = {};
   for (const assignment of assignments) {
-    (byDate[assignment.date as string] ??= []).push(assignment);
+    (byDate[assignment.date] ??= []).push(assignment);
   }
   const days = Array.from({ length: 7 }, (_, i) => shiftDay(monday, i));
   // Fixed dd/mm, not locale-formatted — this pill reads as a date stamp, not prose.

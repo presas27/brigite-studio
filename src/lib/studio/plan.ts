@@ -5,9 +5,10 @@ import { dayKey } from "./dates";
 import type {
   Assignment,
   AssignmentStatus,
+  AssignmentSummary,
   ClientWorkout,
   ExerciseNote,
-  ScheduledAssignment,
+  ScheduledSummary,
   SetLog,
 } from "./types";
 
@@ -107,12 +108,12 @@ export async function assignmentsBetween(
   clientId: string,
   from: string,
   to: string,
-): Promise<ScheduledAssignment[]> {
+): Promise<ScheduledSummary[]> {
   return sq(api.plan.assignmentsBetween, { clientId: clientId as Id<"users">, from, to });
 }
 
 /** A client's workouts assigned with no day yet, oldest first. */
-export async function unscheduledAssignments(clientId: string): Promise<Assignment[]> {
+export async function unscheduledAssignments(clientId: string): Promise<AssignmentSummary[]> {
   return sq(api.plan.unscheduledAssignments, { clientId: clientId as Id<"users"> });
 }
 
@@ -124,14 +125,11 @@ export async function unscheduledAssignments(clientId: string): Promise<Assignme
 export async function studioAssignmentsBetween(
   from: string,
   to: string,
-): Promise<(ScheduledAssignment & { clientName: string })[]> {
+): Promise<(ScheduledSummary & { clientName: string })[]> {
   return sq(api.plan.studioAssignmentsBetween, { from, to });
 }
 
-export async function assignmentsOn(
-  clientId: string,
-  date: string,
-): Promise<ScheduledAssignment[]> {
+export async function assignmentsOn(clientId: string, date: string): Promise<ScheduledSummary[]> {
   return sq(api.plan.assignmentsOn, { clientId: clientId as Id<"users">, date });
 }
 
@@ -139,7 +137,7 @@ export async function assignmentsOn(
 export async function nextAssignment(
   clientId: string,
   from: string = dayKey(),
-): Promise<ScheduledAssignment | undefined> {
+): Promise<ScheduledSummary | undefined> {
   const assignment = await sq(api.plan.nextAssignment, {
     clientId: clientId as Id<"users">,
     from,
@@ -148,7 +146,7 @@ export async function nextAssignment(
 }
 
 /** Completed sessions, newest first. */
-export async function assignmentHistory(clientId: string, limit = 30): Promise<Assignment[]> {
+export async function assignmentHistory(clientId: string, limit = 30): Promise<AssignmentSummary[]> {
   return sq(api.plan.assignmentHistory, { clientId: clientId as Id<"users">, limit });
 }
 

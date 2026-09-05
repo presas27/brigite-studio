@@ -98,10 +98,8 @@ export async function saveNote(input: {
  *
  * The line the coach's thread gets is worded here, in the client's language,
  * because this is where the translations are; the mutation only posts it when
- * there is a coach to read it. `refresh()` is deliberate, unlike `logSet` and
- * `saveNote`: the player renders the snapshot it was given, and the snapshot
- * is what changed. Its own state — where she is in the queue, the sets she
- * typed — survives the re-render, since the component does not remount.
+ * there is a coach to read it. No `refresh()`: the player subscribes to the
+ * assignment, so the swapped snapshot arrives without throwing the route.
  */
 export async function swapSessionExercise(input: {
   assignmentId: string;
@@ -134,13 +132,11 @@ export async function swapSessionExercise(input: {
     note,
     message: note ? `${line}\n${note}` : line,
   });
-  refresh();
 }
 
 export async function beginSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await startAssignment(assignment.id);
-  refresh();
 }
 
 /**

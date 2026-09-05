@@ -1,6 +1,5 @@
 import { capitalize, cn } from "@/lib/utils";
-import type { Assignment } from "@/lib/studio/types";
-import { isRestItem } from "@/lib/studio/types";
+import type { AssignmentSummary } from "@/lib/studio/types";
 import { SubmitButton } from "../SubmitButton";
 import { chip, chipAccent, muted } from "../theme";
 import type { Translate } from "./types";
@@ -29,17 +28,13 @@ export function AssignmentCard({
   markSkippedAction,
   moveAction,
 }: {
-  assignment: Assignment;
+  assignment: AssignmentSummary;
   t: Translate;
   tWorkouts: Translate;
   removeAction: AssignmentAction;
   markSkippedAction?: AssignmentAction;
   moveAction: AssignmentAction;
 }) {
-  const itemCount = assignment.snapshot.blocks.reduce(
-    (n, block) => n + block.items.filter((item) => !isRestItem(item)).length,
-    0,
-  );
   const locked = assignment.status !== "scheduled" || assignment.startedAt != null;
   const statusClass =
     assignment.status === "done"
@@ -48,10 +43,9 @@ export function AssignmentCard({
         ? cn(chip, "text-silk ring-silk/30")
         : chip;
   const facts = [
-    assignment.snapshot.focus && capitalize(assignment.snapshot.focus),
-    tWorkouts("items", { count: itemCount }),
-    assignment.snapshot.estimatedMinutes &&
-      tWorkouts("durationMinutes", { count: assignment.snapshot.estimatedMinutes }),
+    assignment.focus && capitalize(assignment.focus),
+    tWorkouts("items", { count: assignment.itemCount }),
+    assignment.estimatedMinutes && tWorkouts("durationMinutes", { count: assignment.estimatedMinutes }),
     assignment.effort != null && t("effort", { value: assignment.effort }),
     assignment.extraRestSeconds > 0 &&
       t("extraRest", { minutes: Math.max(1, Math.round(assignment.extraRestSeconds / 60)) }),
@@ -63,7 +57,7 @@ export function AssignmentCard({
         <div className="min-w-0 @lg:pt-1">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <p className="min-w-0 line-clamp-2 font-sans text-[0.95rem] font-semibold text-cream @lg:line-clamp-1">
-              {assignment.snapshot.name}
+              {assignment.name}
             </p>
             <span className={statusClass}>{t(`status.${assignment.status}`)}</span>
           </div>

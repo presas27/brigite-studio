@@ -83,7 +83,7 @@ export default async function OverviewPage() {
                         {assignment.clientName}
                       </span>
                       <span className="block truncate text-xs text-cream/55">
-                        {assignment.snapshot.name}
+                        {assignment.name}
                       </span>
                     </span>
                     <span className={assignment.status === "done" ? chipAccent : chip}>

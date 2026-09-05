@@ -59,8 +59,8 @@ export default async function AlunoPlanoPage({
       clientName: client.name,
       date: assignment.date,
       status: assignment.status,
-      workoutName: assignment.snapshot.name,
-      focus: assignment.snapshot.focus,
+      workoutName: assignment.name,
+      focus: assignment.focus,
       href: `/app/aluno/treino/${assignment.id}`,
     });
   }
@@ -102,12 +102,12 @@ export default async function AlunoPlanoPage({
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-sans text-sm font-semibold text-cream">
-                      {assignment.snapshot.name}
+                      {assignment.name}
                     </span>
-                    {assignment.snapshot.estimatedMinutes ? (
+                    {assignment.estimatedMinutes ? (
                       <span className={cn(muted, "mt-0.5 block")}>
                         {tWorkouts("durationMinutes", {
-                          count: assignment.snapshot.estimatedMinutes,
+                          count: assignment.estimatedMinutes,
                         })}
                       </span>
                     ) : null}

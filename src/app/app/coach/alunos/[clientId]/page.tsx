@@ -81,11 +81,11 @@ export default async function ClientOverviewPage({
       <section className={cn(surfaceAccent, "p-5 sm:p-6")}>
         <h2 className={eyebrowOnAccent}>{t("nextSession")}</h2>
         <p className={cn(heading, "mt-3 text-[1.75rem] sm:text-[2rem]")}>
-          {next ? next.snapshot.name : t("noNextSession")}
+          {next ? next.name : t("noNextSession")}
         </p>
         <p className={cn(mutedOnAccent, "mt-1")}>
           {next
-            ? [formatDayKey(next.date, locale), next.snapshot.focus].filter(Boolean).join(" · ")
+            ? [formatDayKey(next.date, locale), next.focus].filter(Boolean).join(" · ")
             : t("noNextSessionHint")}
         </p>
         <Link
@@ -188,7 +188,7 @@ export default async function ClientOverviewPage({
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-sans text-sm text-cream">
-                      {assignment.snapshot.name}
+                      {assignment.name}
                     </span>
                     {assignment.date && (
                       <span className={cn(muted, "block")}>

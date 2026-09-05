@@ -181,11 +181,11 @@ export default async function AlunoEvolucaoPage() {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-sans text-sm font-semibold text-cream">
-                      {assignment.snapshot.name}
+                      {assignment.name}
                     </span>
                     <span className={cn(muted, "block truncate")}>
                       {[
-                        assignment.snapshot.focus,
+                        assignment.focus,
                         assignment.date ? formatDayKey(assignment.date, locale) : null,
                       ]
                         .filter(Boolean)

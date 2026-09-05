@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { Assignment } from "@/lib/studio/types";
+import type { AssignmentSummary } from "@/lib/studio/types";
 import { eyebrow, muted, surface } from "../theme";
 import { AssignmentCard } from "./AssignmentCard";
 import type { Translate } from "./types";
@@ -20,7 +20,7 @@ export function UnscheduledList({
   removeAction,
   moveAction,
 }: {
-  assignments: Assignment[];
+  assignments: AssignmentSummary[];
   t: Translate;
   tWorkouts: Translate;
   removeAction: AssignmentAction;

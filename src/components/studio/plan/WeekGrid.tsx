@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { Assignment } from "@/lib/studio/types";
+import type { AssignmentSummary } from "@/lib/studio/types";
 import { eyebrow, muted, surface } from "../theme";
 import { AssignmentCard } from "./AssignmentCard";
 import { formatDayKey, shortWeekday } from "../format";
@@ -25,7 +25,7 @@ export function WeekGrid({
   moveAction,
 }: {
   days: string[];
-  byDate: Record<string, Assignment[]>;
+  byDate: Record<string, AssignmentSummary[]>;
   locale: string;
   today: string;
   t: Translate;
