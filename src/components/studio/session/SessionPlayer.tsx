@@ -514,17 +514,15 @@ export function SessionPlayer({
       {/* The top inset is what keeps the controls clear of the clock and the
           battery when the app runs installed. */}
       <header className="sticky top-0 z-20 bg-background/90 px-[max(1.25rem,env(safe-area-inset-left))] pt-[calc(1rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm md:px-8 lg:px-10">
-        {/* Chrome only: the view switch, the sync dot and the way out. What the
-            screen is about — the exercise, the workout — heads the content
-            below, with its own actions on its own line, instead of being
-            wedged into the toolbar between a toggle and a cross. On a phone the
-            row reads view · sync · close; a wide screen adds the map and the
-            count and puts the way out first, where a toolbar keeps it. */}
+        {/* Chrome only: the sync dot and the way out — and, on a wide screen,
+            the view switch, the map and the count. On a phone the switch sits
+            on the title's line in the content, and the exercise's own actions
+            on the set's line, so the toolbar is just the cross. */}
         <div
           className={cn(FRAME, "flex items-center justify-end gap-4 md:justify-start")}
         >
           {phase === "exercise" && (
-            <div className="order-1 mr-auto shrink-0 md:order-2 md:mr-0">
+            <div className="hidden shrink-0 md:order-2 md:block">
               <SessionViewToggle value={view} onChange={switchView} />
             </div>
           )}
@@ -643,11 +641,14 @@ export function SessionPlayer({
 
           {phase === "exercise" && view === "sheet" && (
             <div ref={viewRootRef}>
-              {/* The workout's name heads the sheet on a phone; a wide screen
-                  has the map in the toolbar and needs no heading. */}
-              <h1 className={cn(heading, "mb-4 text-[1.6rem] leading-[1.05] md:hidden")}>
-                {current.snapshot.name}
-              </h1>
+              {/* The workout's name and the view switch, on one line, on a
+                  phone; a wide screen has both in the toolbar. */}
+              <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
+                <h1 className={cn(heading, "min-w-0 text-[1.6rem] leading-[1.05]")}>
+                  {current.snapshot.name}
+                </h1>
+                <SessionViewToggle value={view} onChange={switchView} />
+              </div>
               <SessionSheet
                 steps={steps}
                 currentKey={step?.key}
@@ -707,6 +708,7 @@ export function SessionPlayer({
                 (log) => log.setIndex === step.setIndex,
               )}
               actions={stepActions}
+              viewToggle={<SessionViewToggle value={view} onChange={switchView} />}
               progress={
                 <div className="flex items-center gap-3">
                   <StepProgress

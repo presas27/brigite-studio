@@ -39,6 +39,7 @@ export function ExerciseStage({
   previous,
   enterAs,
   actions,
+  viewToggle,
   quickActions,
   progress,
   onOpenList,
@@ -53,8 +54,10 @@ export function ExerciseStage({
   enterAs: "set" | "exercise";
   /** Previous/next. In the bottom panel on a phone, in the column above it. */
   actions: React.ReactNode;
+  /** Focus/sheet switch, on the line with the name — a phone only; the toolbar has it wide. */
+  viewToggle?: React.ReactNode;
   /**
-   * Swap and note as icons, on the line with the name — a phone only. A wide
+   * Swap and note as icons, on the line with the set — a phone only. A wide
    * screen has room for the labelled pair, which arrives through `note`.
    */
   quickActions?: React.ReactNode;
@@ -230,10 +233,11 @@ export function ExerciseStage({
 
       <div className="contents md:flex md:flex-col md:gap-6">
         <div data-stage="identity" className="order-1 space-y-2 md:order-none">
-          {/* The name heads the content at every width, with its own actions
-              on its line on a phone: what the screen is about, and what she
-              can do to it, together — not split between a toolbar and a
-              body. */}
+          {/* Two lines on a phone, each carrying its own control on the right:
+              the name with the view switch, then the set with the exercise's
+              actions. The toolbar above is left with just the cross. A wide
+              screen keeps the switch in the toolbar and the labelled actions
+              under the cues, so both slots sit out there. */}
           <div className="flex items-start justify-between gap-3 md:block">
             <h1
               // Anton set tight enough to look right in English drops the tilde of
@@ -246,30 +250,33 @@ export function ExerciseStage({
             >
               {step.item.exerciseName}
             </h1>
-            {quickActions && (
-              <div className="-mr-2 -mt-1 flex shrink-0 items-center md:hidden">{quickActions}</div>
-            )}
+            {viewToggle && <div className="shrink-0 md:hidden">{viewToggle}</div>}
           </div>
 
           {/* One line, one truth: which set she is on and what it asks for.
               The dots keep it a sentence instead of three floating chips. */}
-          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 font-sans">
-            <span className="text-lg font-semibold tabular-nums text-accent-ink md:text-xl">
-              {step.round != null
-                ? t("roundShort", { round: step.round, total: step.roundCount ?? step.round })
-                : t("setShort", { set: step.setNumber, total: step.setCount })}
-            </span>
-            {target && (
-              <span className="text-base font-medium text-cream/80 md:text-lg">
-                <span aria-hidden className="pr-2 text-cream/30">·</span>
-                {target}
+          <div className="flex items-center justify-between gap-3 md:block">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 font-sans">
+              <span className="text-lg font-semibold tabular-nums text-accent-ink md:text-xl">
+                {step.round != null
+                  ? t("roundShort", { round: step.round, total: step.roundCount ?? step.round })
+                  : t("setShort", { set: step.setNumber, total: step.setCount })}
               </span>
-            )}
-            {step.item.tempo && (
-              <span className="text-sm text-cream/60 md:text-base">
-                <span aria-hidden className="pr-2 text-cream/30">·</span>
-                {common("tempo")} {step.item.tempo}
-              </span>
+              {target && (
+                <span className="text-base font-medium text-cream/80 md:text-lg">
+                  <span aria-hidden className="pr-2 text-cream/30">·</span>
+                  {target}
+                </span>
+              )}
+              {step.item.tempo && (
+                <span className="text-sm text-cream/60 md:text-base">
+                  <span aria-hidden className="pr-2 text-cream/30">·</span>
+                  {common("tempo")} {step.item.tempo}
+                </span>
+              )}
+            </div>
+            {quickActions && (
+              <div className="-mr-2 flex shrink-0 items-center md:hidden">{quickActions}</div>
             )}
           </div>
 
