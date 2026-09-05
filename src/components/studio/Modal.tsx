@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "./coach/icons";
@@ -28,6 +28,7 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
   const common = useTranslations("Studio.common");
   const reduceMotion = useReducedMotion();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -39,6 +40,7 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
   return (
     <dialog
       ref={dialogRef}
+      aria-labelledby={titleId}
       onClose={onCloseAction}
       onClick={(event) => {
         if (event.target === dialogRef.current) onCloseAction();
@@ -54,7 +56,9 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
         >
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className={cn(heading, "text-xl")}>{title}</h2>
+              <h2 id={titleId} className={cn(heading, "text-xl")}>
+                {title}
+              </h2>
               {lead && <p className={cn(muted, "mt-1")}>{lead}</p>}
             </div>
             <button

@@ -70,9 +70,8 @@ function CueList({ label, items, empty }: { label: string; items: string[]; empt
       <p className="font-sans text-xs font-medium text-cream/40">{label}</p>
       {items.length > 0 ? (
         <ul className={cn(muted, "list-disc space-y-1 pl-4")}>
-          {items.map((line, index) => (
-            // Cue lines have no stable identity beyond order; index is safe here.
-            <li key={index}>{line}</li>
+          {items.map((line) => (
+            <li key={line}>{line}</li>
           ))}
         </ul>
       ) : (

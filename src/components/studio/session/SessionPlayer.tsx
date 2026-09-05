@@ -180,17 +180,23 @@ export function SessionPlayer({
   );
 
   function addExtraRest(seconds: number) {
-    setExtraRest((current) => {
-      const next = current + seconds;
-      try {
-        window.localStorage.setItem(extraRestKey, String(next));
-      } catch {
-        // Private browsing: the total still holds for this session, it just
-        // cannot survive a reload. Nothing else depends on it.
-      }
-      return next;
-    });
+    setExtraRest((current) => current + seconds);
   }
+
+  useEffect(() => {
+    const stored = Number(window.localStorage.getItem(extraRestKey));
+    if (Number.isFinite(stored) && stored > 0) setExtraRest(stored);
+  }, [extraRestKey]);
+
+  useEffect(() => {
+    if (extraRest === 0) return;
+    try {
+      window.localStorage.setItem(extraRestKey, String(extraRest));
+    } catch {
+      // Private browsing: the total still holds for this session, it just
+      // cannot survive a reload. Nothing else depends on it.
+    }
+  }, [extraRest, extraRestKey]);
 
   // The session counts as begun the moment the client actually opens it, not
   // when the coach assigned it.

@@ -1,6 +1,5 @@
 import { capitalize, cn } from "@/lib/utils";
-import { shortWeekday } from "../format";
-import { parseDayKey } from "../plan/date";
+import { formatDayNumber, formatLongDate, shortWeekday } from "../format";
 import type { Translate } from "../plan/types";
 import {
   firstName,
@@ -58,15 +57,9 @@ export function CalendarDay({
   onSelect,
   innerRef,
 }: Props) {
-  const day = parseDayKey(date);
-  const dayNumber = new Intl.DateTimeFormat(locale, { day: "numeric", timeZone: "UTC" }).format(day);
+  const dayNumber = formatDayNumber(date, locale);
   const weekday = shortWeekday(date, locale);
-  const fullDate = new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(day);
+  const fullDate = formatLongDate(date, locale);
 
   const isWeekend = index % 7 >= 5;
   const isMonth = view === "month";

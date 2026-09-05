@@ -35,7 +35,9 @@ export function WorkoutScheduleMenu({
   // today when it has none. Never empty — a panel with no date row has nothing
   // to submit and no obvious way back.
   const saved = workout.scheduleDates.length > 0 ? workout.scheduleDates : [dayKey()];
-  const [dates, setDates] = useState<string[]>(saved);
+  const [dates, setDates] = useState(() =>
+    saved.map((value) => ({ id: `${value}-${Math.random().toString(36).slice(2, 8)}`, value })),
+  );
   const [pending, startTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +110,12 @@ export function WorkoutScheduleMenu({
                 type="button"
                 disabled={pending}
                 onClick={() => {
-                  setDates(saved);
+                  setDates(
+                    saved.map((value) => ({
+                      id: `${value}-${Math.random().toString(36).slice(2, 8)}`,
+                      value,
+                    })),
+                  );
                   setPanel("custom");
                 }}
                 className="flex items-start gap-3 rounded-[0.85rem] px-3 py-2.5 text-left transition-colors hover:bg-cream/5"
@@ -177,29 +184,33 @@ export function WorkoutScheduleMenu({
                 event.preventDefault();
                 submit((form) => {
                   form.set("mode", "custom");
-                  for (const date of dates) form.append("date", date);
+                  for (const date of dates) form.append("date", date.value);
                 });
               }}
               className="space-y-3 p-2"
             >
               <p className="font-sans text-sm font-semibold text-cream">{t("scheduleCustomDate")}</p>
               <div className="space-y-2">
-                {dates.map((date, index) => (
-                  <div key={`${date}-${index}`} className="flex items-center gap-2">
+                {dates.map((row) => (
+                  <div key={row.id} className="flex items-center gap-2">
                     <input
                       type="date"
-                      value={date}
+                      aria-label={t("scheduleCustomDate")}
+                      value={row.value}
                       onChange={(event) => {
-                        const next = [...dates];
-                        next[index] = event.target.value;
-                        setDates(next);
+                        const value = event.target.value;
+                        setDates((current) =>
+                          current.map((candidate) =>
+                            candidate.id === row.id ? { ...candidate, value } : candidate,
+                          ),
+                        );
                       }}
                       className={cn(field, "py-2")}
                     />
                     {dates.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => setDates(dates.filter((_, i) => i !== index))}
+                        onClick={() => setDates((current) => current.filter((candidate) => candidate.id !== row.id))}
                         className="shrink-0 font-sans text-xs text-cream/45 hover:text-cream"
                       >
                         {t("removeDate")}
@@ -210,7 +221,12 @@ export function WorkoutScheduleMenu({
               </div>
               <button
                 type="button"
-                onClick={() => setDates([...dates, dayKey()])}
+                onClick={() =>
+                  setDates((current) => [
+                    ...current,
+                    { id: `${dayKey()}-${Math.random().toString(36).slice(2, 8)}`, value: dayKey() },
+                  ])
+                }
                 className="font-sans text-xs font-semibold text-accent-ink"
               >
                 {t("addDate")}

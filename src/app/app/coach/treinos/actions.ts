@@ -225,7 +225,13 @@ export async function reorderItemsAction(
 ): Promise<void> {
   await requireBuilder();
   if (!workoutId || !blockId || !Array.isArray(itemIds)) return;
-  await reorderItems(blockId, itemIds.map(String).filter(Boolean));
+  await reorderItems(
+    blockId,
+    itemIds.flatMap((id) => {
+      const value = String(id);
+      return value ? [value] : [];
+    }),
+  );
   refresh();
 }
 
@@ -321,7 +327,15 @@ export async function groupItemsAction(
 ): Promise<void> {
   await requireBuilder();
   if (!workoutId || !Array.isArray(itemIds)) return;
-  await groupItems(workoutId, itemIds.map(String).filter(Boolean), kind, rounds);
+  await groupItems(
+    workoutId,
+    itemIds.flatMap((id) => {
+      const value = String(id);
+      return value ? [value] : [];
+    }),
+    kind,
+    rounds,
+  );
   refresh();
 }
 

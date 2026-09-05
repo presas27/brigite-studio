@@ -61,15 +61,12 @@ export default async function ClientOverviewPage({
   const { viewer, client } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
-  const [t, common, tPlan, tProgress, locale] = await Promise.all([
+  const [t, common, tPlan, tProgress, locale, next, history, { done, total }] = await Promise.all([
     getTranslations("Studio.clients"),
     getTranslations("Studio.common"),
     getTranslations("Studio.plan"),
     getTranslations("Studio.progress"),
     getLocale(),
-  ]);
-
-  const [next, history, { done, total }] = await Promise.all([
     nextAssignment(client.id),
     assignmentHistory(client.id, 5),
     adherence(client.id),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { resendInvite, saveClient, setStatus } from "@/app/app/coach/actions";
 import { Field } from "@/components/studio/Field";
@@ -25,6 +25,7 @@ export function EditClientModal({ client }: { client: Client }) {
   const t = useTranslations("Studio.clients");
   const common = useTranslations("Studio.common");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   const [open, setOpen] = useState(false);
 
   function openModal() {
@@ -50,6 +51,7 @@ export function EditClientModal({ client }: { client: Client }) {
 
       <dialog
         ref={dialogRef}
+        aria-labelledby={titleId}
         onClose={() => setOpen(false)}
         onClick={(event) => {
           if (event.target === dialogRef.current) closeModal();
@@ -60,7 +62,9 @@ export function EditClientModal({ client }: { client: Client }) {
           <>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className={cn(heading, "truncate text-xl")}>{t("editProfile")}</h2>
+                <h2 id={titleId} className={cn(heading, "truncate text-xl")}>
+                  {t("editProfile")}
+                </h2>
                 <p className="mt-1 font-sans text-xs text-cream/45">{client.email}</p>
               </div>
               <button

@@ -47,7 +47,7 @@ export function RestScreen({
   const t = useTranslations("Studio.session");
   const scope = useRef<HTMLDivElement>(null);
   const [remaining, setRemaining] = useState(seconds);
-  const [total, setTotal] = useState(Math.max(1, seconds));
+  const [total, setTotal] = useState(() => Math.max(1, seconds));
   const deadlineRef = useRef(0);
   const doneRef = useRef(onDone);
 

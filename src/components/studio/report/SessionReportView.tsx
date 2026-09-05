@@ -156,8 +156,8 @@ export function SessionReportView({
         <section className={cn(surface, "space-y-3 p-5")}>
           <h2 className={eyebrow}>{t("exerciseNotes")}</h2>
           <ul className="space-y-3">
-            {report.exerciseNotes.map((note, index) => (
-              <li key={`${note.exerciseName}-${index}`}>
+            {report.exerciseNotes.map((note) => (
+              <li key={`${note.exerciseName}:${note.body}`}>
                 <p className="font-sans text-xs text-cream/45">
                   {t("noteFrom", { name: note.exerciseName })}
                 </p>
@@ -174,8 +174,8 @@ export function SessionReportView({
         <section className={cn(surface, "space-y-3 p-5")}>
           <h2 className={eyebrow}>{t("clientNotes")}</h2>
           <ul className="space-y-3">
-            {report.setNotes.map((note, index) => (
-              <li key={`${note.exerciseName}-${note.setNumber}-${index}`}>
+            {report.setNotes.map((note) => (
+              <li key={`${note.exerciseName}:${note.setNumber}`}>
                 <p className="font-sans text-xs text-cream/45">
                   {t("noteOn", { exercise: note.exerciseName, set: note.setNumber })}
                 </p>

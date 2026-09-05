@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
 import { ShelfTabs } from "@/components/studio/ShelfTabs";
 import { chip, muted, surfaceLink } from "@/components/studio/theme";
+import { formatEditedOn } from "@/components/studio/format";
 import type { LibraryCategory, TrainingProgramSummary } from "@/lib/studio/types";
 import { capitalize, cn, searchKey } from "@/lib/utils";
 
@@ -109,7 +110,7 @@ export function ProgramLibrary({
                       {t("workoutCount", { count: program.workoutCount })}
                       {" · "}
                       {t("editedOn", {
-                        date: new Date(program.updatedAt).toLocaleDateString(locale),
+                        date: formatEditedOn(program.updatedAt, locale),
                       })}
                     </span>
                   </span>

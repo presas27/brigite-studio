@@ -6,8 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
-import { formatMonth, shortWeekday } from "../format";
-import { parseDayKey } from "../plan/date";
+import { formatDayRange, formatMonth, formatYear, shortWeekday } from "../format";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
 import { DayAgenda } from "./DayAgenda";
@@ -102,30 +101,33 @@ export function PlanCalendar({
     return firstBusy ?? days.find(belongs) ?? days[0];
   });
 
-  const visible = days.filter(belongs).flatMap((date) => sessions[date] ?? []);
-  const done = visible.filter((session) => session.status === "done").length;
-  const skipped = visible.filter((session) => session.status === "skipped").length;
-  const scheduled = visible.length - done - skipped;
+  let done = 0;
+  let skipped = 0;
+  let visibleCount = 0;
+  for (const date of days) {
+    if (!belongs(date)) continue;
+    for (const session of sessions[date] ?? []) {
+      visibleCount += 1;
+      if (session.status === "done") done += 1;
+      else if (session.status === "skipped") skipped += 1;
+    }
+  }
+  const scheduled = visibleCount - done - skipped;
 
-  const anchor = parseDayKey(isMonth ? `${month}-01` : days[0]);
   const monthName = formatMonth(isMonth ? month : days[0], locale);
   // Beside the month name, a week inside one month only needs its day numbers
   // ("17 – 23"); a week that straddles two carries the months too. `formatRange`
   // writes both the way each locale does.
   const last = days[days.length - 1];
   const period = isMonth
-    ? new Intl.DateTimeFormat(locale, { year: "numeric", timeZone: "UTC" }).format(anchor)
-    : new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: days[0].slice(0, 7) === last.slice(0, 7) ? undefined : "short",
-        timeZone: "UTC",
-      }).formatRange(parseDayKey(days[0]), parseDayKey(last));
+    ? formatYear(isMonth ? month : days[0], locale)
+    : formatDayRange(days[0], last, locale);
 
   const summary =
-    visible.length === 0
+    visibleCount === 0
       ? t(isMonth ? "calendar.emptyMonth" : "calendar.emptyWeek")
       : [
-          t("calendar.sessions", { count: visible.length }),
+          t("calendar.sessions", { count: visibleCount }),
           done > 0 ? t("calendar.done", { count: done }) : "",
           skipped > 0 ? t("calendar.missed", { count: skipped }) : "",
         ]

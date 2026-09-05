@@ -12,14 +12,16 @@
  * where "now" is turned into a key.
  */
 
+const LISBON_ISO_DAY = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Lisbon",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 /** `YYYY-MM-DD` for a date (today by default), in Lisbon time. */
 export function dayKey(date: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Lisbon",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
+  return LISBON_ISO_DAY.format(date);
 }
 
 /** Monday of the week containing `date`, as `YYYY-MM-DD`. */

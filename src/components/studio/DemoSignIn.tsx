@@ -5,6 +5,12 @@ import { authClient } from "@/lib/auth-client";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/studio/pilot";
 import { buttonGhost, buttonPrimary, eyebrow, muted } from "./theme";
 
+async function enter(email: string) {
+  const result = await authClient.signIn.email({ email, password: DEMO_PASSWORD });
+  if (result.error) return;
+  window.location.assign("/app");
+}
+
 /**
  * Quick sign-in for a demo deployment: one button per provisioned account.
  *
@@ -16,12 +22,6 @@ import { buttonGhost, buttonPrimary, eyebrow, muted } from "./theme";
  */
 export function DemoSignIn() {
   const t = useTranslations("Studio.signIn");
-
-  async function enter(email: string) {
-    const result = await authClient.signIn.email({ email, password: DEMO_PASSWORD });
-    if (result.error) return;
-    window.location.assign("/app");
-  }
 
   return (
     <div className="mt-6 border-t border-cream/10 pt-6">

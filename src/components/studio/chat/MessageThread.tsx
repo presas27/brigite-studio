@@ -1,5 +1,6 @@
 import type { Message } from "@/lib/studio/types";
 import { chip } from "@/components/studio/theme";
+import { formatChatDay, formatChatTime } from "@/components/studio/format";
 import { capitalize, cn } from "@/lib/utils";
 import { groupThread } from "./group";
 
@@ -23,19 +24,6 @@ export function MessageThread({
   locale: string;
 }) {
   const entries = groupThread(messages);
-  // Anchored to Europe/Lisbon to match `dayKey`/`weekKey` in `lib/studio/dates.ts`,
-  // so a message logged just after midnight never lands on the wrong day.
-  const dayFormatter = new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Lisbon",
-  });
-  const timeFormatter = new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Lisbon",
-  });
 
   return (
     <div className="space-y-4">
@@ -44,7 +32,7 @@ export function MessageThread({
           return (
             <div key={`day-${entry.key}`} className="flex justify-center py-1">
               <span className={cn(chip, "text-[0.7rem] text-cream/45")}>
-                {capitalize(dayFormatter.format(entry.date), locale)}
+                {capitalize(formatChatDay(entry.date, locale), locale)}
               </span>
             </div>
           );
@@ -70,7 +58,7 @@ export function MessageThread({
               </div>
             ))}
             <span className="px-1 font-sans tabular-nums text-[0.65rem] text-cream/35">
-              {timeFormatter.format(new Date(last.createdAt))}
+              {formatChatTime(new Date(last.createdAt), locale)}
             </span>
           </div>
         );

@@ -8,6 +8,11 @@ import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/studio/coach/icons";
 import { cn } from "@/lib/utils";
 
+async function signOut() {
+  await authClient.signOut();
+  window.location.assign("/app/entrar");
+}
+
 /**
  * The account chip in the top right, and everything that hangs off it: who is
  * signed in, a way into their own details, and sign-out.
@@ -106,13 +111,7 @@ export function AccountMenu({
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  // Dropping the session is a browser-side act — it is the
-                  // browser's cookie that changes — so this is Better Auth's
-                  // `signOut`, not a Server Action. The push and refresh are
-                  // what make the now-signed-out tree re-render.
-                  void authClient.signOut().then(() => {
-                    window.location.assign("/app/entrar");
-                  });
+                  void signOut();
                 }}
                 className={cn(itemClass, "text-silk hover:bg-silk/10 hover:text-silk")}
               >

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { Modal } from "@/components/studio/Modal";
 import { buttonDanger, buttonGhost, muted, surfaceLink } from "@/components/studio/theme";
+import { formatEditedOn } from "@/components/studio/format";
 import { archiveWorkoutAction } from "@/app/app/coach/treinos/actions";
 import type { WorkoutSummary } from "@/lib/studio/types";
 import { capitalize, cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ export function WorkoutListRow({ workout, locale }: { workout: WorkoutSummary; l
           {workout.estimatedMinutes
             ? ` · ${t("durationMinutes", { count: workout.estimatedMinutes })}`
             : ""}{" "}
-          · {t("editedOn", { date: new Date(workout.updatedAt).toLocaleDateString(locale) })}
+          · {t("editedOn", { date: formatEditedOn(workout.updatedAt, locale) })}
         </p>
       </Link>
 

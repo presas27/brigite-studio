@@ -434,9 +434,9 @@ function ExerciseDetails({
             // read as three things at a glance, where a stacked list reads as
             // a paragraph to work through.
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 md:gap-x-7 md:gap-y-3">
-              {cueLines.map((line, index) => (
+              {cueLines.map((line) => (
                 <p
-                  key={index}
+                  key={line}
                   className="max-w-[18rem] text-xs leading-snug text-cream/50 md:text-sm md:text-cream/65"
                 >
                   {line}

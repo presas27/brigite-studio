@@ -49,8 +49,8 @@ export function PrintMenu({ basePath, clientName }: { basePath: string; clientNa
   const [panel, setPanel] = useState<"menu" | "medida" | "progresso">("menu");
   const [custom, setCustom] = useState<Record<CustomSection, boolean>>(DEFAULT_CUSTOM);
   const today = dayKey();
-  const [from, setFrom] = useState(shiftDay(today, -DEFAULT_RANGE_DAYS));
-  const [to, setTo] = useState(today);
+  const [from, setFrom] = useState(() => shiftDay(today, -DEFAULT_RANGE_DAYS));
+  const [to, setTo] = useState(() => today);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
