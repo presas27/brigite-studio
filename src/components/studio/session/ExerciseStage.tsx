@@ -9,6 +9,7 @@ import type { Locale } from "@/i18n/config";
 import { cuesFor } from "@/lib/studio/cues";
 import type { SetLog } from "@/lib/studio/types";
 import { SetFields } from "./SetFields";
+import { prescriptionOf } from "./prescription";
 import type { SetValue } from "./useSessionLog";
 import { Icon } from "../coach/icons";
 import { heading } from "../theme";
@@ -72,16 +73,18 @@ export function ExerciseStage({
   // The demo's height right before it collapses, so closing the details
   // restores it exactly rather than guessing from a frame that is mid-shrink.
   const mediaHeightRef = useRef(0);
-  // Collapsed by default and per exercise: the coach's cues are worth opening
-  // for, not worth reading through on the way to the exercise she is here for.
-  // Keyed by the step: a new exercise closes the details back up — last
-  // exercise's cues have nothing to say about this one. Storing the key the
-  // flag was set for, rather than resetting in an effect, avoids a render
-  // with the old exercise's panel open.
-  const [details, setDetails] = useState<{ key: string; open: boolean }>({ key: step.key, open: false });
-  const detailsOpen = details.key === step.key && details.open;
-  const setDetailsOpen = (update: (current: boolean) => boolean) =>
-    setDetails({ key: step.key, open: update(detailsOpen) });
+  // A demo only exists when there is a video to play. Most of the library has
+  // none yet, and a plate with an icon on it, at the size of the video it
+  // stands in for, was the biggest thing on the screen and said nothing.
+  const videoId = step.item.videoUrl ? youtubeId(step.item.videoUrl) : null;
+  // With a demo the cues sit collapsed behind one bar: they are worth opening
+  // for, not worth reading through on the way to the movement she can watch.
+  // Without one the cues are the demo, so they start open. Keyed by the step
+  // so a new exercise gets its own default — last exercise's cues have nothing
+  // to say about this one — and storing the key the flag was set for, rather
+  // than resetting in an effect, avoids a render with the old panel open.
+  const [details, setDetails] = useState<{ key: string; open: boolean } | null>(null);
+  const detailsOpen = details?.key === step.key ? details.open : videoId == null;
 
   useGSAP(
     () => {
@@ -195,15 +198,14 @@ export function ExerciseStage({
     .split("\n")
     .filter((line) => line.trim().length > 0);
   const itemNotes = step.item.notes.trim();
-  const target =
-    step.tracking === "time" || step.tracking === "hold"
-      ? step.item.seconds != null
-        ? `${step.item.seconds}s`
-        : null
-      : step.item.reps
-        ? `${step.item.reps} ${step.tracking === "distance" ? t("metersShort") : common("reps")}`
-        : null;
+  const target = prescriptionOf(step, {
+    reps: common("reps"),
+    meters: t("metersShort"),
+    sets: common("sets"),
+  });
 
+  // With no demo the stage is one column, and on a wide screen that column
+  // keeps a reading width rather than stretching the fields across the frame.
   return (
     <div
       ref={scope}
@@ -211,9 +213,14 @@ export function ExerciseStage({
       // by its contents now that the demo holds a ratio instead of eating the
       // leftover height, and auto margins centre it without clipping the top
       // off anything taller than the space between the header and the panel.
-      className="my-auto flex w-full flex-col gap-5 md:grid md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
+      className={cn(
+        "my-auto flex w-full flex-col gap-5",
+        videoId
+          ? "md:grid md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
+          : "md:mx-auto md:max-w-2xl",
+      )}
     >
-      <StageMedia ref={mediaRef} step={step} />
+      {videoId && <StageMedia ref={mediaRef} videoId={videoId} title={step.item.exerciseName} />}
 
       <div className="contents md:flex md:flex-col md:gap-6">
         <div data-stage="identity" className="order-1 space-y-2 md:order-none">
@@ -265,6 +272,19 @@ export function ExerciseStage({
               {t("swapReplaces", { name: step.item.replaces.exerciseName })}
             </p>
           )}
+
+          {/* A demo hosted somewhere the stage cannot play: a link, not a plate. */}
+          {!videoId && step.item.videoUrl && (
+            <a
+              href={step.item.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-sans text-xs text-cream/60 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream md:text-sm"
+            >
+              <Icon name="play" className="h-3 w-3" />
+              {t("watchDemo")}
+            </a>
+          )}
         </div>
 
         {(itemNotes || cueLines.length > 0 || note) && (
@@ -275,7 +295,7 @@ export function ExerciseStage({
             {(itemNotes || cueLines.length > 0) && (
               <ExerciseDetails
                 open={detailsOpen}
-                onToggle={() => setDetailsOpen((current) => !current)}
+                onToggle={() => setDetails({ key: step.key, open: !detailsOpen })}
                 panelRef={detailsPanelRef}
                 notes={itemNotes}
                 cueLines={cueLines}
@@ -326,68 +346,42 @@ export function ExerciseStage({
 }
 
 /**
- * The demo slot, in the shape of the thing it holds.
- *
- * A YouTube link plays in place — streamed from YouTube same as the library's
- * own demo panel, just without the coach's edit chrome — because a client
- * mid-set should never have to leave the session to see the movement. Anything
- * else falls back to a quiet plate with the movement's icon and an outbound
- * link; no video at all falls back further to the icon alone.
+ * The demo, streamed from YouTube same as the library's own demo panel, just
+ * without the coach's edit chrome — because a client mid-set should never have
+ * to leave the session to see the movement. Rendered only when there is a
+ * video to play; the stage decides that, not this component.
  *
  * The frame is 16:9 and nothing else, because that is the frame YouTube's
  * player renders in: given a taller box it letterboxes the video against the
  * top and leaves the rest of the plate empty, which is exactly what a demo
- * stretched to fill the leftover height of a phone looked like. The plate and
- * the video therefore share one ratio, so the placeholder is the same shape as
- * the thing it stands in for and the column does not resize when a movement
- * with a demo follows one without.
+ * stretched to fill the leftover height of a phone looked like.
  *
  * The outer element is the one the parent animates — it carries no ratio of its
  * own, so collapsing it is a plain height tween with nothing to fight.
  */
 function StageMedia({
-  step,
+  videoId,
+  title,
   ref,
 }: {
-  step: SessionStep;
+  videoId: string;
+  title: string;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const t = useTranslations("Studio.session");
-  const frame =
-    "relative aspect-video w-full max-h-[28vh] overflow-hidden rounded-[1.15rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-none";
-  const videoUrl = step.item.videoUrl;
-  const id = videoUrl ? youtubeId(videoUrl) : null;
-
   return (
     <div
       ref={ref}
       data-stage="identity"
       className="order-3 w-full overflow-hidden md:order-none md:self-start"
     >
-      {id ? (
-        <div className={frame}>
-          <iframe
-            title={step.item.exerciseName}
-            src={youtubeEmbed(id)}
-            allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
-            className="absolute inset-0 h-full w-full"
-          />
-        </div>
-      ) : (
-        <div className={cn(frame, "grid place-items-center")}>
-          <Icon name="dumbbell" className="h-14 w-14 text-cream/10 md:h-16 md:w-16" />
-          {videoUrl && (
-            <a
-              href={videoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute bottom-4 left-4 font-sans text-xs text-cream/60 underline decoration-cream/25 underline-offset-4 transition-colors hover:text-cream"
-            >
-              {t("watchDemo")}
-            </a>
-          )}
-        </div>
-      )}
+      <div className="relative aspect-video w-full max-h-[28vh] overflow-hidden rounded-[1.15rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-none">
+        <iframe
+          title={title}
+          src={youtubeEmbed(videoId)}
+          allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
+          className="absolute inset-0 h-full w-full"
+        />
+      </div>
     </div>
   );
 }

@@ -807,6 +807,7 @@
       "startRest": "Descanso {seconds}s",
       "sessionNote": "Nota do treino",
       "resume": "Continuar treino",
+      "viewSummary": "Ver resumo",
       "finish": "Terminar treino",
       "finishing": "A terminar…",
       "skip": "Não consegui treinar",
@@ -916,7 +917,8 @@
         },
         "none": {
           "title": "Sem registos",
-          "line": "Não ficou nenhuma série registada. Se treinaste, diz ao teu treinador."
+          "line": "Não ficou nenhuma série registada. Se treinaste, diz ao teu treinador.",
+          "lineSolo": "Não ficou nenhuma série registada. Para a próxima, regista à medida que fazes."
         },
         "skipped": {
           "title": "Não treinaste",
@@ -933,6 +935,7 @@
       "editNote": "Editar nota",
       "noteTitle": "Nota para {name}",
       "notePrivacy": "Só tu e a tua treinadora veem isto.",
+      "notePrivacySolo": "Só tu vês isto.",
       "notePlaceholder": "O ombro esquerdo picou na terceira série…",
       "saveNote": "Guardar nota",
       "noteSaved": "Nota guardada",

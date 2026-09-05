@@ -2,22 +2,24 @@
 
 import { useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
-import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
+import { isRestItem } from "@/lib/studio/types";
 import { Modal } from "../Modal";
 import { Icon } from "../coach/icons";
 import { eyebrow } from "../theme";
 import { cn } from "@/lib/utils";
+import { prescriptionOf } from "./prescription";
 
 type Row = {
   itemId: string;
   name: string;
-  videoUrl: string | null;
   /** Every step of this exercise, in the order the session runs them. */
   indexes: number[];
   done: number;
+  /** "8 reps · rest 60s" — the set count is the badge beside it. */
   detail: string;
-  restSeconds: number;
   current: boolean;
+  /** A rest the coach placed between exercises: a pause in the list, not a thing to log. */
+  rest: boolean;
 };
 
 /**
@@ -49,6 +51,8 @@ export function SessionListModal({
   const common = useTranslations("Studio.common");
   const workoutsT = useTranslations("Studio.workouts");
 
+  const labels = { reps: common("reps"), meters: t("metersShort"), sets: common("sets") };
+  const rest = common("rest").toLowerCase();
   const blocks: { id: string; label: string; kind: string; rows: Row[] }[] = [];
   steps.forEach((step, index) => {
     let block = blocks.find((entry) => entry.id === step.blockId);
@@ -58,23 +62,21 @@ export function SessionListModal({
     }
     let row = block.rows.find((entry) => entry.itemId === step.itemId);
     if (!row) {
-      const detail =
-        step.tracking === "time" || step.tracking === "hold"
-          ? step.item.seconds != null
-            ? `${step.item.seconds}s`
-            : ""
-          : step.item.reps
-            ? `${step.item.reps} ${step.tracking === "distance" ? t("distanceMeters") : common("reps")}`
-            : "";
       row = {
         itemId: step.itemId,
         name: step.item.exerciseName,
-        videoUrl: step.item.videoUrl,
         indexes: [],
         done: 0,
-        detail,
-        restSeconds: step.item.restSeconds,
+        detail: isRestItem(step.item)
+          ? `${step.item.seconds ?? 0}s`
+          : [
+              prescriptionOf(step, labels),
+              step.item.restSeconds > 0 ? `${rest} ${step.item.restSeconds}s` : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
         current: false,
+        rest: isRestItem(step.item),
       };
       block.rows.push(row);
     }
@@ -111,36 +113,47 @@ export function SessionListModal({
                         onCloseAction();
                       }}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-[0.85rem] px-2 py-2 text-left transition-colors",
+                        "flex w-full items-center gap-3 rounded-[0.85rem] px-3 text-left transition-colors",
+                        row.rest ? "py-1.5" : "py-2.5",
                         row.current ? "bg-caramel/15 ring-1 ring-caramel/30" : "hover:bg-cream/5",
                       )}
                     >
-                      <ExerciseThumb videoUrl={row.videoUrl} className="h-11 w-14 shrink-0 rounded-[0.65rem]" />
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.65rem]",
-                          complete
-                            ? "bg-caramel/25 text-accent-ink"
-                            : "bg-cream/5 font-sans font-semibold text-cream/45 ring-1 ring-cream/10",
-                        )}
-                      >
-                        {complete ? <Icon name="check" className="h-3 w-3" /> : row.indexes.length}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-sans text-sm text-cream">{row.name}</span>
-                        <span className="block font-sans text-xs text-cream/50">
-                          {[
-                            row.detail,
-                            row.restSeconds > 0 ? `${common("rest").toLowerCase()} ${row.restSeconds}s` : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      </span>
-                      <span className="shrink-0 font-sans text-xs tabular-nums text-cream/50">
-                        {row.done}/{row.indexes.length}
-                      </span>
+                      {row.rest ? (
+                        <>
+                          <span
+                            aria-hidden
+                            className="grid h-6 w-6 shrink-0 place-items-center text-cream/40"
+                          >
+                            <Icon name="clock" className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="min-w-0 flex-1 truncate font-sans text-xs text-cream/50">
+                            {row.name} · {row.detail}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "grid h-6 w-6 shrink-0 place-items-center rounded-full font-sans text-[0.65rem] font-semibold tabular-nums",
+                              complete
+                                ? "bg-caramel/25 text-accent-ink"
+                                : "bg-cream/5 text-cream/55 ring-1 ring-cream/10",
+                            )}
+                          >
+                            {complete ? <Icon name="check" className="h-3 w-3" /> : row.indexes.length}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-sans text-sm text-cream">{row.name}</span>
+                            {row.detail && (
+                              <span className="block font-sans text-xs text-cream/50">{row.detail}</span>
+                            )}
+                          </span>
+                          <span className="shrink-0 font-sans text-xs tabular-nums text-cream/50">
+                            {row.done}/{row.indexes.length}
+                          </span>
+                        </>
+                      )}
                     </button>
                   </li>
                 );

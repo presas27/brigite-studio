@@ -49,6 +49,7 @@ function toneOf(status: AssignmentStatus, done: number, total: number): string {
 export function SessionSummary({
   name,
   status,
+  coached,
   doneCount,
   totalCount,
   effort,
@@ -58,6 +59,8 @@ export function SessionSummary({
 }: {
   name: string;
   status: AssignmentStatus;
+  /** Whether there is a coach to tell — the empty outcome names one only then. */
+  coached: boolean;
   doneCount: number;
   totalCount: number;
   effort: number | null;
@@ -203,7 +206,7 @@ export function SessionSummary({
               {t(`outcome.${tone}.title`)}
             </h1>
             <p data-end="line" className={cn(mutedOnAccent, "mt-2")}>
-              {t(`outcome.${tone}.line`)}
+              {tone === "none" && !coached ? t("outcome.none.lineSolo") : t(`outcome.${tone}.line`)}
             </p>
           </div>
         </div>

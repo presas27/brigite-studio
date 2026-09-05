@@ -27,6 +27,8 @@ export function ExerciseNoteButton({
   onSaveAction,
   aside,
   compact = false,
+  coached,
+  triggerClassName,
 }: {
   exerciseName: string;
   /** The note as it stands. Empty means there is none yet. */
@@ -40,6 +42,10 @@ export function ExerciseNoteButton({
   aside?: React.ReactNode;
   /** Icon-only trigger, for the player's header where there is no room for a label. */
   compact?: boolean;
+  /** Whether a coach reads the note: decides what the dialog promises about who sees it. */
+  coached: boolean;
+  /** Extra classes on the row holding the trigger (and `aside`) — never on the saved note. */
+  triggerClassName?: string;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
@@ -65,7 +71,7 @@ export function ExerciseNoteButton({
 
   return (
     <div ref={scope} className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1">
+      <div className={cn("flex flex-wrap items-center gap-1", triggerClassName)}>
         {aside}
         <button
           type="button"
@@ -101,7 +107,7 @@ export function ExerciseNoteButton({
         open={open}
         onCloseAction={() => setOpen(false)}
         title={t("noteTitle", { name: exerciseName })}
-        lead={t("notePrivacy")}
+        lead={coached ? t("notePrivacy") : t("notePrivacySolo")}
         width="28rem"
       >
         <form

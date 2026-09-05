@@ -38,10 +38,14 @@ export default async function AlunoHojePage() {
     myCoach(),
   ]);
 
-  // Today's session is the hero; with nothing today the gold moves to the next
-  // one, and the list below drops it so it is never printed twice.
-  const todaySession = todaySessions.find((assignment) => assignment.status !== "skipped");
-  const hero = todaySession ?? next;
+  // Today's session is the hero — the one still to do, same rule as the
+  // topbar's button, so the two never point at different sessions. With
+  // nothing left today the gold moves to the next one ahead; with nothing
+  // ahead either, today's finished session stays, as the way to its summary.
+  // The list below drops whichever one is the hero so it is never printed twice.
+  const todayOpen = todaySessions.find((assignment) => assignment.status === "scheduled");
+  const todayDone = todaySessions.find((assignment) => assignment.status === "done");
+  const hero = todayOpen ?? next ?? todayDone;
   const upcoming = overview.upcoming
     .filter((session) => session.id !== hero?.id)
     .slice(0, 3);
@@ -75,7 +79,7 @@ export default async function AlunoHojePage() {
 
           <TodayCard
             session={hero}
-            isToday={todaySession != null}
+            isToday={hero?.date === today}
             coachName={coach?.name ?? null}
             className="col-span-2"
           />

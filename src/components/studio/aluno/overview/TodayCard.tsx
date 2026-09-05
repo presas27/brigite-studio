@@ -107,7 +107,11 @@ export async function TodayCard({
         href={`/app/aluno/treino/${session.id}`}
         className={cn(buttonOnAccent, "w-full shrink-0 px-8 py-4 text-base sm:w-auto")}
       >
-        {session.startedAt ? tSession("resume") : tSession("start")}
+        {session.status === "done"
+          ? tSession("viewSummary")
+          : session.startedAt
+            ? tSession("resume")
+            : tSession("start")}
       </Link>
     </section>
   );

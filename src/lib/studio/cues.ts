@@ -14,9 +14,13 @@ import type { Locale } from "@/i18n/config";
  * to silence. An exercise carried over from Trainerize has only English until
  * Sara translates it, and an empty panel mid-set would read as "no
  * instructions" when instructions exist.
+ *
+ * The import also left its numbering jammed against the words ("1.Lie face
+ * down"); every reader of a cue gets the space put back, so the fix lives here
+ * and not in each screen that prints one.
  */
 export function cuesFor(exercise: { cues: string; cuesEn: string }, locale: Locale): string {
   const own = locale === "en" ? exercise.cuesEn : exercise.cues;
   const other = locale === "en" ? exercise.cues : exercise.cuesEn;
-  return own.trim() ? own : other;
+  return (own.trim() ? own : other).replace(/^(\d+)[.)](?=\S)/gm, "$1. ");
 }

@@ -196,6 +196,11 @@ export function SessionPlayer({
     }
   }, [view]);
 
+  // The two views cross-fade and nothing else. A slide would leave a
+  // `transform` on this wrapper, and a transformed ancestor becomes the
+  // containing block of every `position: fixed` descendant — the stage's
+  // bottom panel would pin itself to the bottom of the wrapper instead of the
+  // bottom of the phone. Opacity carries no such rule.
   const switchView = useCallback((next: SessionView) => {
     if (next === view) return;
     const root = viewRootRef.current;
@@ -206,8 +211,7 @@ export function SessionPlayer({
     }
     gsap.to(root, {
       autoAlpha: 0,
-      x: next === "sheet" ? -28 : 28,
-      duration: 0.18,
+      duration: 0.16,
       ease: "power2.in",
       onComplete: () => setView(next),
     });
@@ -219,14 +223,10 @@ export function SessionPlayer({
       if (!root || phase !== "exercise") return;
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduced) {
-        gsap.set(root, { autoAlpha: 1, x: 0 });
+        gsap.set(root, { autoAlpha: 1 });
         return;
       }
-      gsap.fromTo(
-        root,
-        { autoAlpha: 0, x: view === "sheet" ? 28 : -28 },
-        { autoAlpha: 1, x: 0, duration: 0.32, ease: "power2.out" },
-      );
+      gsap.fromTo(root, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.28, ease: "power2.out" });
     },
     { dependencies: [view, phase] },
   );
@@ -409,6 +409,7 @@ export function SessionPlayer({
           <SessionSummary
             name={current.snapshot.name}
             status={finalStatus}
+            coached={coached}
             doneCount={doneCount}
             totalCount={steps.length}
             effort={effort}
@@ -499,11 +500,12 @@ export function SessionPlayer({
       {/* The top inset is what keeps the close button and the exercise name
           clear of the clock and the battery when the app runs installed. */}
       <header className="sticky top-0 z-20 bg-background/90 px-[max(1.25rem,env(safe-area-inset-left))] pt-[calc(1rem+env(safe-area-inset-top))] pb-3 backdrop-blur-sm md:px-8 lg:px-10">
+        {/* One row, two orders. On a phone it reads title · exercise actions ·
+            sync · close. On a wide screen the actions live in the stage beside
+            the exercise, and the row becomes close · view · map · count · sync,
+            with the way out first, where a toolbar puts it. */}
         <div
-          className={cn(
-            FRAME,
-            "flex items-start justify-end gap-4 md:items-center md:justify-start",
-          )}
+          className={cn(FRAME, "flex items-start justify-end gap-4 md:items-center md:justify-start")}
         >
           {/* The exercise, on the line with the way out of it. A phone has no
               room for a title band of its own — the stage's own `h1` is
@@ -526,8 +528,11 @@ export function SessionPlayer({
             </h1>
           )}
 
+          {/* Swap and note, as icons, on a phone only: the stage carries the
+              labelled pair on a wide screen, and a control that appears twice
+              on one screen is a control the eye has to reconcile. */}
           {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
-            <div className="flex shrink-0 items-center">
+            <div className="flex shrink-0 items-center md:hidden">
               <SwapExerciseButton
                 compact
                 assignmentId={assignment.id}
@@ -542,6 +547,7 @@ export function SessionPlayer({
               />
               <ExerciseNoteButton
                 compact
+                coached={coached}
                 exerciseName={step.item.exerciseName}
                 note={notes[step.itemId] ?? ""}
                 onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
@@ -549,14 +555,8 @@ export function SessionPlayer({
             </div>
           )}
 
-          {phase === "exercise" && (
-            <div className="order-2 hidden shrink-0 md:block">
-              <SessionViewToggle value={view} onChange={switchView} />
-            </div>
-          )}
-
           {syncStatus && (
-            <span className="mr-auto flex shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-2 md:mr-0">
+            <span className="flex h-9 shrink-0 items-center gap-1.5 font-sans text-xs text-cream/50 md:order-5">
               <span
                 aria-hidden
                 className={cn(
@@ -572,10 +572,16 @@ export function SessionPlayer({
             type="button"
             onClick={() => setExitOpen(true)}
             aria-label={t("stopSession")}
-            className="-m-2 order-3 shrink-0 p-2 text-cream/55 transition-colors hover:text-cream md:order-1"
+            className="-m-2 shrink-0 p-2 text-cream/55 transition-colors hover:text-cream md:order-1"
           >
             <Icon name="close" className="h-5 w-5" />
           </button>
+
+          {phase === "exercise" && (
+            <div className="hidden shrink-0 md:order-2 md:block">
+              <SessionViewToggle value={view} onChange={switchView} />
+            </div>
+          )}
 
           {/* The map of the session is the obvious thing to press when you want
               to see the map of the session — so the bar opens the list, and
@@ -585,12 +591,12 @@ export function SessionPlayer({
             type="button"
             onClick={() => setListOpen(true)}
             aria-label={t("openList")}
-            className="hidden min-w-0 flex-1 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink md:order-2 md:block"
+            className="hidden min-w-0 flex-1 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink md:order-3 md:block"
           >
             <StepProgress steps={steps} currentIndex={index} isLogged={isLogged} />
           </button>
 
-          <span className="hidden shrink-0 font-sans text-xs tabular-nums text-cream/50 md:order-3 md:block">
+          <span className="hidden shrink-0 font-sans text-xs tabular-nums text-cream/50 md:order-4 md:block">
             {index + 1}/{steps.length}
           </span>
         </div>
@@ -618,7 +624,17 @@ export function SessionPlayer({
           className={cn(
             FRAME,
             "flex flex-1 flex-col py-3",
-            phase === "exercise" && view === "focus" ? "md:justify-center" : phase === "exercise" ? "" : "justify-center",
+            // The preview is a list and starts at the top on a phone, where
+            // centring it would float a short workout in the middle of a tall
+            // screen with nothing above it; a wide screen has the height to
+            // centre it. The sheet is the same kind of thing at every width.
+            phase === "preview"
+              ? "md:justify-center"
+              : phase === "exercise" && view === "sheet"
+                ? ""
+                : phase === "exercise"
+                  ? "md:justify-center"
+                  : "justify-center",
           )}
         >
           {phase === "exercise" && (
@@ -686,6 +702,7 @@ export function SessionPlayer({
                 renderNote={(itemId, exerciseId, name) => (
                   <ExerciseNoteButton
                     compact
+                    coached={coached}
                     exerciseName={name}
                     note={notes[itemId] ?? ""}
                     onSaveAction={(body) => saveNote(itemId, exerciseId, body)}
@@ -748,9 +765,13 @@ export function SessionPlayer({
               }
               note={
                 <ExerciseNoteButton
+                  coached={coached}
                   exerciseName={step.item.exerciseName}
                   note={notes[step.itemId] ?? ""}
                   onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
+                  // The header carries these two as icons on a phone; here
+                  // they are the labelled pair a wide screen has room for.
+                  triggerClassName="hidden md:flex"
                   aside={
                     <SwapExerciseButton
                       assignmentId={assignment.id}
@@ -793,9 +814,11 @@ export function SessionPlayer({
               </div>
               <EffortDial value={effort} onChange={setEffort} />
               <ExerciseNoteButton
+                coached={coached}
                 exerciseName={current.snapshot.name}
                 note={notes[SESSION_NOTE_ITEM] ?? ""}
                 onSaveAction={(body) => saveNote(SESSION_NOTE_ITEM, SESSION_NOTE_ITEM, body)}
+                triggerClassName="justify-center"
               />
               {finishFailed && (
                 <p role="alert" className="text-center text-sm text-silk">

@@ -807,6 +807,7 @@
       "startRest": "Rest {seconds}s",
       "sessionNote": "Session note",
       "resume": "Resume session",
+      "viewSummary": "See the summary",
       "finish": "Finish session",
       "finishing": "Finishing…",
       "skip": "I could not train",
@@ -916,7 +917,8 @@
         },
         "none": {
           "title": "Nothing logged",
-          "line": "No sets recorded. If you trained, tell your coach."
+          "line": "No sets recorded. If you trained, tell your coach.",
+          "lineSolo": "No sets recorded. Next time, log as you go."
         },
         "skipped": {
           "title": "Not trained",
@@ -933,6 +935,7 @@
       "editNote": "Edit note",
       "noteTitle": "Note for {name}",
       "notePrivacy": "Only visible to you and your coach.",
+      "notePrivacySolo": "Only you can see this.",
       "notePlaceholder": "Left shoulder twinged on the third set…",
       "saveNote": "Save note",
       "noteSaved": "Note saved",

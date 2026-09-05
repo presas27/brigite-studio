@@ -6,10 +6,10 @@ import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
 import { isRestItem, type BlockKind, type SetLog, type WorkoutItem } from "@/lib/studio/types";
-import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Icon } from "@/components/studio/coach/icons";
 import { buttonPrimary, eyebrow } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
+import { setsOf } from "./prescription";
 import { EMPTY_SET, isFullyEmpty, type SetValue } from "./useSessionLog";
 
 type SheetExercise = {
@@ -109,6 +109,11 @@ export function SessionSheet({
   const workoutsT = useTranslations("Studio.workouts");
   const scope = useRef<HTMLDivElement>(null);
   const blocks = useMemo(() => groupSheet(steps), [steps]);
+  const prescriptionLabels = {
+    reps: common("reps"),
+    meters: t("metersShort"),
+    sets: common("sets"),
+  };
 
   useGSAP(
     () => {
@@ -170,22 +175,13 @@ export function SessionSheet({
                     ) : (
                       <span className="w-0 shrink-0" />
                     )}
-                    <ExerciseThumb
-                      videoUrl={exercise.item.videoUrl}
-                      className="h-11 w-[3.4rem] shrink-0 rounded-[0.65rem]"
-                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-sans text-sm font-semibold text-cream">
                         {exercise.item.exerciseName}
                       </p>
                       <p className="mt-0.5 font-sans text-xs text-cream/45">
                         {[
-                          exercise.item.reps
-                            ? `${exercise.steps.length} × ${exercise.item.reps}`
-                            : t("setShort", {
-                                set: exercise.steps.length,
-                                total: exercise.steps.length,
-                              }),
+                          setsOf(exercise.steps[0], prescriptionLabels),
                           exercise.item.tempo ? `${common("tempo")} ${exercise.item.tempo}` : null,
                         ]
                           .filter(Boolean)
@@ -198,23 +194,23 @@ export function SessionSheet({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 px-1 pb-1 font-sans text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-cream/35">
+                  {/* Centred like the cells under them, so a header sits over
+                      its column and not over the gap to the left of it. A set
+                      measured in one number (seconds, metres) takes both value
+                      columns, so the field is not parked beside an empty one. */}
+                  <div className="grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 px-1 pb-1 text-center font-sans text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-cream/35">
                     <span>{t("sheetSet")}</span>
                     <span>{t("sheetPrevious")}</span>
-                    <span>
-                      {exercise.steps[0]?.tracking === "time" || exercise.steps[0]?.tracking === "hold"
-                        ? t("secondsShort")
-                        : exercise.steps[0]?.tracking === "distance"
-                          ? t("metersShort")
-                          : common("kg")}
-                    </span>
-                    <span>
-                      {exercise.steps[0]?.tracking === "time" || exercise.steps[0]?.tracking === "hold"
-                        ? ""
-                        : exercise.steps[0]?.tracking === "distance"
-                          ? ""
-                          : common("reps")}
-                    </span>
+                    {exercise.steps[0]?.tracking === "time" || exercise.steps[0]?.tracking === "hold" ? (
+                      <span className="col-span-2">{t("secondsShort")}</span>
+                    ) : exercise.steps[0]?.tracking === "distance" ? (
+                      <span className="col-span-2">{t("metersShort")}</span>
+                    ) : (
+                      <>
+                        <span>{common("kg")}</span>
+                        <span>{common("reps")}</span>
+                      </>
+                    )}
                     <span className="sr-only">{t("sheetDone")}</span>
                   </div>
 
@@ -259,7 +255,7 @@ export function SessionSheet({
                     <button
                       type="button"
                       onClick={() => onStartRest(restStep)}
-                      className="mt-2 ml-7 inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 hover:text-cream"
+                      className="mt-2 ml-1 inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 hover:text-cream"
                     >
                       <Icon name="clock" className="h-3 w-3" />
                       {t("startRest", { seconds: restStep.restSeconds })}
@@ -354,7 +350,7 @@ function SheetSetRow({
           onChange={(event) =>
             onChange({ ...value, seconds: event.target.value === "" ? null : Number(event.target.value) })
           }
-          className={cell}
+          className={cn(cell, "col-span-2")}
           aria-label={t("secondsShort")}
         />
       ) : isDistance ? (
@@ -368,7 +364,7 @@ function SheetSetRow({
           onChange={(event) =>
             onChange({ ...value, reps: event.target.value === "" ? null : Number(event.target.value) })
           }
-          className={cell}
+          className={cn(cell, "col-span-2")}
           aria-label={t("metersShort")}
         />
       ) : (
@@ -388,9 +384,7 @@ function SheetSetRow({
         />
       )}
 
-      {isDuration || isDistance ? (
-        <span />
-      ) : (
+      {!isDuration && !isDistance && (
         <input
           type="number"
           inputMode="numeric"

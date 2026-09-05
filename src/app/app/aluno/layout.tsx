@@ -63,7 +63,7 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
         session && (
           <Link
             href={`/app/aluno/treino/${session.id}`}
-            className={cn(buttonPrimary, "px-5 py-2.5 text-xs")}
+            className={cn(buttonPrimary, "whitespace-nowrap px-5 py-2.5 text-xs")}
           >
             {session.startedAt ? t("resume") : t("start")}
           </Link>
