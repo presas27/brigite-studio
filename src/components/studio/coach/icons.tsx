@@ -95,6 +95,10 @@ const PATHS: Record<string, string> = {
   addToHome: "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM12 8.5v7M8.5 12h7",
   // A phone, for the install card.
   phone: "M8 2.5h8a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2ZM10.5 18.5h3",
+  // Two arrows passing each other, one row per direction: "this for that".
+  // The heads are drawn as two strokes off the shaft's end like `trend`'s, so
+  // they stay arrows at the 14px the session pill uses.
+  swap: "M4 7.5h14M14.5 4 18 7.5 14.5 11M20 16.5H6M9.5 13 6 16.5 9.5 20",
 };
 
 export type IconName = keyof typeof PATHS;

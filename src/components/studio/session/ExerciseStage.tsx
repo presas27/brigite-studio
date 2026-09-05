@@ -252,6 +252,16 @@ export function ExerciseStage({
               </span>
             )}
           </div>
+
+          {/* The slot's prescribed exercise, once she has swapped it out: part
+              of what this screen is, not a footnote — she is doing this one in
+              place of that one, and the report will say the same. */}
+          {step.item.replaces && (
+            <p className="flex items-center gap-1.5 font-sans text-xs text-accent-ink md:text-sm">
+              <Icon name="swap" className="h-3.5 w-3.5 shrink-0" />
+              {t("swapReplaces", { name: step.item.replaces.exerciseName })}
+            </p>
+          )}
         </div>
 
         {(itemNotes || cueLines.length > 0 || note) && (

@@ -814,6 +814,24 @@
       "extraRestSeconds": "+{seconds}s rest",
       "extraRestMinutes": "+{minutes} min rest",
       "goBack": "Go back",
+      "swapExercise": "Swap exercise",
+      "swapTitle": "Swap {name}",
+      "swapLead": "This session only. The plan stays as it is.",
+      "swapLeadCoached": "This session only. Your coach will know.",
+      "swapSearch": "Search exercises",
+      "swapSuggested": "Suggestions",
+      "swapLoading": "Searching…",
+      "swapNoResults": "No results. Try another name.",
+      "swapOriginal": "Original",
+      "swapNote": "Note (optional)",
+      "swapNoteCoached": "Note for your coach (optional)",
+      "swapNotePlaceholder": "No barbell free.",
+      "swapPick": "Pick an exercise",
+      "swapConfirm": "Swap for {name}",
+      "swapping": "Swapping…",
+      "swapReplaces": "In place of {name}",
+      "swapMessage": "I swapped \"{from}\" for \"{to}\" in \"{workout}\".",
+      "swapRestoreMessage": "I switched back to \"{name}\" in \"{workout}\".",
       "outcome": {
         "full": {
           "title": "Session closed",
@@ -879,7 +897,9 @@
         "interval": "Intervals"
       },
       "exerciseNotes": "Client's notes",
-      "noteFrom": "On {name}"
+      "noteFrom": "On {name}",
+      "replaced": "In place of {name}",
+      "replacedNote": "Note: {note}"
     },
     "messages": {
       "title": "Messages",

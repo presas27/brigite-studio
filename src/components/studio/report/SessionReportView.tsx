@@ -1,4 +1,5 @@
 import { StatusChip } from "@/components/studio/aluno/SessionStatus";
+import { Icon } from "@/components/studio/coach/icons";
 import { formatWeekday, formatDayKey } from "@/components/studio/format";
 import type { Translate } from "@/components/studio/plan/types";
 import { eyebrow, heading, muted, surface } from "@/components/studio/theme";
@@ -213,6 +214,24 @@ function ExerciseReport({
           {prescription(entry.item, entry.interleaved)}
         </p>
       </div>
+
+      {/* What was prescribed for this slot, when the client swapped it out,
+          and why if they said. Under the name rather than in the notes at the
+          bottom: the coach reading "goblet squat" needs to know on this line
+          that she asked for a barbell squat. */}
+      {entry.item.replaces && (
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 font-sans text-xs text-accent-ink">
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="swap" className="h-3.5 w-3.5 shrink-0" />
+            {t("replaced", { name: entry.item.replaces.exerciseName })}
+          </span>
+          {entry.item.replaces.note && (
+            <span className="text-cream/60">
+              {t("replacedNote", { note: entry.item.replaces.note })}
+            </span>
+          )}
+        </p>
+      )}
 
       <ul className="mt-3 flex flex-wrap gap-2">
         {entry.sets.map((set) => (

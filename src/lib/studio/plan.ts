@@ -294,6 +294,27 @@ export async function saveExerciseNote(input: {
 }
 
 /**
+ * Swap one exercise of an open session for another, this session only. The
+ * item keeps its id and prescription; `message` is what the coach's thread
+ * gets, and is ignored for a client training alone.
+ */
+export async function swapExercise(input: {
+  assignmentId: string;
+  itemId: string;
+  exerciseId: string;
+  note: string;
+  message: string;
+}): Promise<void> {
+  await sm(api.plan.swapExercise, {
+    assignmentId: input.assignmentId as Id<"assignments">,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId as Id<"exercises">,
+    note: input.note,
+    message: input.message,
+  });
+}
+
+/**
  * The client's previous numbers for an exercise, so the logger can pre-fill
  * instead of asking them to remember. Excludes the session in progress.
  */

@@ -105,6 +105,20 @@ export type WorkoutItem = {
   restSeconds: number;
   rpe: string;
   notes: string;
+  /**
+   * Only ever set on a snapshot item, by the client, mid-session: the exercise
+   * the coach prescribed for this slot, once they swapped it for another. A
+   * live workout item never carries it. See `snapshotItem` in `convex/schema.ts`.
+   */
+  replaces?: ItemSwap;
+};
+
+export type ItemSwap = {
+  exerciseId: string;
+  exerciseName: string;
+  /** The client's reason, or empty. */
+  note: string;
+  at: number;
 };
 
 export function isRestItem(item: { kind?: string | null }): item is { kind: "rest" } {

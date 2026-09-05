@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { requireClientAccess } from "@/lib/studio/auth";
 import {
   clearSet,
@@ -11,8 +12,9 @@ import {
   saveExerciseNote,
   setAssignmentStatus,
   startAssignment,
+  swapExercise,
 } from "@/lib/studio/plan";
-import type { Assignment } from "@/lib/studio/types";
+import { isRestItem, type Assignment } from "@/lib/studio/types";
 
 /**
  * Every mutation here is scoped to one assignment and gated the same way:
@@ -89,6 +91,50 @@ export async function saveNote(input: {
     exerciseId: input.exerciseId,
     body: input.body,
   });
+}
+
+/**
+ * Swap one exercise of this session for another, this session only.
+ *
+ * The line the coach's thread gets is worded here, in the client's language,
+ * because this is where the translations are; the mutation only posts it when
+ * there is a coach to read it. `refresh()` is deliberate, unlike `logSet` and
+ * `saveNote`: the player renders the snapshot it was given, and the snapshot
+ * is what changed. Its own state — where she is in the queue, the sets she
+ * typed — survives the re-render, since the component does not remount.
+ */
+export async function swapSessionExercise(input: {
+  assignmentId: string;
+  itemId: string;
+  exerciseId: string;
+  exerciseName: string;
+  note: string;
+}): Promise<void> {
+  const assignment = await assignmentFor(input.assignmentId);
+  const current = assignment.snapshot.blocks
+    .flatMap((block) => block.items)
+    .find((item) => item.id === input.itemId);
+  if (!current || isRestItem(current)) throw new Error("No such exercise in this session");
+
+  const t = await getTranslations("Studio.session");
+  const note = input.note.trim();
+  const restoring = current.replaces?.exerciseId === input.exerciseId;
+  const line = restoring
+    ? t("swapRestoreMessage", { name: input.exerciseName, workout: assignment.snapshot.name })
+    : t("swapMessage", {
+        from: current.replaces?.exerciseName ?? current.exerciseName,
+        to: input.exerciseName,
+        workout: assignment.snapshot.name,
+      });
+
+  await swapExercise({
+    assignmentId: assignment.id,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId,
+    note,
+    message: note ? `${line}\n${note}` : line,
+  });
+  refresh();
 }
 
 export async function beginSession(assignmentId: string): Promise<void> {

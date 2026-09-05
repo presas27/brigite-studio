@@ -14,6 +14,7 @@ import { RestScreen } from "./RestScreen";
 import { SessionListModal } from "./SessionListModal";
 import { SessionSummary } from "./SessionSummary";
 import { StepProgress } from "./StepProgress";
+import { SwapExerciseButton } from "./SwapExerciseButton";
 import {
   EMPTY_SET,
   isFullyEmpty,
@@ -48,18 +49,22 @@ const FRAME = "mx-auto w-full max-w-[76rem]";
  */
 export function SessionPlayer({
   assignment,
+  coached,
   initialLogs,
   initialNotes,
   previousByExercise,
   logSetAction,
   unlogSetAction,
   saveNoteAction,
+  swapAction,
   beginAction,
   finishAction,
   skipAction,
   discardAction,
 }: {
   assignment: Assignment;
+  /** Whether a coach reads this session — the swap tells them when so. */
+  coached: boolean;
   initialLogs: SetLog[];
   /** This session's notes, keyed by the snapshot `itemId` they belong to. */
   initialNotes: Record<string, string>;
@@ -71,6 +76,13 @@ export function SessionPlayer({
     itemId: string;
     exerciseId: string;
     body: string;
+  }) => Promise<void>;
+  swapAction: (input: {
+    assignmentId: string;
+    itemId: string;
+    exerciseId: string;
+    exerciseName: string;
+    note: string;
   }) => Promise<void>;
   beginAction: () => Promise<void>;
   finishAction: (input: { effort: number | null; extraRestSeconds: number }) => Promise<void>;
@@ -508,6 +520,10 @@ export function SessionPlayer({
 
           {phase === "exercise" && step && !isRestItem(step.item) && (
             <ExerciseStage
+              // Keyed by the exercise as well as the step: a swap changes what
+              // the slot is without moving her off it, and the stage should
+              // come in as a new exercise — because it is one.
+              key={`${step.key}:${step.exerciseId}`}
               step={step}
               enterAs={enterAs}
               value={entries[step.key] ?? EMPTY_SET}
@@ -534,6 +550,19 @@ export function SessionPlayer({
                   exerciseName={step.item.exerciseName}
                   note={notes[step.itemId] ?? ""}
                   onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
+                  aside={
+                    <SwapExerciseButton
+                      assignmentId={assignment.id}
+                      itemId={step.itemId}
+                      exerciseName={step.item.exerciseName}
+                      replaces={step.item.replaces}
+                      coached={coached}
+                      onSwapAction={async (input) => {
+                        await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
+                        setEnterAs("exercise");
+                      }}
+                    />
+                  }
                 />
               }
               onChange={(value) => updateSet(step.itemId, step.setIndex, value)}

@@ -10,6 +10,7 @@ import {
   logSet,
   saveNote,
   skipSession,
+  swapSessionExercise,
   unlogSet,
 } from "./actions";
 
@@ -59,12 +60,14 @@ export default async function TreinoPage({
   return (
     <SessionPlayer
       assignment={assignment}
+      coached={client.profile.coachId !== null}
       initialLogs={initialLogs}
       initialNotes={initialNotes}
       previousByExercise={previousByExercise}
       logSetAction={logSet}
       unlogSetAction={unlogSet}
       saveNoteAction={saveNote}
+      swapAction={swapSessionExercise}
       beginAction={beginSession.bind(null, assignment.id)}
       finishAction={finishSession.bind(null, assignment.id)}
       skipAction={skipSession.bind(null, assignment.id)}

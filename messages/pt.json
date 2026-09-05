@@ -814,6 +814,24 @@
       "extraRestSeconds": "+{seconds}s de descanso",
       "extraRestMinutes": "+{minutes} min de descanso",
       "goBack": "Voltar",
+      "swapExercise": "Trocar exercício",
+      "swapTitle": "Trocar {name}",
+      "swapLead": "Só neste treino. O plano fica como está.",
+      "swapLeadCoached": "Só neste treino. O teu treinador fica a saber.",
+      "swapSearch": "Procurar exercício",
+      "swapSuggested": "Sugestões",
+      "swapLoading": "A procurar…",
+      "swapNoResults": "Sem resultados. Procura por outro nome.",
+      "swapOriginal": "Original",
+      "swapNote": "Nota (opcional)",
+      "swapNoteCoached": "Nota para o treinador (opcional)",
+      "swapNotePlaceholder": "Não havia barra livre.",
+      "swapPick": "Escolhe um exercício",
+      "swapConfirm": "Trocar por {name}",
+      "swapping": "A trocar…",
+      "swapReplaces": "No lugar de {name}",
+      "swapMessage": "Troquei «{from}» por «{to}» no treino «{workout}».",
+      "swapRestoreMessage": "Voltei a «{name}» no treino «{workout}».",
       "outcome": {
         "full": {
           "title": "Treino fechado",
@@ -879,7 +897,9 @@
         "interval": "Intervalado"
       },
       "exerciseNotes": "Notas do aluno",
-      "noteFrom": "Em {name}"
+      "noteFrom": "Em {name}",
+      "replaced": "No lugar de {name}",
+      "replacedNote": "Nota: {note}"
     },
     "messages": {
       "title": "Mensagens",

@@ -25,12 +25,18 @@ export function ExerciseNoteButton({
   exerciseName,
   note,
   onSaveAction,
+  aside,
 }: {
   exerciseName: string;
   /** The note as it stands. Empty means there is none yet. */
   note: string;
   /** Persists the note. An empty body clears it. */
   onSaveAction: (body: string) => Promise<void>;
+  /**
+   * Other controls for the same exercise, on the row with the button — the
+   * swap, today. The saved note keeps the full width under the row.
+   */
+  aside?: React.ReactNode;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
@@ -57,22 +63,25 @@ export function ExerciseNoteButton({
 
   return (
     <div ref={scope} className="space-y-2">
-      <button
-        type="button"
-        onClick={() => {
-          setDraft(note);
-          setOpen(true);
-        }}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium transition-colors",
-          note
-            ? "bg-caramel/15 text-accent-ink hover:bg-caramel/25"
-            : "text-cream/50 hover:bg-cream/8 hover:text-cream",
-        )}
-      >
-        <Icon name={note ? "checkin" : "message"} className="h-3.5 w-3.5" />
-        {note ? t("editNote") : t("addNote")}
-      </button>
+      <div className="flex flex-wrap items-center gap-1">
+        {aside}
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(note);
+            setOpen(true);
+          }}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium transition-colors",
+            note
+              ? "bg-caramel/15 text-accent-ink hover:bg-caramel/25"
+              : "text-cream/50 hover:bg-cream/8 hover:text-cream",
+          )}
+        >
+          <Icon name={note ? "checkin" : "message"} className="h-3.5 w-3.5" />
+          {note ? t("editNote") : t("addNote")}
+        </button>
+      </div>
 
       {note && (
         <p

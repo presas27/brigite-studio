@@ -2,9 +2,16 @@ import { v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireClientAccess, requireCoach, requireCoachOf, requireViewer, type Ctx } from "./model/authz";
-import { hiddenWorkoutIds, workoutSize, workoutWithBlocks } from "./model/library";
+import {
+  hiddenWorkoutIds,
+  liveExercises,
+  searchExercises,
+  workoutSize,
+  workoutWithBlocks,
+} from "./model/library";
 import schema from "./schema";
 import { dayKey, shiftDay } from "../src/lib/studio/dates";
+import { searchKey } from "../src/lib/utils";
 import { buildSessionQueue } from "../src/lib/studio/session-queue";
 import type { Assignment, ScheduledAssignment, SetLog } from "../src/lib/studio/types";
 
@@ -1196,6 +1203,202 @@ export const saveExerciseNote = mutation({
   },
 });
 
+/* ------------------------------------------------------------------ swaps */
+
+/** What the swap picker draws: enough to recognise a movement, nothing to build with. */
+const swapOptionShape = v.object({
+  id: v.string(),
+  name: v.string(),
+  videoUrl: v.union(v.null(), v.string()),
+  tracking: schema.tables.exercises.validator.fields.tracking,
+  tags: v.array(v.string()),
+});
+
+/** How many suggestions the picker shows before the client has typed anything. */
+const SWAP_SUGGESTIONS = 24;
+
+/** The exercise item behind an `itemId` in a snapshot, or `undefined` for a rest row or no such item. */
+function snapshotExercise(
+  snapshot: Doc<"assignments">["snapshot"],
+  itemId: string,
+): Infer<typeof assignmentColumns.snapshot>["blocks"][number]["items"][number] | undefined {
+  for (const block of snapshot.blocks) {
+    for (const item of block.items) {
+      if (item.id === itemId) return item.kind === "rest" ? undefined : item;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Exercises the client could do instead of one in their session.
+ *
+ * Typed into, it is the library's own name search. Left blank, it is the
+ * movements nearest the one being replaced, nearest meaning: linked to it as
+ * a regression or progression; sharing a word of its name ("Prancha lateral"
+ * for "Prancha frontal"); sharing its tags, each tag counting for as rare as
+ * it is — half the imported library is `compound` and `intermediate`, and
+ * two movements agreeing on that agree on nothing. Measured the same way
+ * breaks ties: a barbell squat with no barbell wants a goblet squat, not a
+ * plank. The library is not a builder's privilege here: a coached client
+ * cannot write their plan, but what to do when the rack is taken is theirs
+ * to decide.
+ */
+export const swapOptions = query({
+  args: { assignmentId: v.id("assignments"), itemId: v.string(), search: v.string() },
+  returns: v.array(swapOptionShape),
+  handler: async (ctx, args) => {
+    const doc = await readable(ctx, args.assignmentId);
+    if (!doc) return [];
+    const item = snapshotExercise(doc.snapshot, args.itemId);
+    if (!item) return [];
+
+    const lean = (exercise: Doc<"exercises">) => ({
+      id: exercise._id as string,
+      name: exercise.name,
+      videoUrl: exercise.videoUrl,
+      tracking: exercise.tracking,
+      tags: exercise.tags,
+    });
+
+    const search = args.search.trim();
+    if (search) {
+      return (await searchExercises(ctx, search))
+        .filter((exercise) => exercise._id !== item.exerciseId)
+        .map(lean);
+    }
+
+    const current = await ctx.db.get("exercises", item.exerciseId as Id<"exercises">);
+    const live = await liveExercises(ctx);
+
+    const frequency = new Map<string, number>();
+    for (const exercise of live) {
+      for (const tag of exercise.tags) frequency.set(tag, (frequency.get(tag) ?? 0) + 1);
+    }
+    const tags = new Set(current?.tags ?? []);
+    const words = new Set(nameWords(current?.name ?? item.exerciseName));
+    const originalId = item.replaces?.exerciseId;
+
+    const scored: { exercise: Doc<"exercises">; score: number }[] = [];
+    for (const exercise of live) {
+      if (exercise._id === item.exerciseId) continue;
+      let score = 0;
+      if (originalId && exercise._id === originalId) score += 50;
+      if (current && (exercise.regressionOf === current._id || current.regressionOf === exercise._id)) {
+        score += 100;
+      }
+      for (const word of nameWords(exercise.name)) if (words.has(word)) score += 5;
+      for (const tag of exercise.tags) if (tags.has(tag)) score += 100 / (frequency.get(tag) ?? 1);
+      if (exercise.tracking === item.tracking) score += 0.25;
+      scored.push({ exercise, score });
+    }
+    scored.sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.exercise.name.localeCompare(b.exercise.name, "pt", { sensitivity: "base" }),
+    );
+    return scored.slice(0, SWAP_SUGGESTIONS).map(({ exercise }) => lean(exercise));
+  },
+});
+
+/** The words of an exercise name worth matching on: folded, and long enough to mean something. */
+function nameWords(name: string): string[] {
+  return searchKey(name)
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= 4);
+}
+
+/**
+ * Swap one exercise of an open session for another, for this session only.
+ *
+ * The item keeps its `id` and its prescription — sets, reps, rest, tempo, the
+ * coach's note on it — and takes the new movement's name, demo and cues; the
+ * exercise it replaces is written into `replaces` so nothing about what was
+ * asked for is lost. Sets already logged under the item stay: each carries
+ * the `exerciseId` it was actually done as, so records and progressions keep
+ * counting them against the right movement. Swapping back to the original
+ * clears `replaces` rather than recording a swap of nothing.
+ *
+ * Only the client does this, and only while the session is open. When they
+ * have a coach, `message` lands in the thread as theirs — the coach learns
+ * of the change the way they learn of everything else the client says, and
+ * the console's unread count is what raises it. The caller words the
+ * message because it is written in the client's language, and the
+ * translations live on that side. Without a coach there is no thread and
+ * nothing to tell.
+ */
+export const swapExercise = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    itemId: v.string(),
+    exerciseId: v.id("exercises"),
+    note: v.string(),
+    message: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get("assignments", args.assignmentId);
+    if (!doc) throw new Error("No such assignment");
+    const { viewer, profile } = await requireClientAccess(ctx, doc.clientId);
+    if (viewer._id !== doc.clientId) throw new Error("Only the client swaps their own session");
+    if (doc.status !== "scheduled") throw new Error("Session is closed");
+
+    const item = snapshotExercise(doc.snapshot, args.itemId);
+    if (!item) throw new Error("No such exercise in this session");
+    const exercise = await ctx.db.get("exercises", args.exerciseId);
+    if (!exercise || exercise.archived) throw new Error("No such exercise");
+    if (exercise._id === item.exerciseId) return null;
+
+    const original = item.replaces ?? { exerciseId: item.exerciseId, exerciseName: item.exerciseName };
+    const swapped = {
+      ...item,
+      exerciseId: exercise._id as string,
+      exerciseName: exercise.name,
+      tracking: exercise.tracking,
+      videoUrl: exercise.videoUrl,
+      cues: exercise.cues,
+      cuesEn: exercise.cuesEn,
+      replaces:
+        original.exerciseId === exercise._id
+          ? undefined
+          : {
+              exerciseId: original.exerciseId,
+              exerciseName: original.exerciseName,
+              note: args.note.trim().slice(0, NOTE_LIMIT),
+              at: Date.now(),
+            },
+    };
+    await ctx.db.patch("assignments", doc._id, {
+      snapshot: {
+        ...doc.snapshot,
+        blocks: doc.snapshot.blocks.map((block) => ({
+          ...block,
+          items: block.items.map((candidate) => (candidate.id === item.id ? swapped : candidate)),
+        })),
+      },
+    });
+
+    // The note on this slot is about today's attempt at it, whichever movement
+    // that ended up being; only its advisory `exerciseId` follows the swap.
+    const note = await ctx.db
+      .query("exerciseNotes")
+      .withIndex("by_assignment_and_item", (q) => q.eq("assignmentId", doc._id).eq("itemId", item.id))
+      .unique();
+    if (note) await ctx.db.patch("exerciseNotes", note._id, { exerciseId: swapped.exerciseId });
+
+    const message = args.message.trim();
+    if (profile.coachId !== null && message) {
+      await ctx.db.insert("messages", {
+        clientId: doc.clientId,
+        authorId: viewer._id,
+        body: message,
+        readAt: null,
+      });
+    }
+    return null;
+  },
+});
+
 /**
  * The client's previous numbers for an exercise, so the logger can pre-fill
  * instead of asking them to remember. Excludes the session in progress.
@@ -1261,6 +1464,20 @@ function durationOf(doc: Doc<"assignments">): number | null {
 }
 
 /**
+ * Every exercise a snapshot names, keyed by id — including the ones swapped
+ * out mid-session, since the sets logged before a swap still carry their id
+ * and would otherwise have no name to be listed under.
+ */
+function nameExercises(names: Map<string, string>, snapshot: Doc<"assignments">["snapshot"]): void {
+  for (const block of snapshot.blocks) {
+    for (const item of block.items) {
+      names.set(item.exerciseId, item.exerciseName);
+      if (item.replaces) names.set(item.replaces.exerciseId, item.replaces.exerciseName);
+    }
+  }
+}
+
+/**
  * Heaviest set and longest hold ever logged, per exercise.
  *
  * Set logs are reachable by assignment or by exercise and never by client, so
@@ -1287,11 +1504,7 @@ export const personalRecords = query({
       .collect();
 
     const names = new Map<string, string>();
-    for (const assignment of assignments) {
-      for (const block of assignment.snapshot.blocks) {
-        for (const item of block.items) names.set(item.exerciseId, item.exerciseName);
-      }
-    }
+    for (const assignment of assignments) nameExercises(names, assignment.snapshot);
 
     const best = new Map<
       string,
@@ -1374,9 +1587,7 @@ export const exerciseProgression = query({
     const names = new Map<string, string>();
     const series = new Map<string, Infer<typeof exerciseProgressionShape>["points"]>();
     for (const assignment of assignments) {
-      for (const block of assignment.snapshot.blocks) {
-        for (const item of block.items) names.set(item.exerciseId, item.exerciseName);
-      }
+      nameExercises(names, assignment.snapshot);
       const best = new Map<
         string,
         { loadKg: number | null; reps: number | null; seconds: number | null; rpe: number | null }
