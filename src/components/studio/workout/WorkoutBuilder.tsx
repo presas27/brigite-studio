@@ -44,7 +44,13 @@ import { ExercisePicker } from "./ExercisePicker";
  * server answer arrives as new props and overwrites the draft, so a rejected
  * move snaps back instead of lying.
  */
-export function WorkoutBuilder({ workout, exercises }: { workout: Workout; exercises: Exercise[] }) {
+export function WorkoutBuilder({
+  workout,
+  exercises,
+}: {
+  workout: Workout;
+  exercises: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
+}) {
   const t = useTranslations("Studio.workouts");
   const instructionsFormRef = useRef<HTMLFormElement>(null);
   const [draft, applyDraft] = useOptimistic(workout.blocks, (_current, next: WorkoutBlock[]) => next);

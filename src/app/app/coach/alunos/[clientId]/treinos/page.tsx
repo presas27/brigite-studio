@@ -23,13 +23,12 @@ export default async function ClientSessionsPage({
   const { viewer, client } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
-  const [t, tPlan, locale] = await Promise.all([
+  const [t, tPlan, locale, sessions] = await Promise.all([
     getTranslations("Studio.report"),
     getTranslations("Studio.plan"),
     getLocale(),
+    sessionHistory(client.id, HISTORY_LIMIT),
   ]);
-
-  const sessions = await sessionHistory(client.id, HISTORY_LIMIT);
 
   if (sessions.length === 0) {
     return <Empty title={t("empty")} hint={t("emptyHint")} />;

@@ -42,7 +42,7 @@ type Props = DragProps & {
   canMoveDown: boolean;
   /** Move the whole block one slot, exercises and all. */
   onMoveAction: (delta: -1 | 1) => void;
-  exercises: Exercise[];
+  exercises: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
   selection: Selection;
   view: View;
 };

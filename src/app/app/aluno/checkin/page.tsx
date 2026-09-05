@@ -17,12 +17,14 @@ import { cn } from "@/lib/utils";
 import { submit } from "./actions";
 
 export default async function ClientCheckinPage() {
-  const client = await requireClient();
-  const t = await getTranslations("Studio.checkin");
-  const common = await getTranslations("Studio.common");
-  const locale = await getLocale();
-
   const week = weekKey();
+  const [client, t, common, locale] = await Promise.all([
+    requireClient(),
+    getTranslations("Studio.checkin"),
+    getTranslations("Studio.common"),
+    getLocale(),
+  ]);
+
   const [checkin, history, photoWeeks] = await Promise.all([
     findCheckin(client.id, week),
     listCheckins(client.id),

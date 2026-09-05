@@ -23,10 +23,13 @@ export default async function CoachCheckinsPage({
   const { viewer } = await requireClientAccess(clientId);
   if (viewer.role !== "coach") redirect("/app/aluno");
 
-  const { respondido } = await searchParams;
-  const [t, locale] = await Promise.all([getTranslations("Studio.checkin"), getLocale()]);
-
-  const checkins = await listCheckins(clientId, HISTORY_LIMIT);
+  const [sp, t, locale, checkins] = await Promise.all([
+    searchParams,
+    getTranslations("Studio.checkin"),
+    getLocale(),
+    listCheckins(clientId, HISTORY_LIMIT),
+  ]);
+  const { respondido } = sp;
 
   return (
     <div className="space-y-6">

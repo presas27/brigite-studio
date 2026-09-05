@@ -28,19 +28,18 @@ export default async function CoachCheckinsOverviewPage({
 }: {
   searchParams: Promise<{ semana?: string }>;
 }) {
-  await requireCoach();
-
-  const { semana } = await searchParams;
-  const parsed = semana && WEEK_KEY_RE.test(semana) ? new Date(`${semana}T12:00:00Z`) : null;
-  const monday = parsed && !Number.isNaN(parsed.getTime()) ? weekKey(parsed) : weekKey();
-
-  const [t, tPlan, locale] = await Promise.all([
+  const [, sp, t, tPlan, locale, clients] = await Promise.all([
+    requireCoach(),
+    searchParams,
     getTranslations("Studio.checkin"),
     getTranslations("Studio.plan"),
     getLocale(),
+    listClients(),
   ]);
 
-  const clients = await listClients();
+  const { semana } = sp;
+  const parsed = semana && WEEK_KEY_RE.test(semana) ? new Date(`${semana}T12:00:00Z`) : null;
+  const monday = parsed && !Number.isNaN(parsed.getTime()) ? weekKey(parsed) : weekKey();
 
   const rows = await Promise.all(
     clients.map(async (client) => {

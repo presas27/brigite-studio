@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { useTranslations } from "next-intl";
 import { api } from "@convex/_generated/api";
@@ -50,6 +50,12 @@ export function PhotoAngleField({
   // trip through storage.
   const [preview, setPreview] = useState<string | null>(null);
   const [saved, setSaved] = useState(existing != null);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   async function put(blob: Blob): Promise<Id<"_storage">> {
     const url = await uploadUrl({ clientId: clientId as Id<"users"> });

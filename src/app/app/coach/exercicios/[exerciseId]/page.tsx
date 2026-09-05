@@ -35,8 +35,7 @@ export default async function ExercisePage({
 }: {
   params: Promise<{ exerciseId: string }>;
 }) {
-  await requireCoach();
-  const { exerciseId } = await params;
+  const [{ exerciseId }] = await Promise.all([params, requireCoach()]);
 
   const [exercise, t] = await Promise.all([
     findExercise(exerciseId),

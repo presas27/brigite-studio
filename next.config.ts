@@ -30,6 +30,15 @@ const nextConfig: NextConfig = {
      */
     formats: ["image/avif", "image/webp"],
   },
+  /**
+   * Tree-shake the icon/chart/motion barrels so a page that uses one
+   * `AreaChart` does not download the rest of Recharts, and a Hover icon
+   * does not pull every Motion export.
+   */
+  experimental: {
+    optimizePackageImports: ["motion", "recharts", "gsap", "@gsap/react"],
+    turbopackFileSystemCacheForBuild: true,
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

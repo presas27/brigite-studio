@@ -29,17 +29,18 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ guardado?: string; senha?: string }>;
 }) {
-  const user = await currentUser();
-  if (!user) redirect("/app/entrar");
-
-  const { guardado, senha } = await searchParams;
-  const [t, tClients, common, locale, theme] = await Promise.all([
+  const [user, sp, t, tClients, common, locale, theme] = await Promise.all([
+    currentUser(),
+    searchParams,
     getTranslations("Studio.account"),
     getTranslations("Studio.clients"),
     getTranslations("Studio.common"),
     getLocale(),
     getThemeMode(),
   ]);
+  if (!user) redirect("/app/entrar");
+
+  const { guardado, senha } = sp;
 
   const client = user.role === "client" ? await findClient(user.id) : undefined;
   const coach = client ? await myCoach() : undefined;

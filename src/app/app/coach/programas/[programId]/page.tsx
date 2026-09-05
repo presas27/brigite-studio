@@ -34,8 +34,7 @@ export default async function ProgramPage({
 }: {
   params: Promise<{ programId: string }>;
 }) {
-  const { programId } = await params;
-  await requireCoach();
+  const [{ programId }] = await Promise.all([params, requireCoach()]);
 
   const [program, phases, libraryWorkouts, t, common] = await Promise.all([
     findProgram(programId),

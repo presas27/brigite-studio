@@ -24,14 +24,15 @@ export default async function AlunoPlanoPage({
 }: {
   searchParams: Promise<{ vista?: string; dia?: string; semana?: string }>;
 }) {
-  const client = await requireClient();
-  const [t, tPlan, tWorkouts, locale] = await Promise.all([
+  const [client, t, tPlan, tWorkouts, locale, sp] = await Promise.all([
+    requireClient(),
     getTranslations("Studio.aluno"),
     getTranslations("Studio.plan"),
     getTranslations("Studio.workouts"),
     getLocale(),
+    searchParams,
   ]);
-  const { vista, dia, semana } = await searchParams;
+  const { vista, dia, semana } = sp;
   const view = vista === "semana" ? "week" : "month";
 
   // `?semana=` is what the old week-list plan used; keeping it as an alias

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ProgressChart } from "@/components/studio/analytics/ProgressChart";
+import { ProgressChart } from "@/components/studio/analytics/ProgressChartLazy";
 import { StatusChip } from "@/components/studio/aluno/SessionStatus";
 import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
@@ -51,8 +51,8 @@ type PersonalRecord = {
  * that actually exist for it get printed.
  */
 export default async function AlunoEvolucaoPage() {
-  const client = await requireClient();
-  const [t, tProgress, tPlan, common, locale] = await Promise.all([
+  const [client, t, tProgress, tPlan, common, locale] = await Promise.all([
+    requireClient(),
     getTranslations("Studio.evolucao"),
     getTranslations("Studio.progress"),
     getTranslations("Studio.plan"),

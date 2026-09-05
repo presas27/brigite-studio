@@ -20,13 +20,15 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<{ arquivados?: string }>;
 }) {
-  await requireCoach();
-  const { arquivados } = await searchParams;
+  const [, sp, t, locale, allClients] = await Promise.all([
+    requireCoach(),
+    searchParams,
+    getTranslations("Studio.clients"),
+    getLocale(),
+    listClients(true),
+  ]);
+  const { arquivados } = sp;
   const showArchived = arquivados === "1";
-
-  const [t, locale] = await Promise.all([getTranslations("Studio.clients"), getLocale()]);
-
-  const allClients = await listClients(true);
   const clients = allClients.filter((client) =>
     showArchived ? client.status === "archived" : client.status !== "archived",
   );

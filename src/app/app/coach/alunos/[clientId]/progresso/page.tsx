@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ProgressChart } from "@/components/studio/analytics/ProgressChart";
+import { ProgressChart } from "@/components/studio/analytics/ProgressChartLazy";
 import { exerciseOptions, seriesFromMeasurements } from "@/lib/studio/analytics";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { measurements } from "@/lib/studio/coaching";

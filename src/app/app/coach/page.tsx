@@ -25,11 +25,10 @@ import { cn } from "@/lib/utils";
  * so a message that just landed does not wait on a reload.
  */
 export default async function OverviewPage() {
-  const coach = await requireCoach();
-
-  const [t, locale] = await Promise.all([getTranslations("Studio.overview"), getLocale()]);
-
-  const [clients, alerts, activity, unreadMessages] = await Promise.all([
+  const [coach, t, locale, clients, alerts, activity, unreadMessages] = await Promise.all([
+    requireCoach(),
+    getTranslations("Studio.overview"),
+    getLocale(),
     listClients(),
     coachAlerts(),
     recentActivity(24),

@@ -28,7 +28,7 @@ export function ExercisePicker({
 }: {
   workoutId: string;
   blockId?: string;
-  exercises: Exercise[];
+  exercises: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
   label?: string;
   compact?: boolean;
 }) {

@@ -23,8 +23,7 @@ export default async function OwnWorkoutBuilderPage({
 }: {
   params: Promise<{ workoutId: string }>;
 }) {
-  const builder = await requireBuilder();
-  const { workoutId } = await params;
+  const [builder, { workoutId }] = await Promise.all([requireBuilder(), params]);
 
   const [workout, exercises, t] = await Promise.all([
     findWorkout(workoutId),
@@ -33,6 +32,8 @@ export default async function OwnWorkoutBuilderPage({
   ]);
   if (!workout || workout.coachId !== builder.id || workout.clientId) notFound();
 
+  const picker = exercises.map(({ id, name, videoUrl, tags }) => ({ id, name, videoUrl, tags }));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -40,7 +41,7 @@ export default async function OwnWorkoutBuilderPage({
         title={`${workout.name} · ${t(`type.${workout.workoutType}`)}`}
         action={<WorkoutSettings workout={workout} />}
       />
-      <WorkoutBuilder workout={workout} exercises={exercises} />
+      <WorkoutBuilder workout={workout} exercises={picker} />
     </div>
   );
 }

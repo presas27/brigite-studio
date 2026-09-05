@@ -18,11 +18,10 @@ const HISTORY_LIMIT = 24;
 
 /** BMI headline + weight/height history for the aluno's own Medidas tab, below the entry form. */
 export async function BodyMetricsPanel({ clientId }: { clientId: string }) {
-  const t = await getTranslations("Studio.medidas");
-  const common = await getTranslations("Studio.common");
-  const locale = await getLocale();
-
-  const [weightEntries, heightEntries] = await Promise.all([
+  const [t, common, locale, weightEntries, heightEntries] = await Promise.all([
+    getTranslations("Studio.medidas"),
+    getTranslations("Studio.common"),
+    getLocale(),
     measurements(clientId, "weight", HISTORY_LIMIT),
     measurements(clientId, "height", HISTORY_LIMIT),
   ]);
