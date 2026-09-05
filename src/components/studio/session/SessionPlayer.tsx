@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -15,7 +17,9 @@ import { ExitSheet } from "./ExitSheet";
 import { RestScreen } from "./RestScreen";
 import { SessionListModal } from "./SessionListModal";
 import { SessionPreview } from "./SessionPreview";
+import { SessionSheet } from "./SessionSheet";
 import { SessionSummary } from "./SessionSummary";
+import { SessionViewToggle, type SessionView } from "./SessionViewToggle";
 import { StepProgress } from "./StepProgress";
 import { SwapExerciseButton } from "./SwapExerciseButton";
 import {
@@ -41,16 +45,11 @@ const SESSION_NOTE_ITEM = "__session";
 const FRAME = "mx-auto w-full max-w-[76rem]";
 
 /**
- * The session, one set at a time.
+ * The session, in two views of the same queue.
  *
- * Everything on screen answers "what am I doing right now" — the exercise, its
- * demo, the two numbers it wants back. The rest of the workout is one tap away
- * in the list, and the only other thing the screen offers is a way out that
- * never costs her the work she already did.
- *
- * The queue comes from `buildSessionQueue`, so supersets run round by round and
- * plain blocks run exercise by exercise, and neither this component nor the
- * screens under it have to know the difference.
+ * Focus is one set at a time. Sheet is the whole form — every set of every
+ * exercise, supersets grouped — the Hevy shape. They share the log, the
+ * rest clock and the effort screen; only the surface changes.
  */
 export function SessionPlayer({
   assignment,
@@ -182,6 +181,55 @@ export function SessionPlayer({
   const [finishing, setFinishing] = useState(false);
   const [finishFailed, setFinishFailed] = useState(false);
   const beganRef = useRef(false);
+  const viewRootRef = useRef<HTMLDivElement>(null);
+  const viewKey = `studio:session:view`;
+  const [view, setView] = useState<SessionView>(() => {
+    if (typeof window === "undefined") return "focus";
+    return window.localStorage.getItem(viewKey) === "sheet" ? "sheet" : "focus";
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(viewKey, view);
+    } catch {
+      // Private browsing: the choice lasts this tab only.
+    }
+  }, [view]);
+
+  const switchView = useCallback((next: SessionView) => {
+    if (next === view) return;
+    const root = viewRootRef.current;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!root || reduced) {
+      setView(next);
+      return;
+    }
+    gsap.to(root, {
+      autoAlpha: 0,
+      x: next === "sheet" ? -28 : 28,
+      duration: 0.18,
+      ease: "power2.in",
+      onComplete: () => setView(next),
+    });
+  }, [view]);
+
+  useGSAP(
+    () => {
+      const root = viewRootRef.current;
+      if (!root || phase !== "exercise") return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduced) {
+        gsap.set(root, { autoAlpha: 1, x: 0 });
+        return;
+      }
+      gsap.fromTo(
+        root,
+        { autoAlpha: 0, x: view === "sheet" ? 28 : -28 },
+        { autoAlpha: 1, x: 0, duration: 0.32, ease: "power2.out" },
+      );
+    },
+    { dependencies: [view, phase] },
+  );
 
   // Rest she added on top of what Sara prescribed. Kept in local storage next
   // to the set log so a reload mid-session does not quietly forget it, and
@@ -462,9 +510,14 @@ export function SessionPlayer({
               `md:block` for exactly this reason — and the name is what the
               screen is about, so it takes this row's spare width and wraps
               inside it rather than running under the close button. */}
-          {phase === "exercise" && step && !isRestItem(step.item) && (
+          {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
             <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
               {step.item.exerciseName}
+            </h1>
+          )}
+          {phase === "exercise" && view === "sheet" && (
+            <h1 className={cn(heading, "min-w-0 flex-1 text-[1.5rem] leading-[1.1] md:hidden")}>
+              {current.snapshot.name}
             </h1>
           )}
           {phase === "preview" && (
@@ -473,7 +526,7 @@ export function SessionPlayer({
             </h1>
           )}
 
-          {phase === "exercise" && step && !isRestItem(step.item) && (
+          {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
             <div className="flex shrink-0 items-center">
               <SwapExerciseButton
                 compact
@@ -493,6 +546,12 @@ export function SessionPlayer({
                 note={notes[step.itemId] ?? ""}
                 onSaveAction={(body) => saveNote(step.itemId, step.exerciseId, body)}
               />
+            </div>
+          )}
+
+          {phase === "exercise" && (
+            <div className="order-2 hidden shrink-0 md:block">
+              <SessionViewToggle value={view} onChange={switchView} />
             </div>
           )}
 
@@ -546,16 +605,28 @@ export function SessionPlayer({
           // rest/effort bar. A reserve much bigger than the bar it clears
           // reads as the screen being shoved upwards, so it is measured, not
           // padded generously.
-          phase === "exercise" ? "pb-[15rem]" : phase === "preview" ? "pb-8" : "pb-[7.5rem]",
+          phase === "exercise" && view === "sheet"
+            ? "pb-[6rem]"
+            : phase === "exercise"
+              ? "pb-[15rem]"
+              : phase === "preview"
+                ? "pb-8"
+                : "pb-[7.5rem]",
         )}
       >
         <main
           className={cn(
             FRAME,
             "flex flex-1 flex-col py-3",
-            phase === "exercise" ? "md:justify-center" : "justify-center",
+            phase === "exercise" && view === "focus" ? "md:justify-center" : phase === "exercise" ? "" : "justify-center",
           )}
         >
+          {phase === "exercise" && (
+            <div className="mb-3 flex justify-center md:hidden">
+              <SessionViewToggle value={view} onChange={switchView} />
+            </div>
+          )}
+
           {phase === "preview" && (
             <SessionPreview
               title={current.snapshot.name}
@@ -565,7 +636,7 @@ export function SessionPlayer({
             />
           )}
 
-          {phase === "exercise" && step && isRestItem(step.item) && (
+          {phase === "exercise" && step && isRestItem(step.item) && view === "focus" && (
             <RestScreen
               key={step.key}
               seconds={step.item.seconds ?? 60}
@@ -591,7 +662,54 @@ export function SessionPlayer({
             />
           )}
 
-          {phase === "exercise" && step && !isRestItem(step.item) && (
+          {phase === "exercise" && view === "sheet" && (
+            <div ref={viewRootRef}>
+              <SessionSheet
+                steps={steps}
+                currentKey={step?.key}
+                entries={entries}
+                previousByExercise={previousByExercise}
+                onChange={updateSet}
+                onFlush={flushSet}
+                onJump={goTo}
+                onFinish={() => {
+                  if (step) flushSet(step.itemId, step.setIndex);
+                  setPhase("effort");
+                }}
+                onStartRest={(restStep) => {
+                  flushSet(restStep.itemId, restStep.setIndex);
+                  const from = steps.findIndex((candidate) => candidate.key === restStep.key);
+                  setRestFrom(from >= 0 ? from : index);
+                  setRestKey((key) => key + 1);
+                  setPhase("rest");
+                }}
+                renderNote={(itemId, exerciseId, name) => (
+                  <ExerciseNoteButton
+                    compact
+                    exerciseName={name}
+                    note={notes[itemId] ?? ""}
+                    onSaveAction={(body) => saveNote(itemId, exerciseId, body)}
+                  />
+                )}
+                renderSwap={(itemId, name, replaces) => (
+                  <SwapExerciseButton
+                    compact
+                    assignmentId={assignment.id}
+                    itemId={itemId}
+                    exerciseName={name}
+                    replaces={replaces}
+                    coached={coached}
+                    onSwapAction={async (input) => {
+                      await swapAction({ assignmentId: assignment.id, itemId, ...input });
+                    }}
+                  />
+                )}
+              />
+            </div>
+          )}
+
+          {phase === "exercise" && step && !isRestItem(step.item) && view === "focus" && (
+            <div ref={viewRootRef}>
             <ExerciseStage
               // Keyed by the exercise as well as the step: a swap changes what
               // the slot is without moving her off it, and the stage should
@@ -650,6 +768,7 @@ export function SessionPlayer({
               }
               onChange={(value) => updateSet(step.itemId, step.setIndex, value)}
             />
+            </div>
           )}
 
           {phase === "rest" && (

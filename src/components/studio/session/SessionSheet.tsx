@@ -1,0 +1,425 @@
+"use client";
+
+import { useEffect, useMemo, useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useTranslations } from "next-intl";
+import type { SessionStep } from "@/lib/studio/session-queue";
+import { isRestItem, type BlockKind, type SetLog, type WorkoutItem } from "@/lib/studio/types";
+import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
+import { Icon } from "@/components/studio/coach/icons";
+import { buttonPrimary, eyebrow } from "@/components/studio/theme";
+import { cn } from "@/lib/utils";
+import { EMPTY_SET, isFullyEmpty, type SetValue } from "./useSessionLog";
+
+type SheetExercise = {
+  itemId: string;
+  exerciseId: string;
+  item: WorkoutItem;
+  tag: string | null;
+  steps: SessionStep[];
+};
+
+type SheetBlock = {
+  id: string;
+  label: string;
+  kind: BlockKind;
+  interleaved: boolean;
+  letter: string | null;
+  exercises: SheetExercise[];
+};
+
+function isInterleaved(kind: BlockKind) {
+  return kind === "superset" || kind === "circuit" || kind === "interval";
+}
+
+function groupSheet(steps: SessionStep[]): SheetBlock[] {
+  const blocks: SheetBlock[] = [];
+  let interleavedCount = 0;
+  for (const step of steps) {
+    if (isRestItem(step.item)) continue;
+    let block = blocks.find((entry) => entry.id === step.blockId);
+    if (!block) {
+      const interleaved = isInterleaved(step.blockKind);
+      if (interleaved) interleavedCount += 1;
+      const letter = String.fromCharCode(64 + interleavedCount);
+      block = {
+        id: step.blockId,
+        label: step.blockLabel,
+        kind: step.blockKind,
+        interleaved,
+        letter: interleaved ? letter : null,
+        exercises: [],
+      };
+      blocks.push(block);
+    }
+    let exercise = block.exercises.find((entry) => entry.itemId === step.itemId);
+    if (!exercise) {
+      const index = block.exercises.length + 1;
+      exercise = {
+        itemId: step.itemId,
+        exerciseId: step.exerciseId,
+        item: step.item,
+        tag: block.letter ? `${block.letter}${index}` : null,
+        steps: [],
+      };
+      block.exercises.push(exercise);
+    }
+    exercise.steps.push(step);
+  }
+  return blocks;
+}
+
+const cell =
+  "h-10 w-full min-w-0 rounded-[0.65rem] bg-cream/[0.07] px-1.5 text-center font-sans text-sm font-semibold tabular-nums text-cream ring-1 ring-cream/20 outline-none transition placeholder:font-normal placeholder:text-cream/35 focus:bg-cream/10 focus:ring-2 focus:ring-accent-ink [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+/**
+ * The Hevy-shaped view of the same session: every exercise, every set, on one
+ * sheet. Supersets sit in one block with A1/A2 tags. Logging still writes the
+ * same `itemId:setIndex` keys the focused player uses, so flipping the toggle
+ * mid-session does not invent a second log.
+ */
+export function SessionSheet({
+  steps,
+  currentKey,
+  entries,
+  previousByExercise,
+  onChange,
+  onFlush,
+  onJump,
+  onFinish,
+  onStartRest,
+  renderNote,
+  renderSwap,
+}: {
+  steps: SessionStep[];
+  currentKey: string | undefined;
+  entries: Record<string, SetValue>;
+  previousByExercise: Record<string, SetLog[]>;
+  onChange: (itemId: string, setIndex: number, value: SetValue) => void;
+  onFlush: (itemId: string, setIndex: number) => void;
+  onJump: (index: number) => void;
+  onFinish: () => void;
+  onStartRest?: (step: SessionStep) => void;
+  renderNote: (itemId: string, exerciseId: string, name: string) => React.ReactNode;
+  renderSwap: (itemId: string, name: string, replaces: WorkoutItem["replaces"]) => React.ReactNode;
+}) {
+  const t = useTranslations("Studio.session");
+  const common = useTranslations("Studio.common");
+  const workoutsT = useTranslations("Studio.workouts");
+  const scope = useRef<HTMLDivElement>(null);
+  const blocks = useMemo(() => groupSheet(steps), [steps]);
+
+  useGSAP(
+    () => {
+      gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          "[data-sheet-block]",
+          { autoAlpha: 0, y: 16 },
+          { autoAlpha: 1, y: 0, duration: 0.36, stagger: 0.06, ease: "power2.out" },
+        );
+      });
+    },
+    { scope },
+  );
+
+  useEffect(() => {
+    if (!currentKey) return;
+    const node = scope.current?.querySelector(`[data-sheet-row="${currentKey}"]`);
+    node?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [currentKey]);
+
+  return (
+    <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-5 pb-28">
+      {blocks.map((block) => (
+        <section
+          key={block.id}
+          data-sheet-block
+          className={cn(
+            "overflow-hidden rounded-[1.15rem] bg-cream/[0.03] ring-1 ring-cream/10",
+            block.interleaved && "ring-accent-ink/25",
+          )}
+        >
+          <div className="flex items-center justify-between gap-3 px-3.5 pt-3 pb-2">
+            <p className={eyebrow}>
+              {block.label || workoutsT(`blockKind.${block.kind}`)}
+            </p>
+            {block.interleaved && (
+              <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-accent-ink">
+                {t("sheetSuperset")}
+              </span>
+            )}
+          </div>
+
+          <ul className={cn(block.interleaved && "relative")}>
+            {block.interleaved && (
+              <span
+                aria-hidden
+                className="absolute top-3 bottom-3 left-[1.15rem] w-px bg-accent-ink/35"
+              />
+            )}
+            {block.exercises.map((exercise) => {
+              const restStep = exercise.steps.find((step) => step.restSeconds > 0);
+              return (
+                <li key={exercise.itemId} className="border-t border-cream/8 px-3 pb-3 pt-3">
+                  <div className="mb-2 flex items-start gap-2.5">
+                    {exercise.tag ? (
+                      <span className="mt-1 w-6 shrink-0 text-center font-sans text-[0.65rem] font-semibold text-accent-ink">
+                        {exercise.tag}
+                      </span>
+                    ) : (
+                      <span className="w-0 shrink-0" />
+                    )}
+                    <ExerciseThumb
+                      videoUrl={exercise.item.videoUrl}
+                      className="h-11 w-[3.4rem] shrink-0 rounded-[0.65rem]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-sans text-sm font-semibold text-cream">
+                        {exercise.item.exerciseName}
+                      </p>
+                      <p className="mt-0.5 font-sans text-xs text-cream/45">
+                        {[
+                          exercise.item.reps
+                            ? `${exercise.steps.length} × ${exercise.item.reps}`
+                            : t("setShort", {
+                                set: exercise.steps.length,
+                                total: exercise.steps.length,
+                              }),
+                          exercise.item.tempo ? `${common("tempo")} ${exercise.item.tempo}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      {renderSwap(exercise.itemId, exercise.item.exerciseName, exercise.item.replaces)}
+                      {renderNote(exercise.itemId, exercise.exerciseId, exercise.item.exerciseName)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 px-1 pb-1 font-sans text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-cream/35">
+                    <span>{t("sheetSet")}</span>
+                    <span>{t("sheetPrevious")}</span>
+                    <span>
+                      {exercise.steps[0]?.tracking === "time" || exercise.steps[0]?.tracking === "hold"
+                        ? t("secondsShort")
+                        : exercise.steps[0]?.tracking === "distance"
+                          ? t("metersShort")
+                          : common("kg")}
+                    </span>
+                    <span>
+                      {exercise.steps[0]?.tracking === "time" || exercise.steps[0]?.tracking === "hold"
+                        ? ""
+                        : exercise.steps[0]?.tracking === "distance"
+                          ? ""
+                          : common("reps")}
+                    </span>
+                    <span className="sr-only">{t("sheetDone")}</span>
+                  </div>
+
+                  <ul className="space-y-1.5">
+                    {exercise.steps.map((step) => {
+                      const value = entries[step.key] ?? EMPTY_SET;
+                      const previous = previousByExercise[step.exerciseId]?.find(
+                        (log) => log.setIndex === step.setIndex,
+                      );
+                      const done = !isFullyEmpty(value);
+                      const current = step.key === currentKey;
+                      return (
+                        <li key={step.key} data-sheet-row={step.key}>
+                          <SheetSetRow
+                            step={step}
+                            value={value}
+                            previous={previous}
+                            done={done}
+                            current={current}
+                            onFocusRow={() => {
+                              const index = steps.findIndex((candidate) => candidate.key === step.key);
+                              if (index >= 0) onJump(index);
+                            }}
+                            onChange={(next) => onChange(step.itemId, step.setIndex, next)}
+                            onToggleDone={() => {
+                              if (done) {
+                                onChange(step.itemId, step.setIndex, EMPTY_SET);
+                                onFlush(step.itemId, step.setIndex);
+                                return;
+                              }
+                              const filled = fillFromPrevious(step, value, previous);
+                              onChange(step.itemId, step.setIndex, filled);
+                              onFlush(step.itemId, step.setIndex);
+                            }}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {restStep && onStartRest && (
+                    <button
+                      type="button"
+                      onClick={() => onStartRest(restStep)}
+                      className="mt-2 ml-7 inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 hover:text-cream"
+                    >
+                      <Icon name="clock" className="h-3 w-3" />
+                      {t("startRest", { seconds: restStep.restSeconds })}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+
+      <button type="button" onClick={onFinish} className={cn(buttonPrimary, "h-14 w-full text-base")}>
+        {t("lastSet")}
+        <Icon name="chevron" className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function fillFromPrevious(step: SessionStep, value: SetValue, previous?: SetLog): SetValue {
+  if (!isFullyEmpty(value)) return value;
+  if (step.tracking === "reps") {
+    return {
+      ...EMPTY_SET,
+      reps: previous?.reps ?? (Number.parseInt(step.item.reps, 10) || null),
+      loadKg: previous?.loadKg ?? null,
+    };
+  }
+  if (step.tracking === "distance") {
+    return { ...EMPTY_SET, reps: previous?.reps ?? (Number.parseInt(step.item.reps, 10) || null) };
+  }
+  return { ...EMPTY_SET, seconds: previous?.seconds ?? step.item.seconds };
+}
+
+function previousLabel(step: SessionStep, previous?: SetLog) {
+  if (!previous) return "—";
+  if (step.tracking === "reps") {
+    if (previous.reps == null) return "—";
+    return previous.loadKg != null ? `${previous.loadKg}×${previous.reps}` : `${previous.reps}`;
+  }
+  if (step.tracking === "distance") return previous.reps != null ? `${previous.reps}m` : "—";
+  return previous.seconds != null ? `${previous.seconds}s` : "—";
+}
+
+function SheetSetRow({
+  step,
+  value,
+  previous,
+  done,
+  current,
+  onFocusRow,
+  onChange,
+  onToggleDone,
+}: {
+  step: SessionStep;
+  value: SetValue;
+  previous?: SetLog;
+  done: boolean;
+  current: boolean;
+  onFocusRow: () => void;
+  onChange: (value: SetValue) => void;
+  onToggleDone: () => void;
+}) {
+  const t = useTranslations("Studio.session");
+  const isDuration = step.tracking === "time" || step.tracking === "hold";
+  const isDistance = step.tracking === "distance";
+
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 rounded-[0.75rem] px-1 py-0.5",
+        current && "bg-cream/[0.04] ring-1 ring-cream/10",
+        done && !current && "opacity-80",
+      )}
+    >
+      <span className="text-center font-sans text-sm font-semibold tabular-nums text-cream/70">
+        {step.setNumber}
+      </span>
+      <span className="truncate text-center font-sans text-xs tabular-nums text-cream/40">
+        {previousLabel(step, previous)}
+      </span>
+
+      {isDuration ? (
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={value.seconds ?? ""}
+          placeholder={previous?.seconds != null ? String(previous.seconds) : ""}
+          onFocus={onFocusRow}
+          onChange={(event) =>
+            onChange({ ...value, seconds: event.target.value === "" ? null : Number(event.target.value) })
+          }
+          className={cell}
+          aria-label={t("secondsShort")}
+        />
+      ) : isDistance ? (
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={value.reps ?? ""}
+          placeholder={previous?.reps != null ? String(previous.reps) : ""}
+          onFocus={onFocusRow}
+          onChange={(event) =>
+            onChange({ ...value, reps: event.target.value === "" ? null : Number(event.target.value) })
+          }
+          className={cell}
+          aria-label={t("metersShort")}
+        />
+      ) : (
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={0.5}
+          value={value.loadKg ?? ""}
+          placeholder={previous?.loadKg != null ? String(previous.loadKg) : ""}
+          onFocus={onFocusRow}
+          onChange={(event) =>
+            onChange({ ...value, loadKg: event.target.value === "" ? null : Number(event.target.value) })
+          }
+          className={cell}
+          aria-label="kg"
+        />
+      )}
+
+      {isDuration || isDistance ? (
+        <span />
+      ) : (
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={value.reps ?? ""}
+          placeholder={previous?.reps != null ? String(previous.reps) : ""}
+          onFocus={onFocusRow}
+          onChange={(event) =>
+            onChange({ ...value, reps: event.target.value === "" ? null : Number(event.target.value) })
+          }
+          className={cell}
+          aria-label="reps"
+        />
+      )}
+
+      <button
+        type="button"
+        onClick={onToggleDone}
+        aria-pressed={done}
+        aria-label={t("sheetDone")}
+        className={cn(
+          "grid h-9 w-9 place-items-center rounded-[0.6rem] ring-1 transition-colors",
+          done
+            ? "bg-accent-ink/20 text-accent-ink ring-accent-ink/40"
+            : "text-cream/30 ring-cream/15 hover:text-cream/70 hover:ring-cream/30",
+        )}
+      >
+        <Icon name="check" className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
