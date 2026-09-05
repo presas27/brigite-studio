@@ -350,9 +350,9 @@
       "alert": {
         "session": "You have {name} to do today.",
         "checkin": "The check-in for the week of {date} is still missing.",
-        "feedback": "Sara left feedback on your {subject} clip.",
-        "feedbackPlain": "Sara left feedback on one of your clips.",
-        "message": "{count, plural, =1 {# unread message} other {# unread messages}} from Sara.",
+        "feedback": "Your coach left feedback on your {subject} clip.",
+        "feedbackPlain": "Your coach left feedback on one of your clips.",
+        "message": "{count, plural, =1 {# unread message} other {# unread messages}} from your coach.",
         "missed": "{name} on {date} is still not done."
       },
       "activity": {
@@ -364,12 +364,12 @@
           "skipped": "You couldn't do {subject}.",
           "submission": "You sent a {subject} clip.",
           "submissionPlain": "You sent a clip.",
-          "review": "Sara left feedback on your {subject} clip.",
-          "reviewPlain": "Sara left feedback on one of your clips.",
+          "review": "Your coach left feedback on your {subject} clip.",
+          "reviewPlain": "Your coach left feedback on one of your clips.",
           "checkin": "You sent the check-in for the week of {subject}.",
-          "checkinReply": "Sara replied to the check-in for the week of {subject}.",
-          "message": "You wrote to Sara.",
-          "coachMessage": "Sara wrote to you."
+          "checkinReply": "Your coach replied to the check-in for the week of {subject}.",
+          "message": "You wrote to your coach.",
+          "coachMessage": "Your coach wrote to you."
         }
       },
       "workouts": {
@@ -760,7 +760,7 @@
       "watchDemo": "Watch demo",
       "holdSeconds": "Seconds",
       "distanceMeters": "Metres",
-      "coachNote": "Note from Sara",
+      "coachNote": "Session note",
       "todayLead": "What you're training right now.",
       "nextUp": "Next session",
       "checkinNudge": "You haven't sent this week's check-in yet. Tap to do it.",
@@ -851,7 +851,7 @@
         },
         "none": {
           "title": "Nothing logged",
-          "line": "No sets recorded. If you trained, tell Sara."
+          "line": "No sets recorded. If you trained, tell your coach."
         },
         "skipped": {
           "title": "Not trained",
@@ -911,7 +911,7 @@
       "noClients": "You don't have any clients yet.",
       "noClientsHint": "Invite a client from Clients to start talking.",
       "you": "You",
-      "coach": "Sara",
+      "coach": "Coach",
       "threadsTitle": "Threads",
       "unread": "{count, plural, =1 {# Unread} other {# Unread}}"
     },
@@ -932,8 +932,8 @@
       "alreadyDone": "You already sent this week's check-in. You can update it.",
       "weekOf": "Week of {date}",
       "notSubmitted": "Not sent",
-      "awaitingReply": "Waiting for Sara's reply.",
-      "coachReply": "Sara's reply",
+      "awaitingReply": "Waiting for a reply.",
+      "coachReply": "Coach's reply",
       "replyLabel": "Your reply",
       "replyPlaceholder": "Let's drop the volume this week and focus on mobility.",
       "sendReply": "Reply",
@@ -1216,7 +1216,7 @@
   },
   "Error": {
     "title": "Something broke on our side",
-    "lead": "The page could not load. Nothing you did — try again, and if it keeps happening tell Sara what you were doing.",
+    "lead": "The page could not load. Nothing you did — try again, and if it keeps happening tell us what you were doing.",
     "retry": "Try again",
     "home": "Back to the site",
     "studio": "Back to the training area",

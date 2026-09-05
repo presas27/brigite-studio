@@ -48,6 +48,7 @@ export default async function AlunoLayout({ children }: { children: React.ReactN
 
   return (
     <AlunoChrome
+      clientId={client.id}
       name={client.name}
       email={client.email}
       themeMode={await getThemeMode()}

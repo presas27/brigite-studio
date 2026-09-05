@@ -57,6 +57,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <AlunoChrome
+      clientId={user.id}
       name={user.name}
       email={user.email}
       themeMode={themeMode}

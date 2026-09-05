@@ -40,13 +40,13 @@ export function AssignmentCard({
     (n, block) => n + block.items.filter((item) => !isRestItem(item)).length,
     0,
   );
+  const locked = assignment.status !== "scheduled" || assignment.startedAt != null;
   const statusClass =
     assignment.status === "done"
       ? chipAccent
       : assignment.status === "skipped"
         ? cn(chip, "text-silk ring-silk/30")
         : chip;
-
   const facts = [
     assignment.snapshot.focus && capitalize(assignment.snapshot.focus),
     tWorkouts("items", { count: itemCount }),
@@ -73,36 +73,38 @@ export function AssignmentCard({
           {assignment.note && <p className={cn(muted, "mt-2")}>{assignment.note}</p>}
         </div>
 
-        <div className="flex shrink-0 flex-col items-start gap-1 @lg:flex-row @lg:flex-wrap @lg:items-center @lg:justify-end">
-          <form action={moveAction} className="flex flex-wrap items-center gap-1">
-            <input type="hidden" name="assignmentId" value={assignment.id} />
-            <input
-              type="date"
-              name="date"
-              defaultValue={assignment.date ?? ""}
-              aria-label={t("moveLabel")}
-              required
-              className="h-8 max-w-full rounded-full bg-transparent px-2.5 font-sans text-xs text-cream/50 outline-none transition-colors hover:bg-cream/8 hover:text-cream focus:bg-cream/8 focus:text-cream focus:ring-2 focus:ring-caramel/70"
-            />
-            <SubmitButton variant="quiet" className="text-accent-ink hover:bg-caramel/15">
-              {assignment.date == null ? t("schedule") : t("move")}
-            </SubmitButton>
-          </form>
-
-          {assignment.status === "scheduled" && markSkippedAction && (
-            <form action={markSkippedAction}>
+        {!locked && (
+          <div className="flex shrink-0 flex-col items-start gap-1 @lg:flex-row @lg:flex-wrap @lg:items-center @lg:justify-end">
+            <form action={moveAction} className="flex flex-wrap items-center gap-1">
               <input type="hidden" name="assignmentId" value={assignment.id} />
-              <SubmitButton variant="quiet">{t("markSkipped")}</SubmitButton>
+              <input
+                type="date"
+                name="date"
+                defaultValue={assignment.date ?? ""}
+                aria-label={t("moveLabel")}
+                required
+                className="h-8 max-w-full rounded-full bg-transparent px-2.5 font-sans text-xs text-cream/50 outline-none transition-colors hover:bg-cream/8 hover:text-cream focus:bg-cream/8 focus:text-cream focus:ring-2 focus:ring-caramel/70"
+              />
+              <SubmitButton variant="quiet" className="text-accent-ink hover:bg-caramel/15">
+                {assignment.date == null ? t("schedule") : t("move")}
+              </SubmitButton>
             </form>
-          )}
 
-          <form action={removeAction}>
-            <input type="hidden" name="assignmentId" value={assignment.id} />
-            <SubmitButton variant="quiet" className="hover:bg-silk/10 hover:text-silk">
-              {t("remove")}
-            </SubmitButton>
-          </form>
-        </div>
+            {markSkippedAction && (
+              <form action={markSkippedAction}>
+                <input type="hidden" name="assignmentId" value={assignment.id} />
+                <SubmitButton variant="quiet">{t("markSkipped")}</SubmitButton>
+              </form>
+            )}
+
+            <form action={removeAction}>
+              <input type="hidden" name="assignmentId" value={assignment.id} />
+              <SubmitButton variant="quiet" className="hover:bg-silk/10 hover:text-silk">
+                {t("remove")}
+              </SubmitButton>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

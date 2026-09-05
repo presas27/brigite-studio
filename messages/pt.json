@@ -350,9 +350,9 @@
       "alert": {
         "session": "Tens {name} para fazer hoje.",
         "checkin": "Falta o check-in da semana de {date}.",
-        "feedback": "A Sara comentou o teu vídeo de {subject}.",
-        "feedbackPlain": "A Sara comentou um vídeo teu.",
-        "message": "{count, plural, =1 {# mensagem por ler} other {# mensagens por ler}} da Sara.",
+        "feedback": "O teu treinador comentou o teu vídeo de {subject}.",
+        "feedbackPlain": "O teu treinador comentou um vídeo teu.",
+        "message": "{count, plural, =1 {# mensagem por ler} other {# mensagens por ler}} do teu treinador.",
         "missed": "{name} de {date} continua por fazer."
       },
       "activity": {
@@ -364,12 +364,12 @@
           "skipped": "Não conseguiste fazer {subject}.",
           "submission": "Enviaste um vídeo de {subject}.",
           "submissionPlain": "Enviaste um vídeo.",
-          "review": "A Sara comentou o teu vídeo de {subject}.",
-          "reviewPlain": "A Sara comentou um vídeo teu.",
+          "review": "O teu treinador comentou o teu vídeo de {subject}.",
+          "reviewPlain": "O teu treinador comentou um vídeo teu.",
           "checkin": "Enviaste o check-in da semana de {subject}.",
-          "checkinReply": "A Sara respondeu ao check-in da semana de {subject}.",
-          "message": "Escreveste à Sara.",
-          "coachMessage": "A Sara escreveu-te."
+          "checkinReply": "O teu treinador respondeu ao check-in da semana de {subject}.",
+          "message": "Escreveste ao teu treinador.",
+          "coachMessage": "O teu treinador escreveu-te."
         }
       },
       "workouts": {
@@ -760,7 +760,7 @@
       "watchDemo": "Ver demo",
       "holdSeconds": "Segundos",
       "distanceMeters": "Metros",
-      "coachNote": "Nota da Sara",
+      "coachNote": "Nota do treino",
       "todayLead": "O que tens para treinar agora.",
       "nextUp": "Próximo treino",
       "checkinNudge": "Ainda não enviaste o check-in desta semana. Toca para o fazer.",
@@ -851,7 +851,7 @@
         },
         "none": {
           "title": "Sem registos",
-          "line": "Não ficou nenhuma série registada. Se treinaste, diz à Sara."
+          "line": "Não ficou nenhuma série registada. Se treinaste, diz ao teu treinador."
         },
         "skipped": {
           "title": "Não treinaste",
@@ -911,7 +911,7 @@
       "noClients": "Ainda não tens alunos.",
       "noClientsHint": "Convida um aluno em Alunos para começarem a falar.",
       "you": "Tu",
-      "coach": "Sara",
+      "coach": "Treinador",
       "threadsTitle": "Conversas",
       "unread": "{count, plural, =1 {# Por ler} other {# Por ler}}"
     },
@@ -932,8 +932,8 @@
       "alreadyDone": "Já enviaste o check-in desta semana. Podes atualizar.",
       "weekOf": "Semana de {date}",
       "notSubmitted": "Não enviado",
-      "awaitingReply": "À espera da resposta da Sara.",
-      "coachReply": "Resposta da Sara",
+      "awaitingReply": "À espera da resposta.",
+      "coachReply": "Resposta do treinador",
       "replyLabel": "A tua resposta",
       "replyPlaceholder": "Vamos baixar o volume esta semana e focar na mobilidade.",
       "sendReply": "Responder",
@@ -1216,7 +1216,7 @@
   },
   "Error": {
     "title": "Algo falhou do nosso lado",
-    "lead": "A página não carregou. Não foi nada que fizeste — tenta outra vez e, se continuar, diz à Sara o que estavas a fazer.",
+    "lead": "A página não carregou. Não foi nada que fizeste — tenta outra vez e, se continuar, diz-nos o que estavas a fazer.",
     "retry": "Tentar outra vez",
     "home": "Voltar ao site",
     "studio": "Voltar à área de treino",

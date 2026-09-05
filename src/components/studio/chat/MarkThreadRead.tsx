@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
  * Running the mutation from a mounted Client Component ties it to a real
  * paint in the browser instead of a speculative render.
  */
-export function MarkThreadRead({ action }: { action: () => Promise<void> }) {
+export function MarkThreadRead({ action }: { action: () => void | Promise<unknown> }) {
   const fired = useRef(false);
 
   useEffect(() => {

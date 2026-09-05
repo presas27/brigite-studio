@@ -1,6 +1,8 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { StudioChrome, type ChromeSection } from "@/components/studio/chrome/StudioChrome";
+import { api } from "@convex/_generated/api";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
 import type { CoachAlert } from "@/lib/studio/types";
 import { NotificationsMenu } from "./NotificationsMenu";
@@ -50,8 +52,8 @@ export function CoachChrome({
   name,
   email,
   themeMode,
-  badges,
-  alerts,
+  badges: initialBadges,
+  alerts: initialAlerts,
   quickAdd,
   children,
 }: {
@@ -66,6 +68,15 @@ export function CoachChrome({
   alerts: CoachAlert[];
   children: React.ReactNode;
 }) {
+  const liveUnread = useQuery(api.coaching.unreadTotal, {});
+  const liveAlerts = useQuery(api.coaching.coachAlerts, {});
+  const alerts = liveAlerts ?? initialAlerts;
+  const badges = { ...initialBadges };
+  if (liveUnread !== undefined) {
+    if (liveUnread > 0) badges["/app/coach/mensagens"] = liveUnread;
+    else delete badges["/app/coach/mensagens"];
+  }
+
   return (
     <StudioChrome
       role="coach"

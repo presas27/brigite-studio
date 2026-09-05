@@ -287,6 +287,17 @@ async function coachAssignment(
   return doc;
 }
 
+/**
+ * A session the client has opened, finished or skipped is a record. The coach
+ * still sees it; they cannot drag it to another day or throw it away. Matches
+ * the lock inside `rescheduleWorkout`.
+ */
+function assertUnlocked(doc: Doc<"assignments">): void {
+  if (doc.status !== "scheduled" || doc.startedAt != null) {
+    throw new Error("Session is locked");
+  }
+}
+
 /* ------------------------------------------------------------------ numbers */
 
 /** Clamp a client-supplied count into something a query can safely be sized by. */
@@ -844,7 +855,8 @@ export const moveAssignment = mutation({
   args: { assignmentId: v.id("assignments"), date: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await coachAssignment(ctx, args.assignmentId);
+    const doc = await coachAssignment(ctx, args.assignmentId);
+    assertUnlocked(doc);
     await ctx.db.patch("assignments", args.assignmentId, { date: args.date });
     return null;
   },
@@ -854,12 +866,16 @@ export const moveAssignment = mutation({
  * Delete an assignment and everything logged against it. SQLite cascaded from
  * `set_logs.assignment_id`; here the mutation is the cascade, and forgetting it
  * would leave logs pointing at a row that no longer exists.
+ *
+ * A session that has been opened, finished or skipped is a record, not a
+ * calendar tile — same lock `rescheduleWorkout` already applies.
  */
 export const removeAssignment = mutation({
   args: { assignmentId: v.id("assignments") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await coachAssignment(ctx, args.assignmentId);
+    const doc = await coachAssignment(ctx, args.assignmentId);
+    assertUnlocked(doc);
     await deleteSessionEntries(ctx, args.assignmentId);
     await ctx.db.delete("assignments", args.assignmentId);
     return null;
@@ -1276,7 +1292,7 @@ export const swapOptions = query({
       for (const tag of exercise.tags) frequency.set(tag, (frequency.get(tag) ?? 0) + 1);
     }
     const tags = new Set(current?.tags ?? []);
-    const words = new Set(nameWords(current?.name ?? item.exerciseName));
+    const words = expandStems(nameWords(current?.name ?? item.exerciseName));
     const originalId = item.replaces?.exerciseId;
 
     const scored: { exercise: Doc<"exercises">; score: number }[] = [];
@@ -1306,6 +1322,45 @@ function nameWords(name: string): string[] {
   return searchKey(name)
     .split(/[^a-z0-9]+/)
     .filter((word) => word.length >= 4);
+}
+
+/**
+ * Portuguese movement words and the English stems the imported library uses
+ * for the same thing. The seeded cues are in Portuguese; Trainerize names are
+ * not. Without this, "Prancha frontal" has nothing to say to "Elbow Plank"
+ * and the picker dumps every hold in the library, alphabetically.
+ */
+const NAME_ALIASES: Record<string, string[]> = {
+  prancha: ["plank"],
+  agachamento: ["squat"],
+  avanco: ["lunge"],
+  avancos: ["lunge"],
+  passada: ["lunge"],
+  afundo: ["lunge"],
+  remada: ["row"],
+  remo: ["row"],
+  supino: ["bench", "press"],
+  desenvolvimento: ["press"],
+  flexao: ["pushup", "push"],
+  flexoes: ["pushup"],
+  elevacao: ["pull", "chin", "raise"],
+  puxada: ["pulldown", "pull"],
+  morto: ["deadlift"],
+  ponte: ["bridge", "thrust"],
+  abdominal: ["crunch", "situp"],
+  alongamento: ["stretch"],
+  salto: ["jump"],
+  corrida: ["run"],
+};
+
+/** Fold a name into stems, then add the other language's words for the same movement. */
+function expandStems(words: string[]): Set<string> {
+  const stems = new Set(words);
+  for (const [pt, ens] of Object.entries(NAME_ALIASES)) {
+    if (stems.has(pt)) for (const en of ens) stems.add(en);
+    for (const en of ens) if (stems.has(en)) stems.add(pt);
+  }
+  return stems;
 }
 
 /**

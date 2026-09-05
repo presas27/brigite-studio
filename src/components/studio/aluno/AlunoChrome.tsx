@@ -1,6 +1,9 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { StudioChrome, type ChromeSection } from "@/components/studio/chrome/StudioChrome";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type { ClientAlert } from "@/lib/studio/clientConsole";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
 import { AlunoNotifications } from "./AlunoNotifications";
@@ -53,15 +56,17 @@ function sections(solo: boolean): ChromeSection[] {
  * between sets, one-handed.
  */
 export function AlunoChrome({
+  clientId,
   name,
   email,
   themeMode,
-  badges,
+  badges: initialBadges,
   alerts,
   quickAction,
   solo,
   children,
 }: {
+  clientId: string;
   name: string;
   email: string;
   themeMode: ThemeMode;
@@ -75,6 +80,16 @@ export function AlunoChrome({
   solo: boolean;
   children: React.ReactNode;
 }) {
+  const liveUnread = useQuery(
+    api.coaching.unreadCount,
+    solo ? "skip" : { clientId: clientId as Id<"users"> },
+  );
+  const badges = { ...initialBadges };
+  if (liveUnread !== undefined) {
+    if (liveUnread > 0) badges["/app/aluno/mensagens"] = liveUnread;
+    else delete badges["/app/aluno/mensagens"];
+  }
+
   return (
     <StudioChrome
       role="client"
