@@ -69,39 +69,47 @@ export function ExerciseNoteButton({
     { dependencies: [note], scope },
   );
 
+  // The dialog is a sibling of the box, not a child: closed, a `<dialog>` is
+  // `display: none` but still a DOM child, and a `space-y-*` box would count
+  // it as the last one — putting its gap under the trigger row and floating
+  // the icon 4px above whatever sits beside it.
   return (
-    <div ref={scope} className="space-y-2">
-      <div className={cn("flex flex-wrap items-center gap-1", triggerClassName)}>
-        {aside}
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(note);
-            setFailed(false);
-            setOpen(true);
-          }}
-          aria-label={note ? t("editNote") : t("addNote")}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full font-sans text-xs font-medium transition-colors",
-            compact ? "p-2" : "px-2.5 py-1.5",
-            note
-              ? "bg-caramel/15 text-accent-ink hover:bg-caramel/25"
-              : "text-cream/50 hover:bg-cream/8 hover:text-cream",
-          )}
+    <>
+      <div ref={scope}>
+        <div
+          className={cn("flex flex-wrap items-center gap-1", triggerClassName)}
         >
-          <Icon name={note ? "checkin" : "message"} className="h-3.5 w-3.5" />
-          {!compact && (note ? t("editNote") : t("addNote"))}
-        </button>
-      </div>
+          {aside}
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(note);
+              setFailed(false);
+              setOpen(true);
+            }}
+            aria-label={note ? t("editNote") : t("addNote")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full font-sans text-xs font-medium transition-colors",
+              compact ? "p-2" : "px-2.5 py-1.5",
+              note
+                ? "bg-caramel/15 text-accent-ink hover:bg-caramel/25"
+                : "text-cream/50 hover:bg-cream/8 hover:text-cream",
+            )}
+          >
+            <Icon name={note ? "checkin" : "message"} className="h-3.5 w-3.5" />
+            {!compact && (note ? t("editNote") : t("addNote"))}
+          </button>
+        </div>
 
-      {!compact && note && (
-        <p
-          data-note-block
-          className="rounded-[0.85rem] border-l-2 border-accent-ink/60 bg-cream/5 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-cream/75 md:text-sm"
-        >
-          {note}
-        </p>
-      )}
+        {!compact && note && (
+          <p
+            data-note-block
+            className="mt-2 rounded-[0.85rem] border-l-2 border-accent-ink/60 bg-cream/5 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-cream/75 md:text-sm"
+          >
+            {note}
+          </p>
+        )}
+      </div>
 
       <Modal
         open={open}
@@ -157,6 +165,6 @@ export function ExerciseNoteButton({
           </div>
         </form>
       </Modal>
-    </div>
+    </>
   );
 }

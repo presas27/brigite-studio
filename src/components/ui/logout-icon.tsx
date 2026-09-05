@@ -48,7 +48,7 @@ const LogoutIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
     return (
       <motion.div
         ref={scope}
-        className={`inline-flex cursor-pointer ${className}`}
+        className={`inline-flex cursor-pointer items-center justify-center ${className}`}
         onHoverStart={start}
         onHoverEnd={stop}
       >
@@ -62,6 +62,7 @@ const LogoutIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="h-full w-full"
         >
           <motion.path
             className="logout-door"

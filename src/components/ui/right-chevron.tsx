@@ -32,7 +32,7 @@ const RightChevron = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
     return (
       <motion.div
         ref={scope}
-        className={`flex w-8 items-center justify-center ${className}`}
+        className={`inline-flex items-center justify-center ${className}`}
         onHoverStart={start}
         onHoverEnd={stop}
       >
@@ -46,7 +46,7 @@ const RightChevron = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="chevron cursor-pointer"
+          className="chevron h-full w-full cursor-pointer"
         >
           <path d="M9 6l6 6l-6 6" />
         </svg>

@@ -53,6 +53,7 @@ const ArrowNarrowLeftIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="h-full w-full"
         >
           <motion.g className="arrow-group">
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />

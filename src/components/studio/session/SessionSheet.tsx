@@ -156,13 +156,7 @@ export function SessionSheet({
             )}
           </div>
 
-          <ul className={cn(block.interleaved && "relative")}>
-            {block.interleaved && (
-              <span
-                aria-hidden
-                className="absolute top-3 bottom-3 left-[1.15rem] w-px bg-accent-ink/35"
-              />
-            )}
+          <ul>
             {block.exercises.map((exercise) => {
               const restStep = exercise.steps.find((step) => step.restSeconds > 0);
               return (
@@ -412,7 +406,7 @@ function SheetSetRow({
             : "text-cream/30 ring-cream/15 hover:text-cream/70 hover:ring-cream/30",
         )}
       >
-        <Icon name="check" className="h-4 w-4" />
+        <Icon name="check" strokeWidth={2} className="h-5 w-5" />
       </button>
     </div>
   );

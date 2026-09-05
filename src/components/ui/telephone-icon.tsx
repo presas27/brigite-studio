@@ -57,7 +57,7 @@ const TelephoneIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
         ref={scope}
         onHoverStart={start}
         onHoverEnd={stop}
-        className={`inline-flex cursor-pointer ${className}`}
+        className={`inline-flex cursor-pointer items-center justify-center ${className}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -69,6 +69,7 @@ const TelephoneIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={scaledStrokeWidth(strokeWidth, 48)}
           strokeMiterlimit="10"
           strokeLinecap="square"
+          className="h-full w-full"
         >
           <motion.path
             className="stadium-bowl"

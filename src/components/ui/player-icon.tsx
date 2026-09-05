@@ -46,7 +46,7 @@ const PlayerIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
         onTap={start}
         onHoverStart={start}
         onHoverEnd={stop}
-        className={`inline-flex cursor-pointer ${className}`}
+        className={`inline-flex cursor-pointer items-center justify-center ${className}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +59,7 @@ const PlayerIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeLinecap="round"
           strokeLinejoin="round"
           color={color}
-          className="play-icon"
+          className="play-icon h-full w-full"
           style={{ transformOrigin: "50% 50%" }}
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />

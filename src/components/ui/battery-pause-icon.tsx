@@ -59,7 +59,7 @@ const BatteryPauseIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
         ref={scope}
         onHoverStart={handleHoverStart}
         onHoverEnd={handleHoverEnd}
-        className={`inline-flex cursor-pointer ${className}`}
+        className={`inline-flex cursor-pointer items-center justify-center ${className}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -70,6 +70,7 @@ const BatteryPauseIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="square"
+          className="h-full w-full"
         >
           <motion.path
             className="battery-pause-bar battery-pause-1"

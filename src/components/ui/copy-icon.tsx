@@ -57,6 +57,7 @@ const CopyIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="h-full w-full"
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" />

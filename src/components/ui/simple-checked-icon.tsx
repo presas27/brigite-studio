@@ -32,7 +32,12 @@ const SimpleCheckedIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
     }));
 
     return (
-      <motion.div ref={scope} onHoverStart={start} onHoverEnd={stop}>
+      <motion.div
+        ref={scope}
+        onHoverStart={start}
+        onHoverEnd={stop}
+        className={`inline-flex items-center justify-center ${className}`}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width={size}
@@ -43,13 +48,10 @@ const SimpleCheckedIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className=""
+          className="h-full w-full"
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <motion.path
-            d="M5 12l5 5l10 -10"
-            className={`check-path ${className}`}
-          />
+          <motion.path d="M5 12l5 5l10 -10" className="check-path" />
         </svg>
       </motion.div>
     );
