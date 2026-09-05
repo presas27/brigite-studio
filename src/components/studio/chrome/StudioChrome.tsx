@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AccountMenu } from "@/components/studio/AccountMenu";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
@@ -74,6 +75,7 @@ export function StudioChrome({
 }) {
   const t = useTranslations("Studio.nav");
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
@@ -202,13 +204,18 @@ export function StudioChrome({
                 aria-current={active ? "page" : undefined}
                 title={collapsed ? t(item.labelKey) : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 font-sans text-sm transition-colors",
-                  active
-                    ? "bg-accent-fill font-semibold text-ink"
-                    : "text-cream/70 hover:bg-cream/5 hover:text-cream",
+                  "relative flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 font-sans text-sm transition-colors",
+                  active ? "font-semibold text-ink" : "text-cream/70 hover:bg-cream/5 hover:text-cream",
                 )}
               >
-                <span className="relative shrink-0">
+                {active && (
+                  <motion.span
+                    layoutId={reduceMotion ? undefined : `${role}-nav-pill`}
+                    className="absolute inset-0 rounded-[0.9rem] bg-accent-fill"
+                    transition={{ type: "spring", stiffness: 520, damping: 40 }}
+                  />
+                )}
+                <span className="relative z-[1] shrink-0">
                   <Icon name={item.icon} className="h-[1.15rem] w-[1.15rem]" />
                   {badge != null &&
                     badge > 0 &&
@@ -222,7 +229,7 @@ export function StudioChrome({
                       )
                     ))}
                 </span>
-                <span data-sidebar-fade className="flex min-w-0 flex-1 items-center gap-3">
+                <span data-sidebar-fade className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
                   <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
                   {!item.urgentBadge && badge != null && badge > 0 && (
                     <span
@@ -365,7 +372,17 @@ export function StudioChrome({
           id="main"
           className="min-w-0 grow px-[max(1rem,env(safe-area-inset-left))] pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:pt-8 sm:pb-[calc(2rem+env(safe-area-inset-bottom))] lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
         >
-          {children}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

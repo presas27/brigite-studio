@@ -45,6 +45,12 @@ export function SubmitButton({
       aria-busy={pending}
       className={cn(VARIANT[variant], className)}
     >
+      {pending && (
+        <span
+          aria-hidden
+          className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+        />
+      )}
       {pending && pendingLabel ? pendingLabel : children}
     </button>
   );
