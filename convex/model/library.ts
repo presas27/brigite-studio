@@ -160,8 +160,8 @@ export function workoutMeta(doc: Doc<"workouts">): Omit<Workout, "blocks"> {
   return {
     id: doc._id,
     name: doc.name,
-    focus: doc.focus,
-    instructions: doc.instructions,
+    focus: doc.focus ?? "",
+    instructions: doc.instructions ?? "",
     workoutType: doc.workoutType,
     coachId: doc.coachId,
     clientId: doc.clientId,

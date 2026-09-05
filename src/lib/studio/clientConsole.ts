@@ -262,7 +262,7 @@ function toOverviewSession(assignment: ScheduledSummary): OverviewSession {
     id: assignment.id,
     date: assignment.date,
     name: assignment.name,
-    focus: assignment.focus.trim(),
+    focus: (assignment.focus ?? "").trim(),
     itemCount: assignment.itemCount,
     estimatedMinutes: assignment.estimatedMinutes,
     videoUrl: assignment.videoUrl,
@@ -329,7 +329,7 @@ export async function clientOverview(clientId: string): Promise<ClientOverview> 
 
   const focusCounts = new Map<string, number>();
   for (const assignment of thisWeek) {
-    const tag = assignment.focus.trim();
+    const tag = (assignment.focus ?? "").trim();
     if (!tag) continue;
     focusCounts.set(tag, (focusCounts.get(tag) ?? 0) + 1);
   }

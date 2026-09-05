@@ -63,7 +63,7 @@ export function WorkoutLibrary({
     return workouts.filter((workout) => {
       if (workout.libraryCategory !== shelf) return false;
       const matchesQuery =
-        !needle || searchKey(workout.name).includes(needle) || searchKey(workout.focus).includes(needle);
+        !needle || searchKey(workout.name).includes(needle) || searchKey(workout.focus ?? "").includes(needle);
       const matchesFocus = !focus || workout.focus === focus;
       return matchesQuery && matchesFocus;
     });

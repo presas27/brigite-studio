@@ -223,8 +223,10 @@ function mapAssignmentSummary(doc: Doc<"assignments">): AssignmentSummary {
     effort: doc.effort,
     extraRestSeconds: doc.extraRestSeconds,
     createdAt: doc._creationTime,
-    name: doc.snapshot.name,
-    focus: doc.snapshot.focus,
+    name: doc.snapshot.name ?? "",
+    // Rows frozen before `focus` existed still load; an empty tag is a rest
+    // day of the ring, not a crash.
+    focus: doc.snapshot.focus ?? "",
     estimatedMinutes: doc.snapshot.estimatedMinutes ?? null,
     itemCount,
     videoUrl,
@@ -734,7 +736,7 @@ export const clientWorkouts = query({
           row: {
             id: doc._id as string,
             name: doc.name,
-            focus: doc.focus,
+            focus: doc.focus ?? "",
             workoutType: doc.workoutType,
             estimatedMinutes: doc.estimatedMinutes ?? null,
             itemCount: size.itemCount,
@@ -1775,8 +1777,8 @@ export const sessionHistory = query({
       return {
         id: doc._id,
         date: doc.date,
-        name: doc.snapshot.name,
-        focus: doc.snapshot.focus,
+        name: doc.snapshot.name ?? "",
+        focus: doc.snapshot.focus ?? "",
         status: doc.status,
         effort: doc.effort,
         extraRestSeconds: doc.extraRestSeconds,

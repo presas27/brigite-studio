@@ -521,7 +521,7 @@ export const workoutFocuses = query({
     const builder = await requireBuilder(ctx);
     const counts = new Map<string, number>();
     for (const doc of await libraryWorkouts(ctx, builder._id)) {
-      const focus = doc.focus.trim();
+      const focus = (doc.focus ?? "").trim();
       if (focus) counts.set(focus, (counts.get(focus) ?? 0) + 1);
     }
     return byFrequency(counts);

@@ -58,7 +58,7 @@ export function AddWorkoutToPhaseModal({
     if (!needle) return workouts;
     return workouts.filter(
       (workout) =>
-        workout.name.toLowerCase().includes(needle) || workout.focus.toLowerCase().includes(needle),
+        workout.name.toLowerCase().includes(needle) || (workout.focus ?? "").toLowerCase().includes(needle),
     );
   }, [search, workouts]);
 

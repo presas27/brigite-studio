@@ -66,7 +66,7 @@ export default async function AlunoTreinosPage() {
 function workoutFocuses(workouts: ClientWorkout[]): { tag: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const workout of workouts) {
-    const focus = workout.focus.trim();
+    const focus = (workout.focus ?? "").trim();
     if (!focus) continue;
     counts.set(focus, (counts.get(focus) ?? 0) + 1);
   }

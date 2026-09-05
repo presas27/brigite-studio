@@ -62,7 +62,7 @@ export function WorkoutLibrary({
       const matchesQuery =
         !needle ||
         searchKey(workout.name).includes(needle) ||
-        searchKey(workout.focus).includes(needle) ||
+        searchKey(workout.focus ?? "").includes(needle) ||
         searchKey(workout.phaseName ?? "").includes(needle);
       return matchesQuery && (!focus || workout.focus === focus);
     });
