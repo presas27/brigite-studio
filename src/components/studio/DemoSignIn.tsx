@@ -1,15 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/studio/pilot";
 import { buttonGhost, buttonPrimary, eyebrow, muted } from "./theme";
-
-async function enter(email: string) {
-  const result = await authClient.signIn.email({ email, password: DEMO_PASSWORD });
-  if (result.error) return;
-  window.location.assign("/app");
-}
 
 /**
  * Quick sign-in for a demo deployment: one button per provisioned account.
@@ -22,6 +17,20 @@ async function enter(email: string) {
  */
 export function DemoSignIn() {
   const t = useTranslations("Studio.signIn");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+
+  async function enter(email: string) {
+    setError(null);
+    setPending(email);
+    const result = await authClient.signIn.email({ email, password: DEMO_PASSWORD });
+    if (result.error) {
+      setPending(null);
+      setError(t("wrongCredentials"));
+      return;
+    }
+    window.location.assign("/app");
+  }
 
   return (
     <div className="mt-6 border-t border-cream/10 pt-6">
@@ -35,14 +44,22 @@ export function DemoSignIn() {
             <button
               key={account.email}
               type="button"
+              disabled={pending !== null}
               onClick={() => void enter(account.email)}
               className={`${index === 0 ? buttonPrimary : buttonGhost} w-full`}
             >
-              {t("demoAs", { name: account.name.split(" ")[0] })} · {t(`demoRole.${chair}`)}
+              {pending === account.email
+                ? t("sending")
+                : `${t("demoAs", { name: account.name.split(" ")[0] })} · ${t(`demoRole.${chair}`)}`}
             </button>
           );
         })}
       </div>
+      {error ? (
+        <p className="mt-3 font-sans text-xs text-silk" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

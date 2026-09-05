@@ -38,6 +38,16 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     baseURL: siteUrl,
+    // Local, production, and the Vercel preview of `test` all talk to this
+    // same Convex. Better Auth refuses a sign-in whose Origin is not here.
+    trustedOrigins: [
+      "http://localhost:3000",
+      "https://brigitestudio.com",
+      "https://www.brigitestudio.com",
+      "https://brigite-studio-test.vercel.app",
+      "https://brigite-studio-test-git-test-guilherme-presas-projects.vercel.app",
+      "https://*.vercel.app",
+    ],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

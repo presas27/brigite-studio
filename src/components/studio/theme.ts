@@ -57,11 +57,11 @@ export const fieldCompact =
 
 /** Primary action. Light pill on dark, deep-wine pill on paper; label inverts. */
 export const buttonPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-butter px-6 py-3 font-sans text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-butter px-6 py-3 font-sans text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Secondary action. Outlined, sits on any surface. */
 export const buttonGhost =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream ring-1 ring-cream/20 transition-colors hover:bg-cream/5 hover:ring-cream/35 disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream ring-1 ring-cream/20 transition-colors hover:bg-cream/5 hover:ring-cream/35 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Third action tier, below `buttonGhost`: row actions that must not compete
@@ -69,11 +69,11 @@ export const buttonGhost =
  * of buttons; these read as text until the pointer is on them.
  */
 export const buttonQuiet =
-  "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Destructive action. Never the visual default. */
 export const buttonDanger =
-  "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-sans text-sm font-semibold text-silk ring-1 ring-silk/35 transition-colors hover:bg-silk/10 disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 font-sans text-sm font-semibold text-silk ring-1 ring-silk/35 transition-colors hover:bg-silk/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Small chip: tags, statuses, filters. */
 export const chip =
@@ -96,11 +96,11 @@ export const mutedOnAccent = "text-sm leading-relaxed text-on-dark/75";
 
 /** Primary action on the brand surface — the sand pill, as in the hero. */
 export const buttonOnAccent =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-on-dark px-6 py-3 font-sans text-sm font-semibold text-ink transition-colors hover:bg-on-dark/85 disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-on-dark px-6 py-3 font-sans text-sm font-semibold text-ink transition-colors hover:bg-on-dark/85 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Secondary action on the brand surface. */
 export const buttonGhostOnAccent =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-on-dark ring-1 ring-on-dark/35 transition-colors hover:bg-on-dark/10 hover:ring-on-dark/55 disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-on-dark ring-1 ring-on-dark/35 transition-colors hover:bg-on-dark/10 hover:ring-on-dark/55 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const chipOnAccent =
   "inline-flex items-center gap-1.5 rounded-full bg-on-dark/12 px-3 py-1 font-sans text-xs text-on-dark/85 ring-1 ring-on-dark/25";
