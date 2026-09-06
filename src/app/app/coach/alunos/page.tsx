@@ -5,10 +5,10 @@ import type { ClientRow } from "@/components/studio/coach/ClientListRow";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireCoach } from "@/lib/studio/auth";
+import { intakeResponseForClient } from "@/lib/studio/intake";
 import { assignmentHistory, adherence } from "@/lib/studio/plan";
 import type { PlanId } from "@/lib/studio/types";
 import { listClients } from "@/lib/studio/users";
-
 const PLAN_IDS: PlanId[] = ["personal", "online", "specialty"];
 
 /**
@@ -35,12 +35,19 @@ export default async function ClientsPage({
 
   const rows: ClientRow[] = await Promise.all(
     clients.map(async (client) => {
-      const [{ done, total }, history] = await Promise.all([
+      const [{ done, total }, history, intake] = await Promise.all([
         adherence(client.id),
         assignmentHistory(client.id, 1),
+        intakeResponseForClient(client.id).catch(() => null),
       ]);
       const [lastSession] = history;
-      return { client, done, total, lastSessionDate: lastSession?.date ?? null };
+      return {
+        client,
+        done,
+        total,
+        lastSessionDate: lastSession?.date ?? null,
+        hasHealthAlert: Boolean(intake?.hasSensitiveAlerts),
+      };
     }),
   );
 

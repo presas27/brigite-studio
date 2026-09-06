@@ -266,8 +266,15 @@
       "choose": "Choose",
       "yes": "Yes",
       "no": "No",
-      "responseTitle": "Intake form",
-      "responseEmpty": "They have not answered the form yet.",
+      "responseTitle": "Client Intake Form",
+      "responseEmpty": "No intake form submitted yet.",
+      "healthAlertBadge": "Health Alert",
+      "healthAlertBanner": "Medical notice: The client flagged injuries or sensitive health conditions on their intake form.",
+      "stepProgress": "Step {current} of {total}",
+      "finish": "Complete registration",
+      "sectionLabel": "Section (optional)",
+      "sectionPlaceholder": "Ex: SECTION 1 — Personal details",
+      "sensitive": "Sensitive health (alert)",
       "types": {
         "text": "Short text",
         "textarea": "Long text",
@@ -275,7 +282,8 @@
         "date": "Date",
         "yesno": "Yes / No",
         "select": "Single choice",
-        "multiselect": "Multiple choice"
+        "multiselect": "Multiple choice",
+        "checkbox": "Consent / Checkbox"
       }
     },
     "common": {

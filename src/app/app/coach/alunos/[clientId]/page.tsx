@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { saveNotes } from "@/app/app/coach/actions";
+import { Icon } from "@/components/studio/coach/icons";
 import { formatDayKey, formatMonthYear } from "@/components/studio/format";
 import { Empty } from "@/components/studio/Empty";
 import { SubmitButton } from "@/components/studio/SubmitButton";
@@ -80,6 +81,20 @@ export default async function ClientOverviewPage({
 
   return (
     <div className="space-y-6">
+      {intake?.hasSensitiveAlerts && (
+        <div className="flex items-start gap-3 rounded-[1.25rem] bg-silk/15 p-4 sm:p-5 ring-1 ring-silk/40 text-cream">
+          <Icon name="alert" className="h-5 w-5 shrink-0 text-silk mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-sans text-sm font-semibold text-silk">
+              {tIntake("healthAlertBadge")}
+            </p>
+            <p className="text-xs sm:text-sm text-cream/80 leading-relaxed">
+              {tIntake("healthAlertBanner")}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* The one gold surface here: what this client does next, or the nudge to book it. */}
       <section className={cn(surfaceAccent, "p-5 sm:p-6")}>
         <h2 className={eyebrowOnAccent}>{t("nextSession")}</h2>
@@ -147,14 +162,48 @@ export default async function ClientOverviewPage({
         </article>
       </div>
 
-      <section className={cn(surface, "space-y-3 p-5")}>
-        <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
+      <section className={cn(surface, "space-y-4 p-5 sm:p-6")}>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
+          {intake?.hasSensitiveAlerts && (
+            <span className="rounded-full bg-silk/20 px-2.5 py-0.5 font-sans text-xs font-semibold text-silk ring-1 ring-silk/30">
+              {tIntake("healthAlertBadge")}
+            </span>
+          )}
+        </div>
         {intake ? (
-          <dl className="space-y-3">
+          <dl className="space-y-2.5">
             {intake.answers.map((answer) => (
-              <div key={answer.label}>
-                <dt className="font-sans text-xs font-medium text-cream/50">{answer.label}</dt>
-                <dd className="mt-1 text-sm leading-relaxed whitespace-pre-line text-cream/80">
+              <div
+                key={answer.fieldId}
+                className={cn(
+                  "rounded-[0.9rem] p-3 transition-colors",
+                  answer.flagged
+                    ? "bg-silk/10 ring-1 ring-silk/30"
+                    : "bg-cream/[0.02] ring-1 ring-cream/5",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <dt
+                    className={cn(
+                      "font-sans text-xs font-medium",
+                      answer.flagged ? "text-silk" : "text-cream/50",
+                    )}
+                  >
+                    {answer.label}
+                  </dt>
+                  {answer.flagged && (
+                    <span className="shrink-0 rounded-full bg-silk/20 px-2 py-0.5 font-sans text-[0.65rem] font-semibold text-silk">
+                      {tIntake("healthAlertBadge")}
+                    </span>
+                  )}
+                </div>
+                <dd
+                  className={cn(
+                    "mt-1 text-sm leading-relaxed whitespace-pre-line",
+                    answer.flagged ? "text-cream font-medium" : "text-cream/80",
+                  )}
+                >
                   {answer.value || common("none")}
                 </dd>
               </div>

@@ -158,6 +158,372 @@ export const accounts = internalAction({
     return { linked };
   },
 });
+/**
+ * Seed Sara's client onboarding/intake form with all 6 sections requested:
+ * 1. Dados pessoais
+ * 2. Contacto de emergência
+ * 3. Objetivos e fitness
+ * 4. Saúde (com alertas de sensibilidade e campos condicionais)
+ * 5. Comentários finais
+ * 6. Consentimento
+ */
+export const intakeForm = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const coach = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "coach"))
+      .first();
+    if (!coach) throw new Error("No coach found to assign intake form");
+
+    const fields = [
+      // SECÇÃO 1 — Dados pessoais
+      {
+        id: "name",
+        position: 0,
+        section: "SECÇÃO 1 — Dados pessoais",
+        type: "text" as const,
+        label: "Nome completo",
+        hint: "O teu nome e apelido",
+        required: true,
+        options: [],
+      },
+      {
+        id: "birthdate",
+        position: 1,
+        section: "SECÇÃO 1 — Dados pessoais",
+        type: "date" as const,
+        label: "Data de nascimento",
+        hint: "",
+        required: false,
+        options: [],
+      },
+      {
+        id: "email",
+        position: 2,
+        section: "SECÇÃO 1 — Dados pessoais",
+        type: "text" as const,
+        label: "Email",
+        hint: "Email de contacto e acesso à plataforma",
+        required: true,
+        options: [],
+      },
+      {
+        id: "phone",
+        position: 3,
+        section: "SECÇÃO 1 — Dados pessoais",
+        type: "text" as const,
+        label: "Telefone",
+        hint: "Número de telemóvel para contacto",
+        required: false,
+        options: [],
+      },
+      {
+        id: "address",
+        position: 4,
+        section: "SECÇÃO 1 — Dados pessoais",
+        type: "textarea" as const,
+        label: "Morada",
+        hint: "Opcional",
+        required: false,
+        options: [],
+      },
+
+      // SECÇÃO 2 — Contacto de emergência
+      {
+        id: "emergency_name",
+        position: 5,
+        section: "SECÇÃO 2 — Contacto de emergência",
+        type: "text" as const,
+        label: "Nome",
+        hint: "Nome da pessoa de contacto em caso de emergência",
+        required: false,
+        options: [],
+      },
+      {
+        id: "emergency_phone",
+        position: 6,
+        section: "SECÇÃO 2 — Contacto de emergência",
+        type: "text" as const,
+        label: "Telefone",
+        hint: "Contacto telefónico de emergência",
+        required: false,
+        options: [],
+      },
+      {
+        id: "emergency_relation",
+        position: 7,
+        section: "SECÇÃO 2 — Contacto de emergência",
+        type: "text" as const,
+        label: "Relação",
+        hint: "Ex: cônjuge, familiar, amigo/a",
+        required: false,
+        options: [],
+      },
+
+      // SECÇÃO 3 — Objetivos e fitness
+      {
+        id: "fitness_goals",
+        position: 8,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "multiselect" as const,
+        label: "What are your fitness goals?",
+        hint: "Seleção múltipla de objetivos",
+        required: true,
+        options: ["Flexibility", "Health (General)", "Posture", "Muscular strength/power"],
+      },
+      {
+        id: "other_fitness_goals",
+        position: 9,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "textarea" as const,
+        label: "Other fitness goals (if not selected above)",
+        hint: "Campo de texto livre",
+        required: false,
+        options: [],
+      },
+      {
+        id: "exercise_regularly",
+        position: 10,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "yesno" as const,
+        label: "Do you exercise regularly?",
+        hint: "I currently exercise regularly",
+        required: true,
+        options: [],
+      },
+      {
+        id: "cardio_ability",
+        position: 11,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "select" as const,
+        label: "Rate your ability to perform cardio exercises",
+        hint: "Escala de avaliação",
+        required: true,
+        options: ["Poor", "Fair", "Good", "Excellent"],
+      },
+      {
+        id: "exercise_experience",
+        position: 12,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "select" as const,
+        label: "Rate your experience with exercise",
+        hint: "Nível de experiência",
+        required: true,
+        options: ["Beginner", "Intermediate", "Advanced"],
+      },
+      {
+        id: "equipment_access",
+        position: 13,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "multiselect" as const,
+        label: "What equipment do you have access to?",
+        hint: "Equipamento disponível para os teus treinos",
+        required: true,
+        options: [
+          "Resistance bands",
+          "TRX bands",
+          "Dumbbells",
+          "Barbell",
+          "Kettlebell",
+          "Pull-up bar",
+          "Bench",
+          "Full gym access",
+          "None / Bodyweight only",
+        ],
+      },
+      {
+        id: "workout_days",
+        position: 14,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "multiselect" as const,
+        label: "On which days are you available to work out?",
+        hint: "Dias da semana disponíveis",
+        required: true,
+        options: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+      },
+      {
+        id: "workout_frequency",
+        position: 15,
+        section: "SECÇÃO 3 — Objetivos e fitness",
+        type: "select" as const,
+        label: "How frequently do you have time to exercise?",
+        hint: "Frequência semanal",
+        required: true,
+        options: ["1-2 dias/semana", "2-3 dias/semana", "4-5 dias/semana", "6-7 dias/semana"],
+      },
+
+      // SECÇÃO 4 — Saúde
+      {
+        id: "injuries_yesno",
+        position: 16,
+        section: "SECÇÃO 4 — Saúde",
+        type: "yesno" as const,
+        label:
+          "Do you have any existing injuries or conditions that I should be aware of while building your training plan?",
+        hint: "",
+        required: true,
+        sensitive: true,
+        options: [],
+      },
+      {
+        id: "injuries_details",
+        position: 17,
+        section: "SECÇÃO 4 — Saúde",
+        type: "textarea" as const,
+        label: "Se sim, por favor descreva as lesões ou condições existentes",
+        hint: "Detalhes sobre localização, dor ou restrições de movimento",
+        required: false,
+        sensitive: true,
+        showIf: { fieldId: "injuries_yesno", equals: "yes" },
+        options: [],
+      },
+      {
+        id: "smoke",
+        position: 18,
+        section: "SECÇÃO 4 — Saúde",
+        type: "yesno" as const,
+        label: "Do you smoke tobacco products?",
+        hint: "",
+        required: true,
+        options: [],
+      },
+      {
+        id: "medical_conditions_yesno",
+        position: 19,
+        section: "SECÇÃO 4 — Saúde",
+        type: "yesno" as const,
+        label: "Tem alguma condição médica relevante (cardíaca, respiratória, diabetes, etc.)?",
+        hint: "",
+        required: true,
+        sensitive: true,
+        options: [],
+      },
+      {
+        id: "medical_conditions_details",
+        position: 20,
+        section: "SECÇÃO 4 — Saúde",
+        type: "textarea" as const,
+        label: "Se sim, por favor especifique a condição médica relevante",
+        hint: "",
+        required: false,
+        sensitive: true,
+        showIf: { fieldId: "medical_conditions_yesno", equals: "yes" },
+        options: [],
+      },
+      {
+        id: "medication_yesno",
+        position: 21,
+        section: "SECÇÃO 4 — Saúde",
+        type: "yesno" as const,
+        label: "Toma alguma medicação relevante para o treino?",
+        hint: "",
+        required: true,
+        sensitive: true,
+        options: [],
+      },
+      {
+        id: "medication_details",
+        position: 22,
+        section: "SECÇÃO 4 — Saúde",
+        type: "textarea" as const,
+        label: "Se sim, por favor especifique a medicação relevante",
+        hint: "",
+        required: false,
+        sensitive: true,
+        showIf: { fieldId: "medication_yesno", equals: "yes" },
+        options: [],
+      },
+      {
+        id: "pregnancy",
+        position: 23,
+        section: "SECÇÃO 4 — Saúde",
+        type: "yesno" as const,
+        label: "Está grávida ou no pós-parto?",
+        hint: "Mostrar/responder se relevante",
+        required: false,
+        sensitive: true,
+        options: [],
+      },
+      {
+        id: "medical_clearance",
+        position: 24,
+        section: "SECÇÃO 4 — Saúde",
+        type: "select" as const,
+        label: "Tem autorização médica para praticar exercício físico?",
+        hint: "",
+        required: true,
+        options: ["Sim", "Não", "Não aplicável"],
+      },
+
+      // SECÇÃO 5 — Comentários finais
+      {
+        id: "final_comments",
+        position: 25,
+        section: "SECÇÃO 5 — Comentários finais",
+        type: "textarea" as const,
+        label: "Any other comments about what you would like to see in your fitness plan?",
+        hint: "Opcional",
+        required: false,
+        options: [],
+      },
+
+      // SECÇÃO 6 — Consentimento
+      {
+        id: "consent_responsibility",
+        position: 26,
+        section: "SECÇÃO 6 — Consentimento",
+        type: "checkbox" as const,
+        label:
+          "Confirmo que as informações fornecidas são verdadeiras e assumo a responsabilidade pela prática de exercício físico.",
+        hint: "",
+        required: true,
+        options: [],
+      },
+      {
+        id: "consent_terms",
+        position: 27,
+        section: "SECÇÃO 6 — Consentimento",
+        type: "checkbox" as const,
+        label: "Aceito os termos e condições do serviço",
+        hint: "",
+        required: true,
+        options: [],
+      },
+    ];
+
+    const existing = await ctx.db
+      .query("intakeForms")
+      .withIndex("by_coach", (q) => q.eq("coachId", coach._id))
+      .first();
+
+    const formPayload = {
+      coachId: coach._id,
+      title: "Formulário de Inscrição — Brigite's Studio",
+      intro:
+        "Bem-vindo/a ao Brigite's Studio! Por favor, preenche este formulário inicial para podermos desenhar o teu plano de treino personalizado com toda a segurança.",
+      published: true,
+      updatedAt: Date.now(),
+      fields,
+    };
+
+    if (existing) {
+      await ctx.db.patch("intakeForms", existing._id, formPayload);
+      return { action: "updated", formId: existing._id, fieldCount: fields.length };
+    }
+
+    const formId = await ctx.db.insert("intakeForms", formPayload);
+    return { action: "created", formId, fieldCount: fields.length };
+  },
+});
 
 /**
  * Remove an account outright: the login, the studio row, the profile, and any

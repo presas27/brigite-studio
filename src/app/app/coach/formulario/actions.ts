@@ -9,7 +9,8 @@ export type IntakeFieldType =
   | "date"
   | "yesno"
   | "select"
-  | "multiselect";
+  | "multiselect"
+  | "checkbox";
 
 export async function saveCoachForm(input: {
   title: string;
@@ -23,6 +24,9 @@ export async function saveCoachForm(input: {
     hint: string;
     required: boolean;
     options: string[];
+    section?: string;
+    sensitive?: boolean;
+    showIf?: { fieldId: string; equals: string };
   }[];
 }): Promise<void> {
   await saveIntakeForm(input);

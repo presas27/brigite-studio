@@ -7,7 +7,13 @@ import { chip, chipAccent, muted, surfaceLink } from "@/components/studio/theme"
 import type { Client } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 
-export type ClientRow = { client: Client; done: number; total: number; lastSessionDate: string | null };
+export type ClientRow = {
+  client: Client;
+  done: number;
+  total: number;
+  lastSessionDate: string | null;
+  hasHealthAlert?: boolean;
+};
 
 /** One client as a row: identity and plan on the left, adherence on the right. */
 export function ClientListRow({ row, locale }: { row: ClientRow; locale: string }) {
@@ -22,7 +28,14 @@ export function ClientListRow({ row, locale }: { row: ClientRow; locale: string 
         className={cn(surfaceLink, "flex flex-wrap items-center justify-between gap-4 p-4")}
       >
         <div className="min-w-0 space-y-1.5">
-          <p className="truncate font-sans text-sm font-semibold text-cream">{client.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="truncate font-sans text-sm font-semibold text-cream">{client.name}</p>
+            {row.hasHealthAlert && (
+              <span className="shrink-0 rounded-full bg-silk/20 px-2 py-0.5 font-sans text-[0.65rem] font-semibold text-silk ring-1 ring-silk/30">
+                Alerta
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className={chip}>{t(`plan.${client.profile.plan}`)}</span>
             <span className={client.status === "active" ? chipAccent : chip}>

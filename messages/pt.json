@@ -266,8 +266,15 @@
       "choose": "Escolher",
       "yes": "Sim",
       "no": "Não",
-      "responseTitle": "Formulário de entrada",
-      "responseEmpty": "Ainda não respondeu ao formulário.",
+      "responseTitle": "Formulário de inscrição",
+      "responseEmpty": "Ainda não respondeu ao formulário de inscrição.",
+      "healthAlertBadge": "Alerta de Saúde",
+      "healthAlertBanner": "Atenção médica: O cliente assinalou lesões ou condições de saúde sensíveis no formulário de inscrição.",
+      "stepProgress": "Passo {current} de {total}",
+      "finish": "Concluir inscrição",
+      "sectionLabel": "Secção (opcional)",
+      "sectionPlaceholder": "Ex: SECÇÃO 1 — Dados pessoais",
+      "sensitive": "Saúde sensível (alerta)",
       "types": {
         "text": "Texto curto",
         "textarea": "Texto longo",
@@ -275,7 +282,8 @@
         "date": "Data",
         "yesno": "Sim / Não",
         "select": "Escolha única",
-        "multiselect": "Várias escolhas"
+        "multiselect": "Várias escolhas",
+        "checkbox": "Consentimento / Checkbox"
       }
     },
     "common": {

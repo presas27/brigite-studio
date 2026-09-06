@@ -17,6 +17,9 @@ export type BuilderField = {
   hint: string;
   required: boolean;
   options: string[];
+  section?: string;
+  sensitive?: boolean;
+  showIf?: { fieldId: string; equals: string };
 };
 
 const TYPES: IntakeFieldType[] = [
@@ -27,6 +30,7 @@ const TYPES: IntakeFieldType[] = [
   "yesno",
   "select",
   "multiselect",
+  "checkbox",
 ];
 
 function mintId() {
@@ -159,6 +163,14 @@ export function FormBuilder({
               <label className="ml-auto flex items-center gap-2 font-sans text-xs text-cream/70">
                 <input
                   type="checkbox"
+                  checked={item.sensitive ?? false}
+                  onChange={(event) => update(item.id, { sensitive: event.target.checked })}
+                />
+                {t("sensitive")}
+              </label>
+              <label className="flex items-center gap-2 font-sans text-xs text-cream/70">
+                <input
+                  type="checkbox"
                   checked={item.required}
                   onChange={(event) => update(item.id, { required: event.target.checked })}
                 />
@@ -182,6 +194,12 @@ export function FormBuilder({
                 <Icon name="trash" className="h-3.5 w-3.5" />
               </button>
             </div>
+            <input
+              value={item.section ?? ""}
+              onChange={(event) => update(item.id, { section: event.target.value })}
+              placeholder={t("sectionPlaceholder")}
+              className={cn(field, "text-xs font-medium text-accent-ink")}
+            />
             <input
               value={item.label}
               onChange={(event) => update(item.id, { label: event.target.value })}

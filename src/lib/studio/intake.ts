@@ -23,11 +23,14 @@ export async function saveIntakeForm(input: {
   fields: {
     id: string;
     position: number;
-    type: "text" | "textarea" | "number" | "date" | "yesno" | "select" | "multiselect";
+    type: "text" | "textarea" | "number" | "date" | "yesno" | "select" | "multiselect" | "checkbox";
     label: string;
     hint: string;
     required: boolean;
     options: string[];
+    section?: string;
+    sensitive?: boolean;
+    showIf?: { fieldId: string; equals: string };
   }[];
 }) {
   await sm(api.intake.saveForm, input);
