@@ -862,6 +862,8 @@
       "saveFailed": "Não deu para guardar. Tenta outra vez.",
       "setShort": "Série {set}/{total}",
       "roundShort": "Ronda {round}/{total}",
+      "statSet": "Série",
+      "statRound": "Ronda",
       "startSetShort": "Começar",
       "stopSet": "Parar",
       "previousStep": "Anterior",

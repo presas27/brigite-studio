@@ -862,6 +862,8 @@
       "saveFailed": "Could not save. Try again.",
       "setShort": "Set {set}/{total}",
       "roundShort": "Round {round}/{total}",
+      "statSet": "Set",
+      "statRound": "Round",
       "startSetShort": "Start",
       "stopSet": "Stop",
       "previousStep": "Previous",

@@ -89,6 +89,8 @@ export function ExerciseStage({
   // than resetting in an effect, avoids a render with the old panel open.
   const [details, setDetails] = useState<{ key: string; open: boolean } | null>(null);
   const detailsOpen = details?.key === step.key ? details.open : videoId == null;
+  const [title, setTitle] = useState<{ key: string; open: boolean } | null>(null);
+  const titleExpanded = title?.key === step.key ? title.open : false;
 
   useGSAP(
     () => {
@@ -207,6 +209,17 @@ export function ExerciseStage({
     meters: t("metersShort"),
     sets: common("sets"),
   });
+  const targetLabel =
+    step.tracking === "time" || step.tracking === "hold"
+      ? t("secondsShort")
+      : step.tracking === "distance"
+        ? t("metersShort")
+        : common("reps");
+  const roundLabel = step.round != null ? t("statRound") : t("statSet");
+  const roundValue =
+    step.round != null
+      ? `${step.round}/${step.roundCount ?? step.round}`
+      : `${step.setNumber}/${step.setCount}`;
 
   // With no demo the stage is one column, and on a wide screen that column
   // keeps a reading width rather than stretching the fields across the frame.
@@ -218,7 +231,7 @@ export function ExerciseStage({
       // leftover height, and auto margins centre it without clipping the top
       // off anything taller than the space between the header and the panel.
       className={cn(
-        "my-auto flex w-full flex-col gap-5",
+        "my-auto flex w-full flex-col gap-4",
         videoId
           ? "md:grid md:grid-cols-2 md:gap-10 lg:gap-12 xl:gap-16"
           : "md:mx-auto md:max-w-2xl",
@@ -227,51 +240,45 @@ export function ExerciseStage({
       {videoId && <StageMedia ref={mediaRef} videoId={videoId} title={step.item.exerciseName} />}
 
       <div className="contents md:flex md:flex-col md:gap-6">
-        <div data-stage="identity" className="order-1 space-y-2 md:order-none">
+        <div data-stage="identity" className="order-1 space-y-3 md:order-none">
           {/* Two lines on a phone, each carrying its own control on the right:
               the name with the view switch, then the set with the exercise's
               actions. The toolbar above is left with just the cross. A wide
               screen keeps the switch in the toolbar and the labelled actions
               under the cues, so both slots sit out there. */}
-          <div className="flex items-center justify-between gap-3 md:block">
-            <h1
-              // Anton set tight enough to look right in English drops the tilde of
-              // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
-              // and Ó, so the leading is set to clear a diacritic.
-              className={cn(
-                heading,
-                "min-w-0 text-[1.6rem] leading-[1.05] md:text-[2.25rem] lg:text-[3.25rem] xl:text-[3.75rem]",
-              )}
+          <div className="flex items-start justify-between gap-3 md:block">
+            <button
+              type="button"
+              onClick={() => setTitle({ key: step.key, open: !titleExpanded })}
+              aria-expanded={titleExpanded}
+              className="min-w-0 flex-1 text-left"
             >
-              {step.item.exerciseName}
-            </h1>
-            {viewToggle && <div className="shrink-0 md:hidden">{viewToggle}</div>}
+              <h1
+                // Anton set tight enough to look right in English drops the tilde of
+                // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
+                // and Ó, so the leading is set to clear a diacritic.
+                className={cn(
+                  heading,
+                  "text-[1.35rem] leading-[1.08] md:text-[1.85rem] lg:text-[2.35rem]",
+                  !titleExpanded && "line-clamp-2",
+                )}
+              >
+                {step.item.exerciseName}
+              </h1>
+            </button>
+            {viewToggle && <div className="shrink-0 pt-1 md:hidden">{viewToggle}</div>}
           </div>
 
-          {/* One line, one truth: which set she is on and what it asks for.
-              The dots keep it a sentence instead of three floating chips. */}
-          <div className="flex items-center justify-between gap-3 md:block">
-            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 font-sans">
-              <span className="text-lg font-semibold tabular-nums text-accent-ink md:text-xl">
-                {step.round != null
-                  ? t("roundShort", { round: step.round, total: step.roundCount ?? step.round })
-                  : t("setShort", { set: step.setNumber, total: step.setCount })}
-              </span>
-              {target && (
-                <span className="text-base font-medium text-cream/80 md:text-lg">
-                  <span aria-hidden className="pr-2 text-cream/30">·</span>
-                  {target}
-                </span>
-              )}
-              {step.item.tempo && (
-                <span className="text-sm text-cream/60 md:text-base">
-                  <span aria-hidden className="pr-2 text-cream/30">·</span>
-                  {common("tempo")} {step.item.tempo}
-                </span>
-              )}
+          {/* The prescription, as three glanceable cards — set, target, tempo —
+              so mid-set the numbers are what the eye hits first, not a sentence. */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 gap-2">
+              <StatCard label={roundLabel} value={roundValue} accent />
+              {target && <StatCard label={targetLabel} value={target} />}
+              {step.item.tempo && <StatCard label={common("tempo")} value={step.item.tempo} />}
             </div>
             {quickActions && (
-              <div className="-mr-2 flex shrink-0 items-center md:hidden">{quickActions}</div>
+              <div className="-mr-2 flex shrink-0 items-center self-center md:hidden">{quickActions}</div>
             )}
           </div>
 
@@ -343,6 +350,32 @@ export function ExerciseStage({
   );
 }
 
+function StatCard({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="min-w-0 flex-1 rounded-[0.9rem] bg-cream/[0.06] px-2.5 py-2.5 text-center ring-1 ring-cream/10 md:px-3 md:py-3">
+      <p className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-cream/45">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 font-sans text-[1.35rem] font-semibold leading-none tabular-nums md:text-[1.65rem]",
+          accent ? "text-accent-ink" : "text-cream",
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 /**
  * The demo, streamed from YouTube same as the library's own demo panel, just
  * without the coach's edit chrome — because a client mid-set should never have
@@ -372,7 +405,7 @@ function StageMedia({
       data-stage="identity"
       className="order-3 w-full overflow-hidden md:order-none md:self-start"
     >
-      <div className="relative aspect-video w-full max-h-[28vh] overflow-hidden rounded-[1.15rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-none">
+      <div className="relative aspect-video w-full max-h-[16vh] overflow-hidden rounded-[1rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-[11.5rem]">
         <iframe
           title={title}
           src={youtubeEmbed(videoId)}
