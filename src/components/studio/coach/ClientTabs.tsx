@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { cn } from "@/lib/utils";
 
 export type ClientTab = {
@@ -22,6 +24,10 @@ export type ClientTab = {
  *
  * The badges are the reason this earns its space: the strip answers "what does
  * this person need from me" before Sara opens a single tab.
+ *
+ * One underline slides between tabs rather than each tab fading its own bar
+ * in — two underlines cross-fading at this size reads as a flicker. Same
+ * physics as `ShelfTabs`.
  */
 export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }) {
   const pathname = usePathname();
@@ -36,6 +42,7 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
   // on can start off-screen — the page then opens with no visible active tab.
   // Jumped, not animated: this is the initial position, not a transition.
   const stripRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   // Which edges have more tabs behind them, so the fades only appear where
   // there is actually something to scroll to.
   const [edges, setEdges] = useState({ start: false, end: false });
@@ -58,6 +65,21 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
     return () => window.removeEventListener("resize", readEdges);
   }, [activeHref, readEdges]);
 
+  useGSAP(
+    () => {
+      const list = listRef.current;
+      const active = list?.querySelector<HTMLElement>('[aria-current="page"]');
+      const bar = list?.querySelector<HTMLElement>("[data-client-tab-bar]");
+      if (!list || !active || !bar) return;
+      const listBox = list.getBoundingClientRect();
+      const box = active.getBoundingClientRect();
+      const next = { x: box.left - listBox.left, width: box.width };
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      gsap.to(bar, { ...next, duration: reduced ? 0 : 0.32, ease: "power3.out" });
+    },
+    { dependencies: [activeHref] },
+  );
+
   return (
     <nav aria-label={label} className="relative border-b border-cream/10">
       {/* The strip scrolls sideways rather than wrapping or squeezing: six labels
@@ -75,47 +97,46 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
         // strip and clipping a tab mid-word.
         className="-mx-1 touch-pan-x overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <ul className="flex w-max items-stretch px-1">
-        {tabs.map((tab) => {
-          const active = tab.href === activeHref;
-          return (
-            <li key={tab.href} className="shrink-0">
-              <Link
-                href={tab.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex items-center gap-2 px-3 py-3 font-sans text-sm font-semibold whitespace-nowrap transition-colors sm:px-4",
-                  active ? "text-accent-ink" : "text-cream/50 hover:text-cream",
-                )}
-              >
-                {tab.label}
-                {tab.badge != null && tab.badge > 0 && (
-                  <span
-                    className={cn(
-                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none",
-                      active ? "bg-accent-fill text-ink" : "bg-caramel/20 text-accent-ink",
-                    )}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-                {tab.alertBadge && (
-                  <span
-                    className="inline-flex h-2 w-2 shrink-0 rounded-full bg-silk ring-2 ring-background"
-                    title="Alerta de saúde"
-                  />
-                )}
-                <span
-                  aria-hidden
+        <ul ref={listRef} className="relative flex w-max items-stretch px-1">
+          {tabs.map((tab) => {
+            const active = tab.href === activeHref;
+            return (
+              <li key={tab.href} className="shrink-0">
+                <Link
+                  href={tab.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-colors sm:inset-x-3",
-                    active ? "bg-accent-ink" : "bg-transparent",
+                    "relative flex items-center gap-2 px-3 py-3 font-sans text-sm font-semibold whitespace-nowrap transition-colors sm:px-4",
+                    active ? "text-accent-ink" : "text-cream/50 hover:text-cream",
                   )}
-                />
-              </Link>
-            </li>
-          );
-        })}
+                >
+                  {tab.label}
+                  {tab.badge != null && tab.badge > 0 && (
+                    <span
+                      className={cn(
+                        "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-sans tabular-nums text-[0.65rem] leading-none",
+                        active ? "bg-accent-fill text-ink" : "bg-caramel/20 text-accent-ink",
+                      )}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                  {tab.alertBadge && (
+                    <span
+                      className="inline-flex h-2 w-2 shrink-0 rounded-full bg-silk ring-2 ring-background"
+                      title="Alerta de saúde"
+                    />
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+          <span
+            aria-hidden
+            data-client-tab-bar
+            className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-accent-ink"
+            style={{ width: 0 }}
+          />
         </ul>
       </div>
       {/* Says "there is more this way" without a scrollbar — and only while

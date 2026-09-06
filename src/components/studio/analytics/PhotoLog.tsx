@@ -68,7 +68,7 @@ export function PhotoLog({ weeks }: { weeks: ProgressPhotoWeek[] }) {
   const [comparing, setComparing] = useState(false);
 
   if (weeks.length === 0) {
-    return <Empty title={t("logEmpty")} hint={t("logEmptyHint")} />;
+    return <Empty title={t("logEmpty")} hint={t("logEmptyHint")} className="bg-transparent ring-0 px-1 py-2" />;
   }
 
   const pair = selected

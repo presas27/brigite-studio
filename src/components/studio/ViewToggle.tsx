@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
+import { SegmentedTrack } from "@/components/studio/SegmentedTrack";
 import { cn } from "@/lib/utils";
 
 export type View = "grid" | "list";
@@ -17,15 +18,15 @@ export function ViewToggle({
   const common = useTranslations("Studio.common");
 
   return (
-    <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
+    <SegmentedTrack value={view} className="flex">
       <button
         type="button"
         aria-label={common("viewGrid")}
         aria-pressed={view === "grid"}
         onClick={() => onChangeAction("grid")}
         className={cn(
-          "rounded-full p-2 transition-colors",
-          view === "grid" ? "bg-caramel/20 text-accent-ink" : "text-cream/50 hover:text-cream",
+          "relative z-10 rounded-full p-2 transition-colors",
+          view === "grid" ? "text-accent-ink" : "text-cream/50 hover:text-cream",
         )}
       >
         <Icon name="grid" className="h-4 w-4" />
@@ -36,12 +37,12 @@ export function ViewToggle({
         aria-pressed={view === "list"}
         onClick={() => onChangeAction("list")}
         className={cn(
-          "rounded-full p-2 transition-colors",
-          view === "list" ? "bg-caramel/20 text-accent-ink" : "text-cream/50 hover:text-cream",
+          "relative z-10 rounded-full p-2 transition-colors",
+          view === "list" ? "text-accent-ink" : "text-cream/50 hover:text-cream",
         )}
       >
         <Icon name="list" className="h-4 w-4" />
       </button>
-    </div>
+    </SegmentedTrack>
   );
 }

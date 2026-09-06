@@ -9,6 +9,8 @@ import gsap from "gsap";
 import { cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
 import { formatDayRange, formatMonth, formatYear, shortWeekday } from "../format";
+import { MorphHeight } from "../MorphHeight";
+import { SegmentedTrack } from "../SegmentedTrack";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
 import { CalendarAddButton } from "./CalendarAddButton";
@@ -60,8 +62,8 @@ const stepButton =
 
 function tabClass(active: boolean) {
   return cn(
-    "rounded-full px-3.5 py-1.5 font-sans text-xs font-semibold transition-colors",
-    active ? "bg-caramel/20 text-accent-ink" : "text-cream/50 hover:text-cream",
+    "relative z-10 rounded-full px-3.5 py-1.5 font-sans text-xs font-semibold transition-colors",
+    active ? "text-accent-ink" : "text-cream/50 hover:text-cream",
   );
 }
 
@@ -95,7 +97,8 @@ export function PlanCalendar({
   const cells = useRef<(HTMLButtonElement | null)[]>([]);
   const agenda = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const prevFirstDayRef = useRef(days[0]);
+  const firstDay = days[0];
+  const prevFirstDayRef = useRef(firstDay);
 
   useGSAP(
     () => {
@@ -103,7 +106,7 @@ export function PlanCalendar({
       if (!grid) return;
 
       const prevFirst = prevFirstDayRef.current;
-      const currentFirst = days[0];
+      const currentFirst = firstDay;
       prevFirstDayRef.current = currentFirst;
 
       if (prevFirst && prevFirst !== currentFirst) {
@@ -115,7 +118,7 @@ export function PlanCalendar({
         );
       }
     },
-    { dependencies: [days[0], view] },
+    { dependencies: [firstDay, view] },
   );
 
   /** Week view has no outside days; month view dims the ones filling the edges. */
@@ -242,7 +245,7 @@ export function PlanCalendar({
               </Link>
             </div>
 
-            <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
+            <SegmentedTrack value={view} className="flex">
               <Link
                 href={hrefs.month}
                 aria-current={isMonth ? "page" : undefined}
@@ -257,7 +260,7 @@ export function PlanCalendar({
               >
                 {t("calendar.viewWeek")}
               </Link>
-            </div>
+            </SegmentedTrack>
           </div>
         </div>
 
@@ -272,61 +275,65 @@ export function PlanCalendar({
           </div>
         </div>
 
-        <div className="space-y-2">
-          {isMonth && (
-            <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-              {days.slice(0, 7).map((date) => (
-                <p key={date} className={cn(eyebrow, "truncate px-1.5 sm:px-2")}>
-                  {shortWeekday(date, locale)}
-                </p>
+        <MorphHeight contentKey={view}>
+          <div className="space-y-2">
+            {isMonth && (
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {days.slice(0, 7).map((date) => (
+                  <p key={date} className={cn(eyebrow, "truncate px-1.5 sm:px-2")}>
+                    {shortWeekday(date, locale)}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <div
+              ref={gridRef}
+              role="group"
+              aria-label={t("calendar.grid")}
+              onKeyDown={handleKeyDown}
+              className={cn(
+                "grid gap-1.5 sm:gap-2",
+                isMonth ? "grid-cols-7" : "grid-cols-1 sm:grid-cols-7",
+              )}
+            >
+              {days.map((date, index) => (
+                <CalendarDay
+                  key={date}
+                  date={date}
+                  index={index}
+                  view={view}
+                  subject={subject}
+                  inMonth={belongs(date)}
+                  isToday={date === today}
+                  isSelected={index === selectedIndex}
+                  sessions={sessions[date] ?? []}
+                  locale={locale}
+                  t={t}
+                  onSelect={selectDay}
+                  innerRef={(el) => {
+                    cells.current[index] = el;
+                  }}
+                />
               ))}
             </div>
-          )}
-
-          <div
-            ref={gridRef}
-            role="group"
-            aria-label={t("calendar.grid")}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              "grid gap-1.5 sm:gap-2",
-              isMonth ? "grid-cols-7" : "grid-cols-1 sm:grid-cols-7",
-            )}
-          >
-            {days.map((date, index) => (
-              <CalendarDay
-                key={date}
-                date={date}
-                index={index}
-                view={view}
-                subject={subject}
-                inMonth={belongs(date)}
-                isToday={date === today}
-                isSelected={index === selectedIndex}
-                sessions={sessions[date] ?? []}
-                locale={locale}
-                t={t}
-                onSelect={selectDay}
-                innerRef={(el) => {
-                  cells.current[index] = el;
-                }}
-              />
-            ))}
           </div>
-        </div>
+        </MorphHeight>
       </div>
 
       <div ref={agenda} className="scroll-mt-6">
-        <DayAgenda
-          date={selectedDay}
-          sessions={sessions[selectedDay] ?? []}
-          subject={subject}
-          isToday={selectedDay === today}
-          emptyTitle={dayEmptyTitle}
-          emptyHint={dayEmptyHint}
-          locale={locale}
-          t={t}
-        />
+        <MorphHeight contentKey={selectedDay}>
+          <DayAgenda
+            date={selectedDay}
+            sessions={sessions[selectedDay] ?? []}
+            subject={subject}
+            isToday={selectedDay === today}
+            emptyTitle={dayEmptyTitle}
+            emptyHint={dayEmptyHint}
+            locale={locale}
+            t={t}
+          />
+        </MorphHeight>
       </div>
     </div>
   );

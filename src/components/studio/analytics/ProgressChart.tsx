@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ExerciseMeasure, ExerciseOption, MetricSeries } from "@/lib/studio/analytics";
 import { formatSigned } from "@/lib/studio/bodyMetrics";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
+import { SegmentedTrack } from "@/components/studio/SegmentedTrack";
 import type { ProgressPhotoWeek } from "@/lib/studio/types";
 import { chip, field, heading, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
@@ -28,11 +30,7 @@ function Pill<T extends string>({
   groupLabel: string;
 }) {
   return (
-    <div
-      role="group"
-      aria-label={groupLabel}
-      className="inline-flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10"
-    >
+    <SegmentedTrack value={value} groupLabel={groupLabel}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -40,14 +38,14 @@ function Pill<T extends string>({
           aria-pressed={value === option.value}
           onClick={() => onChangeAction(option.value)}
           className={cn(
-            "rounded-full px-3 py-1.5 font-sans text-xs font-semibold whitespace-nowrap transition-colors",
-            value === option.value ? "bg-caramel/20 text-accent-ink" : "text-cream/50 hover:text-cream",
+            "relative z-10 rounded-full px-3 py-1.5 font-sans text-xs font-semibold whitespace-nowrap transition-colors",
+            value === option.value ? "text-accent-ink" : "text-cream/50 hover:text-cream",
           )}
         >
           {option.label}
         </button>
       ))}
-    </div>
+    </SegmentedTrack>
   );
 }
 
@@ -154,31 +152,34 @@ export function ProgressChart({
         )}
       </div>
 
-      {metric === "photos" ? (
-        <PhotoLog weeks={photoWeeks} />
-      ) : !series || points.length === 0 ? (
-        <Empty
-          title={metric === "weight" ? tProgress("weightEmpty") : t("exerciseEmpty")}
-          hint={metric === "weight" ? tProgress("weightEmptyHint") : t("exerciseEmptyHint")}
-        />
-      ) : (
-        <>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h3 className={cn(heading, "text-lg")}>{title}</h3>
-            <div className="flex items-baseline gap-2">
-              <p className={cn(heading, "text-xl text-cream")}>
-                {latest.value} {series.unit}
-              </p>
-              {delta != null && (
-                <span className={cn(chip, deltaIsGood === false && "text-silk")}>
-                  {formatSigned(delta)} {series.unit}
-                </span>
-              )}
+      <MorphHeight contentKey={`${metric}:${exerciseId}:${measure ?? ""}:${chartType}`}>
+        {metric === "photos" ? (
+          <PhotoLog weeks={photoWeeks} />
+        ) : !series || points.length === 0 ? (
+          <Empty
+            title={metric === "weight" ? tProgress("weightEmpty") : t("exerciseEmpty")}
+            hint={metric === "weight" ? tProgress("weightEmptyHint") : t("exerciseEmptyHint")}
+            className="bg-transparent ring-0 px-1 py-2"
+          />
+        ) : (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h3 className={cn(heading, "text-lg")}>{title}</h3>
+              <div className="flex items-baseline gap-2">
+                <p className={cn(heading, "text-xl text-cream")}>
+                  {latest.value} {series.unit}
+                </p>
+                {delta != null && (
+                  <span className={cn(chip, deltaIsGood === false && "text-silk")}>
+                    {formatSigned(delta)} {series.unit}
+                  </span>
+                )}
+              </div>
             </div>
+            <MetricChart series={series} label={title} locale={locale} type={chartType} />
           </div>
-          <MetricChart series={series} label={title} locale={locale} type={chartType} />
-        </>
-      )}
+        )}
+      </MorphHeight>
     </section>
   );
 }

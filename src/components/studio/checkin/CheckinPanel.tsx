@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { MorphHeight } from "../MorphHeight";
+import { SegmentedTrack } from "../SegmentedTrack";
 import { Icon, type IconName } from "../coach/icons";
 import { cn } from "@/lib/utils";
-
 type View = "form" | "history";
 
 function ViewTab({
@@ -25,8 +26,8 @@ function ViewTab({
       title={label}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-        active ? "bg-butter text-on-primary" : "text-cream/55 hover:bg-cream/5 hover:text-cream",
+        "relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+        active ? "text-on-primary" : "text-cream/55 hover:text-cream",
       )}
     >
       <Icon name={icon} className="h-[1.15rem] w-[1.15rem]" />
@@ -58,7 +59,7 @@ export function CheckinPanel({
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <div className="inline-flex items-center gap-1 rounded-full bg-cream/[0.04] p-1 ring-1 ring-cream/10">
+        <SegmentedTrack value={view} thumbClassName="bg-butter">
           <ViewTab
             icon="checkin"
             label={formLabel}
@@ -71,10 +72,12 @@ export function CheckinPanel({
             active={view === "history"}
             onSelect={() => setView("history")}
           />
-        </div>
+        </SegmentedTrack>
       </div>
-      <div hidden={view !== "form"}>{form}</div>
-      <div hidden={view !== "history"}>{history}</div>
+      <MorphHeight contentKey={view}>
+        <div hidden={view !== "form"}>{form}</div>
+        <div hidden={view !== "history"}>{history}</div>
+      </MorphHeight>
     </div>
   );
 }
