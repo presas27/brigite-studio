@@ -5,7 +5,7 @@ import { EditClientModal } from "@/components/studio/coach/EditClientModal";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { listCheckins, unreadCount } from "@/lib/studio/coaching";
-
+import { intakeResponseForClient } from "@/lib/studio/intake";
 /**
  * The client page. One masthead, one tab strip, and a panel that swaps —
  * plan, check-ins and messages are segments of this route rather than
@@ -28,9 +28,10 @@ export default async function ClientLayout({
 
   const t = await getTranslations("Studio.clients");
 
-  const [checkins, unread] = await Promise.all([
+  const [checkins, unread, intake] = await Promise.all([
     listCheckins(client.id),
     unreadCount(client.id),
+    intakeResponseForClient(client.id).catch(() => null),
   ]);
 
   const base = `/app/coach/alunos/${client.id}`;
@@ -48,6 +49,11 @@ export default async function ClientLayout({
       href: `${base}/mensagens`,
       label: t("tab.messages"),
       badge: unread,
+    },
+    {
+      href: `${base}/inscricao`,
+      label: t("tab.intake"),
+      alertBadge: Boolean(intake?.hasSensitiveAlerts),
     },
   ];
 

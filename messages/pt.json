@@ -268,6 +268,15 @@
       "no": "Não",
       "responseTitle": "Formulário de inscrição",
       "responseEmpty": "Ainda não respondeu ao formulário de inscrição.",
+      "viewFull": "Ver formulário completo",
+      "viewAnswers": "Ver todas as respostas ({count})",
+      "submittedAt": "Respondido a {date}",
+      "keyDetails": "Resumo da inscrição",
+      "secPersonal": "Dados pessoais e emergência",
+      "secGoals": "Objetivos e fitness",
+      "secHealth": "Saúde e limitações",
+      "secConsent": "Comentários e consentimento",
+      "consentConfirmed": "Consentimento confirmado pelo cliente",
       "healthAlertBadge": "Alerta de Saúde",
       "healthAlertBanner": "Atenção médica: O cliente assinalou lesões ou condições de saúde sensíveis no formulário de inscrição.",
       "stepProgress": "Passo {current} de {total}",
@@ -503,7 +512,8 @@
         "sessions": "Treinos",
         "checkins": "Check-ins",
         "progresso": "Progresso",
-        "messages": "Mensagens"
+        "messages": "Mensagens",
+        "intake": "Inscrição"
       }
     },
     "library": {

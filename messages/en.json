@@ -268,6 +268,15 @@
       "no": "No",
       "responseTitle": "Client Intake Form",
       "responseEmpty": "No intake form submitted yet.",
+      "viewFull": "View full form",
+      "viewAnswers": "View all responses ({count})",
+      "submittedAt": "Submitted on {date}",
+      "keyDetails": "Registration summary",
+      "secPersonal": "Personal & emergency details",
+      "secGoals": "Goals & fitness",
+      "secHealth": "Health & medical",
+      "secConsent": "Comments & consent",
+      "consentConfirmed": "Consent compliance confirmed",
       "healthAlertBadge": "Health Alert",
       "healthAlertBanner": "Medical notice: The client flagged injuries or sensitive health conditions on their intake form.",
       "stepProgress": "Step {current} of {total}",
@@ -503,7 +512,8 @@
         "sessions": "Sessions",
         "checkins": "Check-ins",
         "progresso": "Progress",
-        "messages": "Messages"
+        "messages": "Messages",
+        "intake": "Intake"
       }
     },
     "library": {

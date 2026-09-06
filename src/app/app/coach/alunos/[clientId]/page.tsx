@@ -7,6 +7,7 @@ import { formatDayKey, formatMonthYear } from "@/components/studio/format";
 import { Empty } from "@/components/studio/Empty";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import {
+  buttonGhost,
   buttonOnAccent,
   chip,
   chipAccent,
@@ -78,20 +79,30 @@ export default async function ClientOverviewPage({
   const [lastSession] = history;
   const planHref = `/app/coach/alunos/${client.id}/plano`;
   const sessionsHref = `/app/coach/alunos/${client.id}/treinos`;
+  const intakeHref = `/app/coach/alunos/${client.id}/inscricao`;
 
   return (
     <div className="space-y-6">
       {intake?.hasSensitiveAlerts && (
-        <div className="flex items-start gap-3 rounded-[1.25rem] bg-silk/15 p-4 sm:p-5 ring-1 ring-silk/40 text-cream">
-          <Icon name="alert" className="h-5 w-5 shrink-0 text-silk mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-sans text-sm font-semibold text-silk">
-              {tIntake("healthAlertBadge")}
-            </p>
-            <p className="text-xs sm:text-sm text-cream/80 leading-relaxed">
-              {tIntake("healthAlertBanner")}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] bg-silk/15 p-4 sm:p-5 ring-1 ring-silk/40 text-cream">
+          <div className="flex items-start gap-3">
+            <Icon name="alert" className="h-5 w-5 shrink-0 text-silk mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-sans text-sm font-semibold text-silk">
+                {tIntake("healthAlertBadge")}
+              </p>
+              <p className="text-xs sm:text-sm text-cream/80 leading-relaxed">
+                {tIntake("healthAlertBanner")}
+              </p>
+            </div>
           </div>
+          <Link
+            href={intakeHref}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-silk/20 px-3.5 py-1.5 font-sans text-xs font-semibold text-silk hover:bg-silk/30 transition-colors"
+          >
+            {tIntake("viewFull")}
+            <Icon name="chevron" className="h-3 w-3" />
+          </Link>
         </div>
       )}
 
@@ -163,52 +174,60 @@ export default async function ClientOverviewPage({
       </div>
 
       <section className={cn(surface, "space-y-4 p-5 sm:p-6")}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
+            {intake && (
+              <p className={cn(muted, "mt-0.5 text-xs")}>
+                {tIntake("submittedAt", {
+                  date: formatDayKey(new Date(intake.submittedAt).toISOString().slice(0, 10), locale),
+                })}
+              </p>
+            )}
+          </div>
           {intake?.hasSensitiveAlerts && (
             <span className="rounded-full bg-silk/20 px-2.5 py-0.5 font-sans text-xs font-semibold text-silk ring-1 ring-silk/30">
               {tIntake("healthAlertBadge")}
             </span>
           )}
         </div>
+
         {intake ? (
-          <dl className="space-y-2.5">
-            {intake.answers.map((answer) => (
-              <div
-                key={answer.fieldId}
-                className={cn(
-                  "rounded-[0.9rem] p-3 transition-colors",
-                  answer.flagged
-                    ? "bg-silk/10 ring-1 ring-silk/30"
-                    : "bg-cream/[0.02] ring-1 ring-cream/5",
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <dt
-                    className={cn(
-                      "font-sans text-xs font-medium",
-                      answer.flagged ? "text-silk" : "text-cream/50",
-                    )}
-                  >
-                    {answer.label}
-                  </dt>
-                  {answer.flagged && (
-                    <span className="shrink-0 rounded-full bg-silk/20 px-2 py-0.5 font-sans text-[0.65rem] font-semibold text-silk">
-                      {tIntake("healthAlertBadge")}
-                    </span>
-                  )}
-                </div>
-                <dd
-                  className={cn(
-                    "mt-1 text-sm leading-relaxed whitespace-pre-line",
-                    answer.flagged ? "text-cream font-medium" : "text-cream/80",
-                  )}
-                >
-                  {answer.value || common("none")}
-                </dd>
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[0.9rem] bg-cream/[0.03] p-3.5 ring-1 ring-cream/10">
+                <p className="font-sans text-xs font-medium text-cream/50">{tIntake("secGoals")}</p>
+                <p className="mt-1 line-clamp-2 font-sans text-sm font-semibold text-cream">
+                  {intake.answers.find((a) => a.fieldId === "fitness_goals")?.value.replace(/\n/g, ", ") || common("none")}
+                </p>
               </div>
-            ))}
-          </dl>
+              <div className="rounded-[0.9rem] bg-cream/[0.03] p-3.5 ring-1 ring-cream/10">
+                <p className="font-sans text-xs font-medium text-cream/50">{tIntake("secHealth")}</p>
+                <p className={cn("mt-1 font-sans text-sm font-semibold", intake.hasSensitiveAlerts ? "text-silk" : "text-cream")}>
+                  {intake.hasSensitiveAlerts
+                    ? `${intake.sensitiveCount} ${tIntake("healthAlertBadge").toLowerCase()}`
+                    : common("none")}
+                </p>
+              </div>
+              <div className="rounded-[0.9rem] bg-cream/[0.03] p-3.5 ring-1 ring-cream/10">
+                <p className="font-sans text-xs font-medium text-cream/50">{tIntake("secConsent")}</p>
+                <p className="mt-1 font-sans text-sm font-semibold text-accent-ink flex items-center gap-1.5">
+                  <Icon name="check" className="h-4 w-4" />
+                  {tIntake("consentConfirmed")}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <Link
+                href={intakeHref}
+                className={cn(buttonGhost, "inline-flex items-center gap-1.5 text-xs px-4 py-2")}
+              >
+                {tIntake("viewAnswers", { count: intake.answers.length })}
+                <Icon name="chevron" className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
         ) : (
           <p className="text-sm text-cream/40">{tIntake("responseEmpty")}</p>
         )}

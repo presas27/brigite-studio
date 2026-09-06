@@ -10,6 +10,8 @@ export type ClientTab = {
   label: string;
   /** Count of things waiting on Sara in that tab. Hidden at zero. */
   badge?: number;
+  /** Whether to show a red health alert indicator. */
+  alertBadge?: boolean;
 };
 
 /**
@@ -96,6 +98,12 @@ export function ClientTabs({ tabs, label }: { tabs: ClientTab[]; label: string }
                   >
                     {tab.badge}
                   </span>
+                )}
+                {tab.alertBadge && (
+                  <span
+                    className="inline-flex h-2 w-2 shrink-0 rounded-full bg-silk ring-2 ring-background"
+                    title="Alerta de saúde"
+                  />
                 )}
                 <span
                   aria-hidden
