@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { SCALE_MAX, SCALE_MIN } from "@/lib/studio/scale";
 import { eyebrow } from "../theme";
 import { cn } from "@/lib/utils";
-
 /**
  * A 1-10 self-report rendered as a drag dial.
  *
@@ -61,10 +62,33 @@ export function ArcRating({
   );
   const [dragging, setDragging] = useState(false);
   const dialRef = useRef<HTMLDivElement>(null);
+  const numRef = useRef<HTMLSpanElement>(null);
 
-  const fraction = value == null ? 0 : (value - MIN) / STEPS;
-  const thumb = pointAt(START + fraction * SWEEP);
+  const targetFraction = value == null ? 0 : (value - MIN) / STEPS;
+  const [displayFraction, setDisplayFraction] = useState(targetFraction);
 
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setDisplayFraction(targetFraction);
+        return;
+      }
+      const tracker = { f: displayFraction };
+      gsap.to(tracker, {
+        f: targetFraction,
+        duration: dragging ? 0.06 : 0.35,
+        ease: dragging ? "none" : "back.out(1.6)",
+        onUpdate: () => setDisplayFraction(tracker.f),
+        overwrite: "auto",
+      });
+      if (!dragging && value != null && numRef.current) {
+        gsap.fromTo(numRef.current, { scale: 1.18 }, { scale: 1, duration: 0.28, ease: "back.out(2)" });
+      }
+    },
+    { dependencies: [targetFraction, dragging] },
+  );
+
+  const thumb = pointAt(START + displayFraction * SWEEP);
   /** Screen point → nearest stop on the arc. */
   function valueAt(clientX: number, clientY: number): number {
     const box = dialRef.current?.getBoundingClientRect();
@@ -142,11 +166,11 @@ export function ArcRating({
             strokeLinecap="round"
             className="text-cream/12"
           />
-          {fraction > 0 && (
+          {displayFraction > 0 && (
             <path
               d={ARC}
               pathLength={100}
-              strokeDasharray={`${fraction * 100} 100`}
+              strokeDasharray={`${displayFraction * 100} 100`}
               fill="none"
               stroke="currentColor"
               strokeWidth={9}
@@ -166,7 +190,7 @@ export function ArcRating({
           />
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-[2.5rem] leading-none tracking-[0.01em] text-cream">
+          <span ref={numRef} className="font-display text-[2.5rem] leading-none tracking-[0.01em] text-cream">
             {value ?? "–"}
           </span>
           <span className="mt-1 font-sans text-[0.65rem] font-medium text-cream/40">/{MAX}</span>

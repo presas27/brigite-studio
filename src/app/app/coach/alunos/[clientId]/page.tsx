@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { saveNotes } from "@/app/app/coach/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { formatDayKey, formatMonthYear } from "@/components/studio/format";
+import { ClientOverviewEntrance } from "@/components/studio/coach/ClientOverviewEntrance";
 import { Empty } from "@/components/studio/Empty";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import {
@@ -82,9 +83,9 @@ export default async function ClientOverviewPage({
   const intakeHref = `/app/coach/alunos/${client.id}/inscricao`;
 
   return (
-    <div className="space-y-6">
+    <ClientOverviewEntrance>
       {intake?.hasSensitiveAlerts && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] bg-silk/15 p-4 sm:p-5 ring-1 ring-silk/40 text-cream">
+        <div data-client-card className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] bg-silk/15 p-4 sm:p-5 ring-1 ring-silk/40 text-cream">
           <div className="flex items-start gap-3">
             <Icon name="alert" className="h-5 w-5 shrink-0 text-silk mt-0.5" />
             <div className="space-y-0.5">
@@ -107,7 +108,7 @@ export default async function ClientOverviewPage({
       )}
 
       {/* The one gold surface here: what this client does next, or the nudge to book it. */}
-      <section className={cn(surfaceAccent, "p-5 sm:p-6")}>
+      <section data-client-card className={cn(surfaceAccent, "p-5 sm:p-6")}>
         <h2 className={eyebrowOnAccent}>{t("nextSession")}</h2>
         <p className={cn(heading, "mt-3 text-[1.75rem] sm:text-[2rem]")}>
           {next ? next.name : t("noNextSession")}
@@ -125,7 +126,7 @@ export default async function ClientOverviewPage({
         </Link>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-client-card className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label={tProgress("adherence")} value={`${done}/${total}`} />
         <Stat
           label={t("lastSession")}
@@ -148,7 +149,7 @@ export default async function ClientOverviewPage({
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div data-client-card className="grid gap-3 sm:grid-cols-2">
         <article className={cn(surface, "space-y-2 p-5")}>
           <h2 className={eyebrow}>{t("goalsLabel")}</h2>
           <p
@@ -173,7 +174,7 @@ export default async function ClientOverviewPage({
         </article>
       </div>
 
-      <section className={cn(surface, "space-y-4 p-5 sm:p-6")}>
+      <section data-client-card className={cn(surface, "space-y-4 p-5 sm:p-6")}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className={eyebrow}>{tIntake("responseTitle")}</h2>
@@ -233,7 +234,7 @@ export default async function ClientOverviewPage({
         )}
       </section>
 
-      <section className={cn(surface, "space-y-3 p-5 ring-1 ring-caramel/25 sm:p-6")}>
+      <section data-client-card className={cn(surface, "space-y-3 p-5 ring-1 ring-caramel/25 sm:p-6")}>
         <div>
           <h2 className={eyebrow}>{t("notesLabel")}</h2>
           <p className={muted}>{t("notesHint")}</p>
@@ -253,7 +254,7 @@ export default async function ClientOverviewPage({
         </form>
       </section>
 
-      <section className="space-y-3">
+      <section data-client-card className="space-y-3">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className={eyebrow}>{tProgress("history")}</h2>
           {history.length > 0 && (
@@ -294,6 +295,6 @@ export default async function ClientOverviewPage({
           </ul>
         )}
       </section>
-    </div>
+    </ClientOverviewEntrance>
   );
 }

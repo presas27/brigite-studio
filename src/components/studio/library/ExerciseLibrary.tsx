@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
 import { FilterBar } from "@/components/studio/FilterBar";
@@ -31,7 +33,7 @@ export function ExerciseLibrary({
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
   const [view, setView] = usePersistedView("studio.exercises.view");
-
+  const listRef = useRef<HTMLDivElement>(null);
   const categoryOptions = useMemo(
     () => tags.map(({ tag: value, count }) => ({ value, label: capitalize(value), count })),
     [tags],
@@ -52,9 +54,28 @@ export function ExerciseLibrary({
   }, [exercises, query, tag]);
 
   const shown = results.slice(0, LIMIT);
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      gsap.fromTo(
+        "[data-exercise-card]",
+        { autoAlpha: 0, y: 14, scale: 0.98 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.28,
+          stagger: 0.02,
+          ease: "power2.out",
+          overwrite: "auto",
+        },
+      );
+    },
+    { scope: listRef, dependencies: [shown.map((e) => e.id).join(","), view] },
+  );
 
   return (
-    <div className="space-y-6">
+    <div ref={listRef} className="space-y-6">
       <FilterBar
         query={query}
         onQueryChangeAction={setQuery}

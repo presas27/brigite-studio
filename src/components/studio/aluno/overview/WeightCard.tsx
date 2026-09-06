@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme";
 import type { OverviewWeight } from "@/lib/studio/clientConsole";
 import { cn } from "@/lib/utils";
-
+import { Sparkline } from "./Sparkline";
 /**
  * Weight, as a number and a shape.
  *
@@ -17,48 +17,6 @@ import { cn } from "@/lib/utils";
  * green would be the app taking a side it has no business taking.
  */
 
-const WIDTH = 320;
-const HEIGHT = 64;
-
-function Sparkline({ values, label }: { values: number[]; label: string }) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  // A flat series has no span to divide by, and a straight line through the
-  // middle is the honest way to draw "this did not move".
-  const span = max - min || 1;
-  const step = values.length > 1 ? WIDTH / (values.length - 1) : 0;
-
-  const points = values.map((value, index) => {
-    const x = values.length > 1 ? index * step : WIDTH / 2;
-    const y = HEIGHT - 4 - ((value - min) / span) * (HEIGHT - 8);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-
-  return (
-    <svg
-      role="img"
-      aria-label={label}
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      preserveAspectRatio="none"
-      className="h-16 w-full text-accent-ink"
-    >
-      <polygon
-        points={`0,${HEIGHT} ${points.join(" ")} ${WIDTH},${HEIGHT}`}
-        fill="currentColor"
-        opacity={0.12}
-      />
-      <polyline
-        points={points.join(" ")}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
 
 export async function WeightCard({
   weight,

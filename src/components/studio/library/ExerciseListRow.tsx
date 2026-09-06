@@ -17,7 +17,7 @@ export function ExerciseListRow({ exercise }: { exercise: Exercise }) {
   );
 
   return (
-    <li>
+    <li data-exercise-card>
       <Link
         href={`/app/coach/exercicios/${exercise.id}`}
         className="flex items-center gap-3 rounded-[1rem] bg-cream/[0.04] p-2.5 ring-1 ring-cream/10 transition hover:bg-cream/[0.07] hover:ring-cream/25"

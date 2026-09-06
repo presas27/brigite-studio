@@ -1,9 +1,13 @@
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import type { Message } from "@/lib/studio/types";
 import { chip } from "@/components/studio/theme";
 import { formatChatDay, formatChatTime } from "@/components/studio/format";
 import { capitalize, cn } from "@/lib/utils";
 import { groupThread } from "./group";
-
 /**
  * Renders a chronological thread as day separators plus bubbles grouped by
  * consecutive author — the author label and timestamp sit once per run, not
@@ -24,9 +28,30 @@ export function MessageThread({
   locale: string;
 }) {
   const entries = groupThread(messages);
+  const scope = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      gsap.fromTo(
+        "[data-message-bubble]",
+        { autoAlpha: 0, scale: 0.94, y: 8 },
+        {
+          autoAlpha: 1,
+          scale: 1,
+          y: 0,
+          duration: 0.28,
+          stagger: 0.03,
+          ease: "back.out(1.8)",
+          overwrite: "auto",
+        },
+      );
+    },
+    { scope, dependencies: [messages.length] },
+  );
 
   return (
-    <div className="space-y-4">
+    <div ref={scope} className="space-y-4">
       {entries.map((entry) => {
         if (entry.kind === "day") {
           return (
@@ -49,6 +74,7 @@ export function MessageThread({
             {entry.group.messages.map((message) => (
               <div
                 key={message.id}
+                data-message-bubble
                 className={cn(
                   "max-w-[85%] rounded-[1.1rem] px-4 py-2.5 sm:max-w-[70%]",
                   mine ? "bg-butter text-on-primary" : "bg-ink-lift text-cream ring-1 ring-cream/10",

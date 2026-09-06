@@ -57,11 +57,11 @@ export const fieldCompact =
 
 /** Primary action. Light pill on dark, deep-wine pill on paper; label inverts. */
 export const buttonPrimary =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-butter px-6 py-3 font-sans text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-butter px-6 py-3 font-sans text-sm font-semibold text-on-primary transition-[transform,background-color,color] duration-150 ease-out hover:bg-primary-hover active:scale-[0.97] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 /** Secondary action. Outlined, sits on any surface. */
 export const buttonGhost =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream ring-1 ring-cream/20 transition-colors hover:bg-cream/5 hover:ring-cream/35 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream ring-1 ring-cream/20 transition-[transform,background-color,color,box-shadow] duration-150 ease-out hover:bg-cream/5 hover:ring-cream/35 active:scale-[0.97] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 /**
  * Third action tier, below `buttonGhost`: row actions that must not compete
@@ -69,12 +69,11 @@ export const buttonGhost =
  * of buttons; these read as text until the pointer is on them.
  */
 export const buttonQuiet =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 font-sans text-xs font-medium text-cream/50 transition-[transform,background-color,color] duration-150 ease-out hover:bg-cream/8 hover:text-cream active:scale-[0.96] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 /** Destructive action. Never the visual default. */
 export const buttonDanger =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 font-sans text-sm font-semibold text-silk ring-1 ring-silk/35 transition-colors hover:bg-silk/10 disabled:cursor-not-allowed disabled:opacity-50";
-
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 font-sans text-sm font-semibold text-silk ring-1 ring-silk/35 transition-[transform,background-color,color,box-shadow] duration-150 ease-out hover:bg-silk/10 active:scale-[0.97] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 /** Small chip: tags, statuses, filters. */
 export const chip =
   "inline-flex items-center gap-1.5 rounded-full bg-cream/5 px-3 py-1 font-sans text-xs text-cream/70 ring-1 ring-cream/10";
@@ -96,12 +95,11 @@ export const mutedOnAccent = "text-sm leading-relaxed text-on-dark/75";
 
 /** Primary action on the brand surface — the sand pill, as in the hero. */
 export const buttonOnAccent =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-on-dark px-6 py-3 font-sans text-sm font-semibold text-ink transition-colors hover:bg-on-dark/85 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-on-dark px-6 py-3 font-sans text-sm font-semibold text-ink transition-[transform,background-color,color] duration-150 ease-out hover:bg-on-dark/85 active:scale-[0.97] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 /** Secondary action on the brand surface. */
 export const buttonGhostOnAccent =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-on-dark ring-1 ring-on-dark/35 transition-colors hover:bg-on-dark/10 hover:ring-on-dark/55 disabled:cursor-not-allowed disabled:opacity-50";
-
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 font-sans text-sm font-semibold text-on-dark ring-1 ring-on-dark/35 transition-[transform,background-color,color,box-shadow] duration-150 ease-out hover:bg-on-dark/10 hover:ring-on-dark/55 active:scale-[0.97] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 export const chipOnAccent =
   "inline-flex items-center gap-1.5 rounded-full bg-on-dark/12 px-3 py-1 font-sans text-xs text-on-dark/85 ring-1 ring-on-dark/25";
 
