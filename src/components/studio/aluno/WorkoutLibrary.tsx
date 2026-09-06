@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useLocale, useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
 import { FilterBar } from "@/components/studio/FilterBar";
@@ -50,12 +52,12 @@ export function WorkoutLibrary({
   const [query, setQuery] = useState("");
   const [focus, setFocus] = useState<string | null>(null);
   const [view, setView] = usePersistedView("studio.aluno.workouts.view");
+  const listRef = useRef<HTMLDivElement>(null);
 
   const categoryOptions = useMemo(
     () => focuses.map(({ tag: value, count }) => ({ value, label: capitalize(value), count })),
     [focuses],
   );
-
   const results = useMemo(() => {
     const needle = searchKey(query.trim());
     return workouts.filter((workout) => {
@@ -67,6 +69,25 @@ export function WorkoutLibrary({
       return matchesQuery && (!focus || workout.focus === focus);
     });
   }, [workouts, query, focus]);
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      gsap.fromTo(
+        "[data-workout-card]",
+        { autoAlpha: 0, y: 14, scale: 0.98 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.28,
+          stagger: 0.03,
+          ease: "power2.out",
+          overwrite: "auto",
+        },
+      );
+    },
+    { scope: listRef, dependencies: [results.map((w) => w.id).join(","), view] },
+  );
 
   /** The three labels a row needs that only the locale and today can give it. */
   function labelsFor(workout: ClientWorkout) {
@@ -81,7 +102,7 @@ export function WorkoutLibrary({
   }
 
   return (
-    <div className="space-y-6">
+    <div ref={listRef} className="space-y-6">
       <FilterBar
         query={query}
         onQueryChangeAction={setQuery}

@@ -26,7 +26,7 @@ export function WorkoutListRow({
   editHref?: string | null;
 }) {
   return (
-    <li className="flex items-center gap-3">
+    <li data-workout-card className="flex items-center gap-3">
       <form action={startAction} className="min-w-0 flex-1">
         <input type="hidden" name="workoutId" value={workout.id} />
         <RowSurface

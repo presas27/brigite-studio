@@ -66,7 +66,7 @@ export async function WeekCard({
           const isToday = day.date === today;
           const tone = day.status ?? "rest";
           return (
-            <li key={day.date}>
+            <li key={day.date} data-week-ring>
               <Link
                 href={`/app/aluno/plano?vista=semana&dia=${day.date}`}
                 aria-current={isToday ? "date" : undefined}

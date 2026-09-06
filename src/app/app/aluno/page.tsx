@@ -1,9 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { AdherenceCard } from "@/components/studio/aluno/overview/AdherenceCard";
-import { WeekProgressCard } from "@/components/studio/aluno/overview/WeekProgressCard";
+import { HojeEntrance } from "@/components/studio/aluno/overview/HojeEntrance";
 import { StreakCard } from "@/components/studio/aluno/overview/StreakCard";
 import { TodayCard } from "@/components/studio/aluno/overview/TodayCard";
 import { WeekCard } from "@/components/studio/aluno/overview/WeekCard";
+import { WeekProgressCard } from "@/components/studio/aluno/overview/WeekProgressCard";
 import { WeightCard } from "@/components/studio/aluno/overview/WeightCard";
 import { heading } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
@@ -51,54 +52,71 @@ export default async function AlunoHojePage() {
     .slice(0, 3);
 
   return (
-    // `<main>` is exactly the viewport's remaining height (see `StudioChrome`); the `-1.5rem`
-    // leaves a sliver of breathing room under the cards instead of stretching them flush to
-    // the bottom edge. Both columns below stretch to fill whatever that leaves, and `<main>`'s
-    // own scrollbar (not the document's) is the fallback on a day the content doesn't fit.
-    <div className="grid gap-8 xl:h-[calc(100%_-_1.5rem)] xl:grid-cols-[minmax(0,1fr)_26rem]">
-      <div className="min-w-0 space-y-6">
-        <header>
-          <h1 className={cn(heading, "text-[2rem] sm:text-[2.5rem]")}>
-            {t("greeting", { name: client.name.split(" ")[0] })}
-          </h1>
-        </header>
+    <HojeEntrance>
+      {/* `<main>` is exactly the viewport's remaining height (see `StudioChrome`); the `-1.5rem`
+          leaves a sliver of breathing room under the cards instead of stretching them flush to
+          the bottom edge. Both columns below stretch to fill whatever that leaves, and `<main>`'s
+          own scrollbar (not the document's) is the fallback on a day the content doesn't fit. */}
+      <div className="grid gap-8 xl:h-[calc(100%_-_1.5rem)] xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="min-w-0 space-y-6">
+          <header>
+            <h1 className={cn(heading, "text-[2rem] sm:text-[2.5rem]")}>
+              {t("greeting", { name: client.name.split(" ")[0] })}
+            </h1>
+          </header>
 
-        {/* Two squares and a band. The reading sits up top, side by side at
-            every width — a phone included, which is where this page is
-            actually opened — and the gold runs underneath as a strip carrying
-            the only thing here she can press. */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <AdherenceCard
-            done={overview.adherenceDone}
-            total={overview.adherenceTotal}
-            pct={overview.adherencePct}
-          />
+          {/* Two squares and a band. The reading sits up top, side by side at
+              every width — a phone included, which is where this page is
+              actually opened — and the gold runs underneath as a strip carrying
+              the only thing here she can press. */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div data-hoje-card className="h-full">
+              <AdherenceCard
+                done={overview.adherenceDone}
+                total={overview.adherenceTotal}
+                pct={overview.adherencePct}
+                className="h-full"
+              />
+            </div>
 
-          <WeekProgressCard week={overview.week} next={todayOpen ?? next} today={today} />
+            <div data-hoje-card className="h-full">
+              <WeekProgressCard
+                week={overview.week}
+                next={todayOpen ?? next}
+                today={today}
+                className="h-full"
+              />
+            </div>
 
-          <TodayCard
-            session={hero}
-            isToday={hero?.date === today}
-            coachName={coach?.name ?? null}
-            className="col-span-2"
-          />
+            <div data-hoje-card className="col-span-2">
+              <TodayCard
+                session={hero}
+                isToday={hero?.date === today}
+                coachName={coach?.name ?? null}
+              />
+            </div>
+          </div>
         </div>
+
+        {/* The week and the number that matters most, not a feed of what already
+            happened — that reads as an afterthought this far up the page. */}
+        <aside className="flex min-w-0 flex-col gap-6">
+          <div data-hoje-card>
+            <WeekCard week={overview.week} today={today} upcoming={upcoming} />
+          </div>
+
+          {/* Grows to the column's full stretched height instead of stopping at its own
+              content — otherwise it falls short of the left column and leaves the gap
+              underneath it bare. */}
+          <div data-hoje-card className="flex-1 flex flex-col">
+            {overview.weight ? (
+              <WeightCard weight={overview.weight} className="flex-1" />
+            ) : (
+              <StreakCard weeks={overview.streakWeeks} className="flex-1" />
+            )}
+          </div>
+        </aside>
       </div>
-
-      {/* The week and the number that matters most, not a feed of what already
-          happened — that reads as an afterthought this far up the page. */}
-      <aside className="flex min-w-0 flex-col gap-6">
-        <WeekCard week={overview.week} today={today} upcoming={upcoming} />
-
-        {/* Grows to the column's full stretched height instead of stopping at its own
-            content — otherwise it falls short of the left column and leaves the gap
-            underneath it bare. */}
-        {overview.weight ? (
-          <WeightCard weight={overview.weight} className="flex-1" />
-        ) : (
-          <StreakCard weeks={overview.streakWeeks} className="flex-1" />
-        )}
-      </aside>
-    </div>
+    </HojeEntrance>
   );
 }

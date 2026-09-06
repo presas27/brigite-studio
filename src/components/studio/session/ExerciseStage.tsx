@@ -103,16 +103,25 @@ export function ExerciseStage({
             { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out", stagger: 0.06 },
           );
         }
-        // The fields move on every step: they are the thing being replaced.
+        // Odometer roll for the active set counter
         gsap.fromTo(
-          '[data-stage="fields"]',
-          { autoAlpha: 0, y: 12 },
+          '[data-stage="stat-accent"]',
+          { autoAlpha: 0, y: -10 },
+          { autoAlpha: 1, y: 0, duration: 0.32, ease: "back.out(2)" },
+        );
+
+        // The fields move on every step: crisp spring entrance with subtle stagger
+        gsap.fromTo(
+          '[data-stage="fields"] input, [data-stage="fields"] button',
+          { autoAlpha: 0, scale: 0.96, y: 8 },
           {
             autoAlpha: 1,
+            scale: 1,
             y: 0,
-            duration: 0.25,
+            duration: 0.26,
             ease: "power2.out",
-            delay: enterAs === "exercise" ? 0.14 : 0,
+            stagger: 0.035,
+            delay: enterAs === "exercise" ? 0.12 : 0,
           },
         );
       });
@@ -360,11 +369,12 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="min-w-0 flex-1 rounded-[0.9rem] bg-cream/[0.06] px-2.5 py-2.5 text-center ring-1 ring-cream/10 md:px-3 md:py-3">
+    <div className="min-w-0 flex-1 overflow-hidden rounded-[0.9rem] bg-cream/[0.06] px-2.5 py-2.5 text-center ring-1 ring-cream/10 md:px-3 md:py-3">
       <p className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-cream/45">
         {label}
       </p>
       <p
+        data-stage={accent ? "stat-accent" : "stat-value"}
         className={cn(
           "mt-1 font-sans text-[1.35rem] font-semibold leading-none tabular-nums md:text-[1.65rem]",
           accent ? "text-accent-ink" : "text-cream",

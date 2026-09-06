@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
 import { formatDayRange, formatMonth, formatYear, shortWeekday } from "../format";
@@ -88,11 +90,34 @@ export function PlanCalendar({
   hrefs,
 }: Props) {
   const t = useTranslations("Studio.plan");
+  const isMonth = view === "month";
   const router = useRouter();
   const cells = useRef<(HTMLButtonElement | null)[]>([]);
   const agenda = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const prevFirstDayRef = useRef(days[0]);
 
-  const isMonth = view === "month";
+  useGSAP(
+    () => {
+      const grid = gridRef.current;
+      if (!grid) return;
+
+      const prevFirst = prevFirstDayRef.current;
+      const currentFirst = days[0];
+      prevFirstDayRef.current = currentFirst;
+
+      if (prevFirst && prevFirst !== currentFirst) {
+        const forward = currentFirst > prevFirst;
+        gsap.fromTo(
+          grid,
+          { autoAlpha: 0, x: forward ? 24 : -24 },
+          { autoAlpha: 1, x: 0, duration: 0.3, ease: "power2.out", clearProps: "x,transform" },
+        );
+      }
+    },
+    { dependencies: [days[0], view] },
+  );
+
   /** Week view has no outside days; month view dims the ones filling the edges. */
   const belongs = (date: string) => !isMonth || date.startsWith(month);
 
@@ -259,6 +284,7 @@ export function PlanCalendar({
           )}
 
           <div
+            ref={gridRef}
             role="group"
             aria-label={t("calendar.grid")}
             onKeyDown={handleKeyDown}

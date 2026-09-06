@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { cn } from "@/lib/utils";
 
 const RING_LENGTH = 100;
@@ -11,12 +14,9 @@ export function formatClock(seconds: number): string {
 }
 
 /**
- * A countdown as a ring that empties. Used at full size for the rest between
- * sets and at column size for an exercise measured in seconds — the same object
- * either way, because they are the same thing to the person holding the plank.
- *
- * The wrapper is sized by the caller; the ring fills it, and `textClassName`
- * scales the numerals to match.
+ * A countdown as a ring that empties.
+ * GSAP animates the SVG stroke smoothly on every tick, and applies an elastic
+ * recoil bounce whenever rest is extended (+30s).
  */
 export function CountdownRing({
   remaining,
@@ -32,13 +32,60 @@ export function CountdownRing({
   /** A stopped clock keeps a full ring — it has not started spending time yet. */
   running?: boolean;
 }) {
+  const circleRef = useRef<SVGCircleElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const prevTotalRef = useRef(total);
+
   const progress = running ? Math.max(0, Math.min(1, remaining / Math.max(1, total))) : 1;
+  const targetOffset = RING_LENGTH * (1 - progress);
+
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (circleRef.current) circleRef.current.style.strokeDashoffset = String(targetOffset);
+        return;
+      }
+
+      const circle = circleRef.current;
+      if (!circle) return;
+
+      const wasExtended = total > prevTotalRef.current;
+      prevTotalRef.current = total;
+
+      if (wasExtended) {
+        // Elastic recoil bounce when adding extra rest time (+30s)
+        gsap.to(circle, {
+          strokeDashoffset: targetOffset,
+          duration: 0.65,
+          ease: "back.out(2.2)",
+          overwrite: "auto",
+        });
+        if (textRef.current) {
+          gsap.fromTo(
+            textRef.current,
+            { scale: 1.25, color: "var(--color-accent-ink, #c4a484)" },
+            { scale: 1, color: "currentColor", duration: 0.45, ease: "back.out(2)" },
+          );
+        }
+      } else {
+        // Continuous, fluid countdown progression
+        gsap.to(circle, {
+          strokeDashoffset: targetOffset,
+          duration: 0.35,
+          ease: "power1.out",
+          overwrite: "auto",
+        });
+      }
+    },
+    { dependencies: [targetOffset, total] },
+  );
 
   return (
     <span className={cn("relative block", className)}>
       <svg viewBox="0 0 120 120" className="w-full -rotate-90">
         <circle cx="60" cy="60" r="52" fill="none" strokeWidth="4" className="stroke-cream/10" />
         <circle
+          ref={circleRef}
           cx="60"
           cy="60"
           r="52"
@@ -47,14 +94,12 @@ export function CountdownRing({
           strokeLinecap="round"
           pathLength={RING_LENGTH}
           strokeDasharray={RING_LENGTH}
-          strokeDashoffset={RING_LENGTH * (1 - progress)}
-          className={cn(
-            "transition-[stroke-dashoffset] duration-200 ease-linear",
-            running ? "stroke-accent-ink" : "stroke-cream/25",
-          )}
+          strokeDashoffset={targetOffset}
+          className={cn(running ? "stroke-accent-ink" : "stroke-cream/25")}
         />
       </svg>
       <span
+        ref={textRef}
         className={cn(
           "absolute inset-0 grid place-items-center font-sans font-semibold tabular-nums",
           running ? "text-cream" : "text-cream/50",

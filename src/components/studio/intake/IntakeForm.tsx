@@ -219,48 +219,39 @@ export function IntakeForm({
             className="space-y-4"
           >
             {activeSection.items.map((item) => {
-              if (!isFieldVisible(item)) return null;
               const hasError = Boolean(stepErrors[item.id]);
 
-              if (item.type === "checkbox") {
-                const isChecked =
-                  values[item.id] === "true" || values[item.id] === "yes";
-                return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "rounded-[1rem] p-4 ring-1 transition-colors",
-                      hasError
-                        ? "bg-silk/5 ring-silk/40"
-                        : "bg-cream/[0.04] ring-cream/10 hover:bg-cream/[0.07]",
-                    )}
-                  >
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(event) =>
-                          setValue(item.id, event.target.checked ? "true" : "")
-                        }
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded accent-[var(--accent-ink,#c4a484)]"
-                      />
-                      <span className="font-sans text-xs leading-relaxed text-cream/85 select-none sm:text-sm">
-                        {item.label}
-                        {item.required && (
-                          <span className="text-accent-ink ml-1">*</span>
-                        )}
-                      </span>
-                    </label>
-                    {item.hint && (
-                      <p className="mt-1 pl-7 text-xs text-cream/45">{item.hint}</p>
-                    )}
-                  </div>
-                );
-              }
-
-              return (
+              const fieldNode = item.type === "checkbox" ? (
+                <div
+                  className={cn(
+                    "rounded-[1rem] p-4 ring-1 transition-colors",
+                    hasError
+                      ? "bg-silk/5 ring-silk/40"
+                      : "bg-cream/[0.04] ring-cream/10 hover:bg-cream/[0.07]",
+                  )}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={values[item.id] === "true" || values[item.id] === "yes"}
+                      onChange={(event) =>
+                        setValue(item.id, event.target.checked ? "true" : "")
+                      }
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded accent-[var(--accent-ink,#c4a484)]"
+                    />
+                    <span className="font-sans text-xs leading-relaxed text-cream/85 select-none sm:text-sm">
+                      {item.label}
+                      {item.required && (
+                        <span className="text-accent-ink ml-1">*</span>
+                      )}
+                    </span>
+                  </label>
+                  {item.hint && (
+                    <p className="mt-1 pl-7 text-xs text-cream/45">{item.hint}</p>
+                  )}
+                </div>
+              ) : (
                 <Field
-                  key={item.id}
                   label={item.label}
                   htmlFor={item.id}
                   hint={item.hint || undefined}
@@ -375,6 +366,27 @@ export function IntakeForm({
                   )}
                 </Field>
               );
+
+              if (item.showIf) {
+                const isVisible = isFieldVisible(item);
+                return (
+                  <AnimatePresence key={item.id} initial={false}>
+                    {isVisible && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-1 pb-0.5">{fieldNode}</div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                );
+              }
+
+              return <div key={item.id}>{fieldNode}</div>;
             })}
           </motion.div>
         </AnimatePresence>

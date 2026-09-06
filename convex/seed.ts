@@ -525,6 +525,17 @@ export const intakeForm = internalMutation({
   },
 });
 
+export const clearIntakeResponses = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("intakeResponses").collect();
+    for (const row of all) {
+      await ctx.db.delete(row._id);
+    }
+    return all.length;
+  },
+});
+
 /**
  * Remove an account outright: the login, the studio row, the profile, and any
  * invites addressed to it. Admin-only, by the CLI — the app has no delete

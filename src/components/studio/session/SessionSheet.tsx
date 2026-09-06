@@ -310,11 +310,47 @@ function SheetSetRow({
   const t = useTranslations("Studio.session");
   const isDuration = step.tracking === "time" || step.tracking === "hold";
   const isDistance = step.tracking === "distance";
+  const rowRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const isMountedRef = useRef(false);
+
+  useGSAP(
+    () => {
+      if (!isMountedRef.current) {
+        isMountedRef.current = true;
+        return;
+      }
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const btn = btnRef.current;
+      const row = rowRef.current;
+      if (!btn) return;
+
+      if (done) {
+        // Energetic pop on completion + row flash
+        gsap.fromTo(btn, { scale: 0.75 }, { scale: 1, duration: 0.35, ease: "back.out(2.5)" });
+        const icon = btn.querySelector("svg");
+        if (icon) {
+          gsap.fromTo(icon, { scale: 0.4, rotate: -20 }, { scale: 1, rotate: 0, duration: 0.3, ease: "back.out(2)" });
+        }
+        if (row) {
+          gsap.fromTo(
+            row,
+            { backgroundColor: "rgba(143, 42, 58, 0.22)" },
+            { backgroundColor: "transparent", duration: 0.65, ease: "power2.out", clearProps: "backgroundColor" },
+          );
+        }
+      } else {
+        gsap.fromTo(btn, { scale: 1.15 }, { scale: 1, duration: 0.2, ease: "power2.out" });
+      }
+    },
+    { dependencies: [done] },
+  );
 
   return (
     <div
+      ref={rowRef}
       className={cn(
-        "grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 rounded-[0.75rem] px-1 py-0.5",
+        "grid grid-cols-[2rem_minmax(3.25rem,1fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_2.25rem] items-center gap-1.5 rounded-[0.75rem] px-1 py-0.5 transition-colors",
         current && "bg-cream/[0.04] ring-1 ring-cream/10",
         done && !current && "opacity-80",
       )}
@@ -388,6 +424,7 @@ function SheetSetRow({
       )}
 
       <button
+        ref={btnRef}
         type="button"
         onClick={onToggleDone}
         aria-pressed={done}

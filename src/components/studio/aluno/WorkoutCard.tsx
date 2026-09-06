@@ -42,7 +42,7 @@ export function WorkoutCard({
     // The edit link sits over the card's corner rather than under the card:
     // the card is one big submit button, so the link cannot be inside it, but
     // a bare text link floating under a tile read as belonging to nothing.
-    <li className="relative">
+    <li data-workout-card className="relative">
       <form action={startAction} className="h-full">
         <input type="hidden" name="workoutId" value={workout.id} />
         <CardSurface
