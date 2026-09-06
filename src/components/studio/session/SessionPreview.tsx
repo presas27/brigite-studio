@@ -8,7 +8,7 @@ import type { SessionStep } from "@/lib/studio/session-queue";
 import { isRestItem } from "@/lib/studio/types";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Icon } from "@/components/studio/coach/icons";
-import { buttonPrimary, eyebrow, heading } from "@/components/studio/theme";
+import { eyebrow, heading } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { youtubeId } from "@/lib/youtube";
 import { setsOf } from "./prescription";
@@ -40,12 +40,10 @@ export function SessionPreview({
   title,
   note,
   steps,
-  onStart,
 }: {
   title: string;
   note: string;
   steps: SessionStep[];
-  onStart: () => void;
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
@@ -90,7 +88,7 @@ export function SessionPreview({
   );
 
   return (
-    <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-6 pb-8">
+    <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-6">
       <div className="space-y-2">
         <p className={eyebrow}>{t("previewEyebrow")}</p>
         <h1 className={cn(heading, "text-[1.75rem] leading-[1.05] sm:text-[2.25rem]")}>{title}</h1>
@@ -136,11 +134,6 @@ export function SessionPreview({
           </ul>
         </section>
       ))}
-
-      <button type="button" onClick={onStart} className={cn(buttonPrimary, "h-14 w-full text-base")}>
-        {t("startNow")}
-        <Icon name="play" className="h-4 w-4" />
-      </button>
     </div>
   );
 }

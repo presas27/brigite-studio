@@ -183,9 +183,6 @@ export type OverviewDay = {
   done: number;
 };
 
-/** One slice of the focus ring: a `focus` value and how many sessions carry it. */
-export type OverviewFocus = { tag: string; count: number };
-
 /**
  * An upcoming session, flattened for the "a seguir" list. `videoUrl` is the
  * first clip anywhere in the session — enough to give the row a plate without
@@ -217,10 +214,6 @@ export type ClientOverview = {
   adherenceDone: number;
   adherenceTotal: number;
   adherencePct: number;
-  /** Every session of the adherence window, oldest first — the dot grid. */
-  dots: AssignmentStatus[];
-  /** This week's sessions grouped by focus, biggest slice first. */
-  focus: OverviewFocus[];
   /** Scheduled sessions after today, soonest first. */
   upcoming: OverviewSession[];
   weight: OverviewWeight | null;
@@ -326,14 +319,6 @@ export async function clientOverview(clientId: string): Promise<ClientOverview> 
   });
 
   const adherenceDone = window.filter((assignment) => assignment.status === "done").length;
-
-  const focusCounts = new Map<string, number>();
-  for (const assignment of thisWeek) {
-    const tag = (assignment.focus ?? "").trim();
-    if (!tag) continue;
-    focusCounts.set(tag, (focusCounts.get(tag) ?? 0) + 1);
-  }
-
   const upcoming = upcomingAssignments
     .filter((assignment) => assignment.status === "scheduled")
     .slice(0, UPCOMING_LIMIT)
@@ -350,10 +335,6 @@ export async function clientOverview(clientId: string): Promise<ClientOverview> 
     adherenceDone,
     adherenceTotal: window.length,
     adherencePct: window.length > 0 ? Math.round((adherenceDone / window.length) * 100) : 0,
-    dots: window.map((assignment) => assignment.status),
-    focus: [...focusCounts]
-      .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)),
     upcoming,
     weight:
       latest == null

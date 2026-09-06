@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
+import { Icon } from "@/components/studio/coach/icons";
 import type { Translate } from "@/components/studio/plan/types";
 import { chip, chipAccent, eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme";
 import type { ClientWorkout } from "@/lib/studio/types";
@@ -38,7 +39,10 @@ export function WorkoutCard({
   editHref?: string | null;
 }) {
   return (
-    <li className="flex flex-col gap-2">
+    // The edit link sits over the card's corner rather than under the card:
+    // the card is one big submit button, so the link cannot be inside it, but
+    // a bare text link floating under a tile read as belonging to nothing.
+    <li className="relative">
       <form action={startAction} className="h-full">
         <input type="hidden" name="workoutId" value={workout.id} />
         <CardSurface
@@ -46,12 +50,18 @@ export function WorkoutCard({
           lastDoneLabel={lastDoneLabel}
           weekdayLabel={weekdayLabel}
           doneToday={doneToday}
+          editable={editHref != null}
           t={t}
         />
       </form>
       {editHref && (
-        <Link href={editHref} className="link-grow self-start font-sans text-xs text-cream/60 hover:text-cream">
-          {t("workouts.edit")}
+        <Link
+          href={editHref}
+          aria-label={t("workouts.edit")}
+          title={t("workouts.edit")}
+          className="absolute top-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream"
+        >
+          <Icon name="settings" className="h-4 w-4" />
         </Link>
       )}
     </li>
@@ -63,12 +73,15 @@ function CardSurface({
   lastDoneLabel,
   weekdayLabel,
   doneToday,
+  editable,
   t,
 }: {
   workout: ClientWorkout;
   lastDoneLabel: string | null;
   weekdayLabel: string | null;
   doneToday: boolean;
+  /** An edit control sits over the top-right corner; the top row keeps clear of it. */
+  editable: boolean;
   t: Translate;
 }) {
   const { pending } = useFormStatus();
@@ -91,7 +104,7 @@ function CardSurface({
         workout.startedToday && "ring-caramel/40",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className={cn("flex items-start justify-between gap-3", editable && "pr-8")}>
         <p className={cn(eyebrow, "truncate")}>{workout.phaseName ?? t("workouts.noPhase")}</p>
         {workout.startedToday ? (
           <span className={chipAccent}>{t("workouts.inProgress")}</span>

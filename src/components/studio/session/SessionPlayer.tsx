@@ -10,7 +10,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { buildSessionQueue, type SessionStep } from "@/lib/studio/session-queue";
 import { isRestItem, type Assignment, type AssignmentStatus, type SetLog } from "@/lib/studio/types";
-import { EffortDial } from "./EffortDial";
+import { EffortScale } from "./EffortScale";
 import { ExerciseNoteButton } from "./ExerciseNoteButton";
 import { ExerciseStage } from "./ExerciseStage";
 import { ExitSheet } from "./ExitSheet";
@@ -551,16 +551,29 @@ export function SessionPlayer({
 
           {/* The map of the session is the obvious thing to press when you want
               to see the map of the session — so the bar opens the list, and
-              there is no separate control competing with it. On a phone this
-              lives in the bottom panel instead, where her thumb already is. */}
+              there is no separate control competing with it. A wide screen
+              draws it as segments; a phone as a hairline with the count and
+              the list glyph, filling the toolbar with the one thing the panel
+              below no longer needs to carry. */}
+          {phase !== "preview" && (
           <button
             type="button"
             onClick={() => setListOpen(true)}
             aria-label={t("openList")}
-            className="hidden min-w-0 flex-1 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink md:order-3 md:block"
+            className="order-1 mr-auto flex min-w-0 flex-1 items-center gap-3 rounded-[4px] py-1 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink md:order-3 md:mr-0 md:block"
           >
-            <StepProgress steps={steps} currentIndex={index} isLogged={isLogged} />
+            <span className="hidden md:block">
+              <StepProgress steps={steps} currentIndex={index} isLogged={isLogged} />
+            </span>
+            <span className="min-w-0 flex-1 md:hidden">
+              <StepProgress variant="line" steps={steps} currentIndex={index} isLogged={isLogged} />
+            </span>
+            <span className="shrink-0 font-sans text-xs tabular-nums text-cream/50 md:hidden">
+              {index + 1}/{steps.length}
+            </span>
+            <Icon name="list" className="h-4 w-4 shrink-0 text-cream/50 md:hidden" />
           </button>
+          )}
 
           <span className="hidden shrink-0 font-sans text-xs tabular-nums text-cream/50 md:order-4 md:block">
             {index + 1}/{steps.length}
@@ -584,20 +597,18 @@ export function SessionPlayer({
 
       <div
         className={cn(
-          "flex flex-1 flex-col px-5 md:px-8 md:pb-12 lg:px-10",
-          // Room for whichever bar is pinned to the bottom of a phone: the
-          // exercise panel (numbers or clock — they come out the same height,
-          // both being one row of controls under the fields) or the slimmer
-          // rest/effort bar. A reserve much bigger than the bar it clears
-          // reads as the screen being shoved upwards, so it is measured, not
-          // padded generously.
-          phase === "exercise" && view === "sheet"
-            ? "pb-[6rem]"
-            : phase === "exercise"
-              ? "pb-[15rem]"
-              : phase === "preview"
-                ? "pb-8"
-                : "pb-[7.5rem]",
+          "flex flex-1 flex-col px-5 md:px-8 lg:px-10",
+          // Room for whichever bar is pinned to the bottom: the exercise
+          // panel on a phone (numbers or clock — one row of controls under
+          // the fields), the start/finish bar of the preview and the sheet at
+          // every width, or the slimmer rest/effort bar on a phone. A reserve
+          // much bigger than the bar it clears reads as the screen being
+          // shoved upwards, so it is measured, not padded generously.
+          phase === "exercise" && view === "focus"
+            ? "pb-[15rem] md:pb-12"
+            : phase === "exercise" || phase === "preview"
+              ? "pb-[6.5rem]"
+              : "pb-[7.5rem] md:pb-12",
         )}
       >
         <main
@@ -619,12 +630,7 @@ export function SessionPlayer({
         >
 
           {phase === "preview" && (
-            <SessionPreview
-              title={current.snapshot.name}
-              note={coachNote}
-              steps={steps}
-              onStart={() => void handleStart()}
-            />
+            <SessionPreview title={current.snapshot.name} note={coachNote} steps={steps} />
           )}
 
           {phase === "exercise" && step && isRestItem(step.item) && view === "focus" && (
@@ -663,10 +669,6 @@ export function SessionPlayer({
                 onChange={updateSet}
                 onFlush={flushSet}
                 onJump={goTo}
-                onFinish={() => {
-                  if (step) flushSet(step.itemId, step.setIndex);
-                  setPhase("effort");
-                }}
                 onStartRest={(restStep) => {
                   flushSet(restStep.itemId, restStep.setIndex);
                   const from = steps.findIndex((candidate) => candidate.key === restStep.key);
@@ -715,20 +717,6 @@ export function SessionPlayer({
               )}
               actions={stepActions}
               viewToggle={<SessionViewToggle value={view} onChange={switchView} />}
-              progress={
-                <div className="flex items-center gap-3">
-                  <StepProgress
-                    variant="line"
-                    steps={steps}
-                    currentIndex={index}
-                    isLogged={isLogged}
-                  />
-                  <span className="shrink-0 font-sans text-xs tabular-nums text-cream/45">
-                    {index + 1}/{steps.length}
-                  </span>
-                </div>
-              }
-              onOpenList={() => setListOpen(true)}
               onStartRest={
                 step.item.restSeconds > 0
                   ? () => {
@@ -813,7 +801,7 @@ export function SessionPlayer({
                   {t("doneSets", { done: doneCount, total: steps.length })}
                 </p>
               </div>
-              <EffortDial value={effort} onChange={setEffort} />
+              <EffortScale value={effort} onChange={setEffort} />
               <ExerciseNoteButton
                 coached={coached}
                 exerciseName={current.snapshot.name}
@@ -832,12 +820,48 @@ export function SessionPlayer({
         </main>
       </div>
 
-      {/* Rest and effort keep a bar pinned to the bottom of a phone; the
-          exercise screen has its own panel down there and needs none. On a wide
-          screen every phase carries its controls inside its own composition. */}
-      {phase !== "exercise" && phase !== "preview" && (
-        <footer className="fixed inset-x-0 bottom-0 z-20 bg-background/90 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm md:hidden">
+      {/* The bar pinned to the bottom. The preview's "start" and the sheet's
+          "finish" live here at every width — both screens scroll, and the one
+          button each of them is for must never be somewhere below the fold.
+          Rest and effort pin theirs on a phone only; a wide screen carries
+          them inside the composition. The focused exercise has its own panel
+          down there and needs none. */}
+      {(phase === "preview" || phase === "rest" || phase === "effort" || view === "sheet") && (
+        <footer
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-20 bg-background/90 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm md:px-8 lg:px-10",
+            (phase === "rest" || phase === "effort") && "md:hidden",
+          )}
+        >
           <div className={cn(FRAME, "flex items-center gap-3")}>
+            {phase === "preview" && (
+              <button
+                type="button"
+                onClick={() => void handleStart()}
+                className={cn(buttonPrimary, "mx-auto h-14 w-full max-w-lg text-base")}
+              >
+                {t("startNow")}
+                <Icon name="play" className="h-4 w-4" />
+              </button>
+            )}
+            {phase === "exercise" && view === "sheet" && (
+              <div className="mx-auto flex w-full max-w-lg items-center gap-4">
+                <span className="shrink-0 font-sans text-sm tabular-nums text-cream/55">
+                  {t("doneSets", { done: doneCount, total: steps.length })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (step) flushSet(step.itemId, step.setIndex);
+                    setPhase("effort");
+                  }}
+                  className={cn(buttonPrimary, "h-14 flex-1 text-base")}
+                >
+                  {t("lastSet")}
+                  <Icon name="chevron" className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             {phase === "rest" && restActions}
             {phase === "effort" && effortActions}
           </div>

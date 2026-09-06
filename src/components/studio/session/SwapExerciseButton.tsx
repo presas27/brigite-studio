@@ -11,6 +11,7 @@ import { Modal } from "@/components/studio/Modal";
 import { buttonGhost, buttonPrimary, eyebrow, field } from "@/components/studio/theme";
 import type { ItemSwap } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
+import { youtubeId } from "@/lib/youtube";
 
 /**
  * "Swap exercise" on the set in front of her, and the picker behind it.
@@ -144,14 +145,20 @@ export function SwapExerciseButton({
         ) : (
           <>
             {!search.trim() && <p className={cn(eyebrow, "mt-4")}>{t("swapSuggested")}</p>}
+            {/* A list, not a grid of cards: nearly every movement has no video
+                yet, and a card whose picture is a plate is a card that shows
+                less than a line does. A row carries the whole name and the
+                tags that made it a suggestion; the thumbnail only when there
+                is one. */}
             <ul
               role="listbox"
               aria-label={t("swapSearch")}
-              className="mt-3 grid max-h-[40vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3"
+              className="mt-3 max-h-[44vh] space-y-1 overflow-y-auto pr-1"
             >
               {options.map((option) => {
                 const selected = picked?.id === option.id;
                 const original = replaces?.exerciseId === option.id;
+                const thumb = option.videoUrl && youtubeId(option.videoUrl) ? option.videoUrl : null;
                 return (
                   <li key={option.id}>
                     <button
@@ -160,19 +167,34 @@ export function SwapExerciseButton({
                       aria-selected={selected}
                       onClick={() => setPicked({ id: option.id, name: option.name })}
                       className={cn(
-                        "relative w-full rounded-[1rem] bg-cream/[0.04] p-2 text-left ring-1 transition",
-                        selected ? "ring-2 ring-accent-ink" : "ring-cream/10 hover:ring-caramel/50",
+                        "flex w-full items-center gap-3 rounded-[0.85rem] px-3 py-2.5 text-left ring-1 transition",
+                        selected
+                          ? "bg-caramel/15 ring-caramel/40"
+                          : "ring-transparent hover:bg-cream/5 hover:ring-cream/10",
                       )}
                     >
-                      <ExerciseThumb videoUrl={option.videoUrl} className="aspect-[3/2] w-full" />
-                      <span className="mt-2 block truncate px-1 font-sans text-sm font-semibold text-cream">
-                        {option.name}
-                      </span>
-                      {original && (
-                        <span className="absolute top-3 right-3 rounded-full bg-accent-fill px-2 py-0.5 font-sans text-[0.65rem] leading-none font-semibold text-ink">
-                          {t("swapOriginal")}
-                        </span>
+                      {thumb && (
+                        <ExerciseThumb videoUrl={thumb} className="h-10 w-14 shrink-0 rounded-[0.6rem]" />
                       )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-sans text-sm font-semibold leading-snug text-cream">
+                          {option.name}
+                        </span>
+                        {(option.tags.length > 0 || original) && (
+                          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-sans text-xs text-cream/45">
+                            {original && (
+                              <span className="font-semibold text-accent-ink">{t("swapOriginal")}</span>
+                            )}
+                            {option.tags.slice(0, 3).map((tag) => (
+                              <span key={tag}>{tag}</span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                      <Icon
+                        name="check"
+                        className={cn("h-4 w-4 shrink-0 text-accent-ink transition-opacity", selected ? "opacity-100" : "opacity-0")}
+                      />
                     </button>
                   </li>
                 );

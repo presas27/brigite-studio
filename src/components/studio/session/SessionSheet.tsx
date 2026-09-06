@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
 import { isRestItem, type BlockKind, type SetLog, type WorkoutItem } from "@/lib/studio/types";
 import { Icon } from "@/components/studio/coach/icons";
-import { buttonPrimary, eyebrow } from "@/components/studio/theme";
+import { eyebrow } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { setsOf } from "./prescription";
 import { EMPTY_SET, isFullyEmpty, type SetValue } from "./useSessionLog";
@@ -87,7 +87,6 @@ export function SessionSheet({
   onChange,
   onFlush,
   onJump,
-  onFinish,
   onStartRest,
   renderNote,
   renderSwap,
@@ -99,7 +98,6 @@ export function SessionSheet({
   onChange: (itemId: string, setIndex: number, value: SetValue) => void;
   onFlush: (itemId: string, setIndex: number) => void;
   onJump: (index: number) => void;
-  onFinish: () => void;
   onStartRest?: (step: SessionStep) => void;
   renderNote: (itemId: string, exerciseId: string, name: string) => React.ReactNode;
   renderSwap: (itemId: string, name: string, replaces: WorkoutItem["replaces"]) => React.ReactNode;
@@ -135,7 +133,7 @@ export function SessionSheet({
   }, [currentKey]);
 
   return (
-    <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-5 pb-28">
+    <div ref={scope} className="mx-auto flex w-full max-w-lg flex-col gap-5">
       {blocks.map((block) => (
         <section
           key={block.id}
@@ -261,11 +259,6 @@ export function SessionSheet({
           </ul>
         </section>
       ))}
-
-      <button type="button" onClick={onFinish} className={cn(buttonPrimary, "h-14 w-full text-base")}>
-        {t("lastSet")}
-        <Icon name="chevron" className="h-4 w-4" />
-      </button>
     </div>
   );
 }

@@ -118,29 +118,40 @@ export function ExitSheet({
     }
   }
 
+  // The bordeaux button is the one she is being invited to press, so it has
+  // to be the honest one. With sets on the board, submit; with nothing logged
+  // there is nothing to submit yet, and "leave and come back" is the answer
+  // — submitting an empty session is still there, one tier down.
+  const nothingLogged = doneCount === 0;
+  const leave = (
+    <button
+      key="leave"
+      type="button"
+      disabled={busy != null}
+      onClick={onLeave}
+      className={cn(nothingLogged ? buttonPrimary : buttonGhost, "w-full")}
+    >
+      {t("leaveForLater")}
+    </button>
+  );
+  const submit = (
+    <button
+      key="submit"
+      type="button"
+      disabled={busy != null}
+      onClick={onSubmit}
+      className={cn(nothingLogged ? buttonGhost : buttonPrimary, "w-full")}
+    >
+      {t("submitWorkout")}
+    </button>
+  );
+
   return (
     <Modal open={open} onCloseAction={onCloseAction} title={t("exitTitle")} width="26rem">
       <div className="space-y-5">
         <p className={muted}>{t("exitLead", { done: doneCount, total: totalCount })}</p>
 
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={busy != null}
-            onClick={onSubmit}
-            className={cn(buttonPrimary, "w-full")}
-          >
-            {t("submitWorkout")}
-          </button>
-          <button
-            type="button"
-            disabled={busy != null}
-            onClick={onLeave}
-            className={cn(buttonGhost, "w-full")}
-          >
-            {t("leaveForLater")}
-          </button>
-        </div>
+        <div className="flex flex-col gap-2">{nothingLogged ? [leave, submit] : [submit, leave]}</div>
 
         {failed && (
           <p role="alert" className="text-sm text-silk">

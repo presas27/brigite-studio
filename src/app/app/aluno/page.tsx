@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { AdherenceCard } from "@/components/studio/aluno/overview/AdherenceCard";
-import { FocusRing } from "@/components/studio/aluno/overview/FocusRing";
+import { WeekProgressCard } from "@/components/studio/aluno/overview/WeekProgressCard";
 import { StreakCard } from "@/components/studio/aluno/overview/StreakCard";
 import { TodayCard } from "@/components/studio/aluno/overview/TodayCard";
 import { WeekCard } from "@/components/studio/aluno/overview/WeekCard";
@@ -72,10 +72,9 @@ export default async function AlunoHojePage() {
             done={overview.adherenceDone}
             total={overview.adherenceTotal}
             pct={overview.adherencePct}
-            dots={overview.dots}
           />
 
-          <FocusRing focus={overview.focus} />
+          <WeekProgressCard week={overview.week} next={todayOpen ?? next} today={today} />
 
           <TodayCard
             session={hero}

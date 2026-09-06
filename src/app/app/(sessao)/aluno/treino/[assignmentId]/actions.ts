@@ -1,6 +1,5 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { requireClientAccess } from "@/lib/studio/auth";
 import {
@@ -145,6 +144,11 @@ export async function beginSession(assignmentId: string): Promise<void> {
  * reason to refuse the write. `extraRestSeconds` is how much she added to the
  * prescribed rests, which is Sara's signal that a session was pitched too hard.
  * A session submitted half-finished is still a session that happened.
+ *
+ * No `refresh()`, same as `discardSession`: the player draws the summary from
+ * its own state the moment this resolves, and the live subscription carries
+ * the new status; a route refresh here was one more server round trip between
+ * "finish" and the summary, for a page that nothing on it re-reads.
  */
 export async function finishSession(
   assignmentId: string,
@@ -155,13 +159,11 @@ export async function finishSession(
     input.effort == null || Number.isNaN(input.effort) ? null : input.effort;
   const extraRestSeconds = Number.isFinite(input.extraRestSeconds) ? input.extraRestSeconds : 0;
   await completeAssignment(assignment.id, { effort, extraRestSeconds });
-  refresh();
 }
 
 export async function skipSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await setAssignmentStatus(assignment.id, "skipped");
-  refresh();
 }
 
 /**
@@ -170,10 +172,10 @@ export async function skipSession(assignmentId: string): Promise<void> {
  * skipping — "I opened this by mistake" and "I could not train this week" are
  * different facts, and only the second one is Sara's business.
  *
- * No `refresh()` here, unlike its siblings: the player leaves this route the
- * moment the discard lands, and refreshing the page on the way out re-rendered
- * it as an untouched session for one frame under the sheet — the workout
- * flashing back before the exit. `/app/aluno` is dynamic and renders fresh.
+ * No `refresh()` here either: the player leaves this route the moment the
+ * discard lands, and refreshing the page on the way out re-rendered it as an
+ * untouched session for one frame under the sheet — the workout flashing
+ * back before the exit. `/app/aluno` is dynamic and renders fresh.
  */
 export async function discardSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);

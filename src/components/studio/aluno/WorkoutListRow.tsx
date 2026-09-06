@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
+import { Icon } from "@/components/studio/coach/icons";
 import type { Translate } from "@/components/studio/plan/types";
 import { chip, chipAccent, eyebrow, muted, surfaceLink } from "@/components/studio/theme";
 import type { ClientWorkout } from "@/lib/studio/types";
@@ -37,8 +38,13 @@ export function WorkoutListRow({
         />
       </form>
       {editHref && (
-        <Link href={editHref} className="link-grow shrink-0 font-sans text-xs text-cream/60 hover:text-cream">
-          {t("workouts.edit")}
+        <Link
+          href={editHref}
+          aria-label={t("workouts.edit")}
+          title={t("workouts.edit")}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream"
+        >
+          <Icon name="settings" className="h-4 w-4" />
         </Link>
       )}
     </li>

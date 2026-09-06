@@ -366,12 +366,13 @@
         "of": "{done} of {total} sessions done",
         "empty": "No sessions booked in the last month."
       },
-      "focus": {
-        "title": "This week's focus",
-        "sessions": "Sessions",
-        "other": "Other",
-        "empty": "No sessions booked this week yet.",
-        "aria": "This week's sessions split by focus."
+      "weekProgress": {
+        "title": "This week",
+        "of": "{done} of {total} sessions done",
+        "next": "Next: {when} · {name}",
+        "missed": "{count, plural, =1 {# left undone} other {# left undone}}.",
+        "allDone": "Week closed. Nothing left to do.",
+        "none": "No sessions booked this week."
       },
       "weight": {
         "title": "Weight",
@@ -435,8 +436,7 @@
         "emptyHint": "As soon as your coach builds your plan, every workout shows up here.",
         "emptyHintSolo": "Create the first one with the button above: pick exercises from the library and go.",
         "leadSolo": "The workouts you built. Do any of them, on any day.",
-        "edit": "Edit workout",
-        "note": "Any workout, any day. The plan shows the suggested day for each one."
+        "edit": "Edit workout"
       }
     },
     "clients": {
@@ -959,6 +959,7 @@
       "clientNotes": "Client notes",
       "noteOn": "{exercise} · set {set}",
       "notLogged": "Set not logged",
+      "notDone": "Not done",
       "block": {
         "superset": "Superset",
         "circuit": "Circuit",

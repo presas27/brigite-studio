@@ -41,8 +41,6 @@ export function ExerciseStage({
   actions,
   viewToggle,
   quickActions,
-  progress,
-  onOpenList,
   note,
   onStartRest,
   onChange,
@@ -61,9 +59,6 @@ export function ExerciseStage({
    * screen has room for the labelled pair, which arrives through `note`.
    */
   quickActions?: React.ReactNode;
-  /** The session's progress, shown in the panel where the header has none. */
-  progress: React.ReactNode;
-  onOpenList: () => void;
   /**
    * The client's note on this exercise, as a slot. Passed in rather than built
    * here because the note is per session and the stage only knows the step —
@@ -238,7 +233,7 @@ export function ExerciseStage({
               actions. The toolbar above is left with just the cross. A wide
               screen keeps the switch in the toolbar and the labelled actions
               under the cues, so both slots sit out there. */}
-          <div className="flex items-start justify-between gap-3 md:block">
+          <div className="flex items-center justify-between gap-3 md:block">
             <h1
               // Anton set tight enough to look right in English drops the tilde of
               // BASTÃO into the line above it. Portuguese titles are full of Ã, Ç
@@ -339,20 +334,6 @@ export function ExerciseStage({
                 {t("startRest", { seconds: step.item.restSeconds })}
               </button>
             )}
-          </div>
-
-          {/* The line and the way into the list, on one row: the map of the
-              session and the button that opens it belong to each other. */}
-          <div className="flex items-center gap-3 md:hidden">
-            <div className="min-w-0 flex-1">{progress}</div>
-            <button
-              type="button"
-              onClick={onOpenList}
-              aria-label={t("openList")}
-              className="-m-2 shrink-0 p-2 text-cream/50 transition-colors hover:text-cream"
-            >
-              <Icon name="list" className="h-4 w-4" />
-            </button>
           </div>
 
           <div className="flex items-center gap-3 md:order-4 md:mt-auto md:pt-4">{actions}</div>

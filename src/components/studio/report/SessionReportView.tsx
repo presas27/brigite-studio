@@ -204,11 +204,21 @@ function ExerciseReport({
   t: Translate;
   common: Translate;
 }) {
+  // Nothing logged on any set means she went past it. Said on the line with
+  // the name, not only as a row of dashed tiles: the dashes are the evidence,
+  // the chip is the verdict, and a coach scanning ten exercises reads chips.
+  const notDone = entry.sets.every((set) => set.log == null);
+
   return (
     <article className="p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="min-w-0 font-sans text-[0.95rem] font-semibold text-cream">
+        <h3 className="flex min-w-0 flex-wrap items-baseline gap-x-2 font-sans text-[0.95rem] font-semibold text-cream">
           {entry.item.exerciseName}
+          {notDone && (
+            <span className="rounded-full bg-silk/10 px-2 py-0.5 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.06em] text-silk">
+              {t("notDone")}
+            </span>
+          )}
         </h3>
         <p className={cn(eyebrow, "shrink-0 tabular-nums")}>
           {prescription(entry.item, entry.interleaved)}

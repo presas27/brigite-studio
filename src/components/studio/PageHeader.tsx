@@ -33,7 +33,10 @@ export async function PageHeader({ title, lead, action, backHref, className }: P
 
   return (
     <header className={cn("flex flex-wrap items-start justify-between gap-x-4 gap-y-3", className)}>
-      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+      {/* `flex-1 min-w-0`: the lead's natural width is a whole sentence, and
+          without this the block claimed it, shoving even a 44px action onto
+          its own line under the title on a phone. */}
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
         {backHref && (
           <Link
             href={backHref}

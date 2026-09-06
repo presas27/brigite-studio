@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { formatDayKey } from "@/components/studio/format";
-import { eyebrow, muted } from "@/components/studio/theme";
+import { eyebrow } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import type { ClientWorkout } from "@/lib/studio/types";
 import { capitalize, searchKey } from "@/lib/utils";
@@ -124,9 +124,6 @@ export function WorkoutLibrary({
               ))}
             </ul>
           )}
-          {/* Said once, at the end: the day on a card is Sara's suggestion, and
-              nothing here waits for it. */}
-          <p className={muted}>{t("workouts.note")}</p>
         </>
       )}
     </div>

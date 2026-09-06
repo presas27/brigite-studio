@@ -366,12 +366,13 @@
         "of": "{done} de {total} treinos feitos",
         "empty": "Sem treinos marcados no último mês."
       },
-      "focus": {
-        "title": "Foco da semana",
-        "sessions": "Treinos",
-        "other": "Outros",
-        "empty": "A semana ainda não tem treinos marcados.",
-        "aria": "Treinos da semana repartidos por foco."
+      "weekProgress": {
+        "title": "Esta semana",
+        "of": "{done} de {total} treinos feitos",
+        "next": "Próximo: {when} · {name}",
+        "missed": "{count, plural, =1 {# ficou por fazer} other {# ficaram por fazer}}.",
+        "allDone": "Semana fechada. Não falta nada.",
+        "none": "Sem treinos marcados esta semana."
       },
       "weight": {
         "title": "Peso",
@@ -435,8 +436,7 @@
         "emptyHint": "Assim que o teu treinador montar o teu plano, todos os treinos aparecem aqui.",
         "emptyHintSolo": "Cria o primeiro com o botão acima: escolhe exercícios da biblioteca e começa.",
         "leadSolo": "Os treinos que montaste. Faz qualquer um, em qualquer dia.",
-        "edit": "Editar treino",
-        "note": "Qualquer treino, qualquer dia. O plano mostra o dia sugerido para cada um."
+        "edit": "Editar treino"
       }
     },
     "clients": {
@@ -959,6 +959,7 @@
       "clientNotes": "Notas do aluno",
       "noteOn": "{exercise} · série {set}",
       "notLogged": "Série não registada",
+      "notDone": "Não feito",
       "block": {
         "superset": "Superset",
         "circuit": "Circuito",
