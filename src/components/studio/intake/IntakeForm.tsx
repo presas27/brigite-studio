@@ -6,9 +6,9 @@ import { useTranslations } from "next-intl";
 import { submitIntakeAndAccept } from "@/app/app/entrar/actions";
 import { Field } from "@/components/studio/Field";
 import { Icon } from "@/components/studio/coach/icons";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { buttonGhost, buttonPrimary, field, heading, muted } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
-
 export type IntakeFieldView = {
   id: string;
   type:
@@ -209,6 +209,9 @@ export function IntakeForm({
         }}
         className="space-y-4"
       >
+        <MorphHeight
+          contentKey={`${currentStep}:${activeSection.items.filter(isFieldVisible).map((item) => item.id).join("|")}`}
+        >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -390,6 +393,7 @@ export function IntakeForm({
             })}
           </motion.div>
         </AnimatePresence>
+        </MorphHeight>
 
         {failed && (
           <p role="alert" className="font-sans text-sm text-silk pt-2">

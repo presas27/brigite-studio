@@ -1,5 +1,8 @@
+"use client";
+
 import { capitalize, cn } from "@/lib/utils";
 import { formatDayNumber, formatLongDate, shortWeekday } from "../format";
+import { MorphHeight } from "../MorphHeight";
 import type { Translate } from "../plan/types";
 import {
   firstName,
@@ -119,6 +122,7 @@ export function CalendarDay({
         </span>
       )}
 
+      <MorphHeight contentKey={`${shown.length}:${hidden}`} fade={false}>
       <span className={cn("flex-col gap-1", isMonth ? "hidden sm:flex" : "flex")}>
         {shown.map((session) => (
           <span
@@ -162,6 +166,7 @@ export function CalendarDay({
           </span>
         )}
       </span>
+      </MorphHeight>
     </button>
   );
 }

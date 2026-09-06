@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
@@ -51,6 +52,7 @@ export function ClientLibrary({
         onViewChangeAction={setView}
       />
 
+      <MorphHeight contentKey={`${view}:${plan ?? ""}:${results.length === 0 ? "empty" : "list"}`}>
       {results.length === 0 ? (
         <Empty title={t("noResults")} />
       ) : (
@@ -71,6 +73,7 @@ export function ClientLibrary({
           )}
         </>
       )}
+      </MorphHeight>
     </div>
   );
 }

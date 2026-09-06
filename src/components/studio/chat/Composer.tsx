@@ -3,9 +3,9 @@
 import { useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { SubmitButton } from "@/components/studio/SubmitButton";
+import { AutoResizeTextarea } from "@/components/studio/AutoResizeTextarea";
 import { field } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
-
 export type ComposerState = { ok: boolean; error?: "required" | "tooLong" };
 
 const initial: ComposerState = { ok: false };
@@ -38,13 +38,13 @@ export function Composer({
   return (
     <div className="space-y-2">
       <form ref={formRef} action={formAction} className="flex items-end gap-2">
-        <textarea
+        <AutoResizeTextarea
           name="body"
           rows={2}
           required
           maxLength={MAX_MESSAGE_LENGTH}
           placeholder={t("placeholder")}
-          className={cn(field, "min-h-11 flex-1 resize-none py-2.5")}
+          className={cn(field, "min-h-11 flex-1 py-2.5")}
         />
         <SubmitButton pendingLabel={common("sending")} className="shrink-0">
           {common("send")}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { ShelfTabs } from "@/components/studio/ShelfTabs";
 import { muted } from "@/components/studio/theme";
@@ -90,9 +91,8 @@ export function WorkoutLibrary({
         onViewChangeAction={setView}
       />
 
+      <MorphHeight contentKey={`${shelf}:${view}:${focus ?? ""}:${query}:${results.length === 0 ? "empty" : "list"}`}>
       {results.length === 0 ? (
-        // An empty shelf and an empty result set are different problems: one
-        // needs explaining, the other needs the search widening.
         searching ? (
           <Empty title={t("noResults")} />
         ) : (
@@ -119,6 +119,7 @@ export function WorkoutLibrary({
           )}
         </>
       )}
+      </MorphHeight>
     </div>
   );
 }

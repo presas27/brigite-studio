@@ -6,8 +6,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/studio/coach/icons";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { cn } from "@/lib/utils";
-
 async function signOut() {
   await authClient.signOut();
   window.location.assign("/app/entrar");
@@ -93,6 +93,7 @@ export function AccountMenu({
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="absolute right-0 z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-[1rem] bg-ink-lift ring-1 ring-cream/12 shadow-[0_24px_48px_-20px_rgba(18,17,20,0.65)]"
           >
+            <MorphHeight appear fade={false} contentKey="menu">
             <div className="border-b border-cream/10 px-4 py-3.5">
               <p className="truncate font-sans text-sm font-semibold text-cream">{name}</p>
               <p className="mt-0.5 truncate font-sans text-xs text-cream/45">{email}</p>
@@ -119,6 +120,7 @@ export function AccountMenu({
                 {t("signOut")}
               </button>
             </div>
+            </MorphHeight>
           </motion.div>
         )}
       </AnimatePresence>

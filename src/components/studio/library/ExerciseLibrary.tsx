@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
@@ -86,6 +87,7 @@ export function ExerciseLibrary({
         onViewChangeAction={setView}
       />
 
+      <MorphHeight contentKey={`${view}:${tag ?? ""}:${query}:${results.length === 0 ? "empty" : "list"}`}>
       {results.length === 0 ? (
         <Empty title={t("noResults")} />
       ) : (
@@ -110,6 +112,7 @@ export function ExerciseLibrary({
           )}
         </>
       )}
+      </MorphHeight>
     </div>
   );
 }

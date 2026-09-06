@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { ShelfTabs } from "@/components/studio/ShelfTabs";
 import { chip, muted, surfaceLink } from "@/components/studio/theme";
 import { formatEditedOn } from "@/components/studio/format";
@@ -72,9 +73,8 @@ export function ProgramLibrary({
         className="w-full rounded-[1rem] bg-cream/5 px-4 py-3 font-sans text-base text-cream ring-1 ring-cream/15 outline-none transition placeholder:text-cream/35 focus:ring-2 focus:ring-accent-ink/70"
       />
 
+      <MorphHeight contentKey={`${shelf}:${query}:${results.length === 0 ? "empty" : "list"}`}>
       {results.length === 0 ? (
-        // An empty shelf and an empty search are different problems: one needs
-        // explaining, the other needs the search widening.
         query.trim() ? (
           <Empty title={t("noResults")} />
         ) : (
@@ -123,6 +123,7 @@ export function ProgramLibrary({
           </ul>
         </>
       )}
+      </MorphHeight>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { SessionPreview } from "./SessionPreview";
 import { SessionSheet } from "./SessionSheet";
 import { SessionSummary } from "./SessionSummary";
 import { SessionViewToggle, type SessionView } from "./SessionViewToggle";
+import { MorphHeight } from "../MorphHeight";
 import { StepProgress } from "./StepProgress";
 import { SwapExerciseButton } from "./SwapExerciseButton";
 import {
@@ -269,6 +270,7 @@ export function SessionPlayer({
 
   useEffect(() => {
     const stored = Number(window.localStorage.getItem(extraRestKey));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from localStorage after mount
     if (Number.isFinite(stored) && stored > 0) setExtraRest(stored);
   }, [extraRestKey]);
 
@@ -628,7 +630,7 @@ export function SessionPlayer({
                   : "justify-center",
           )}
         >
-
+          <MorphHeight contentKey={`${phase}:${view}:${step?.key ?? ""}`} fade={false}>
           {phase === "preview" && (
             <SessionPreview title={current.snapshot.name} note={coachNote} steps={steps} />
           )}
@@ -817,6 +819,7 @@ export function SessionPlayer({
               <div className="hidden items-center justify-center gap-3 md:flex">{effortActions}</div>
             </div>
           )}
+          </MorphHeight>
         </main>
       </div>
 

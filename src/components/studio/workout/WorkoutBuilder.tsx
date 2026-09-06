@@ -12,6 +12,7 @@ import {
 } from "@/app/app/coach/treinos/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { buttonGhost, buttonQuiet, eyebrow, field, heading, muted, surface } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import { ViewToggle } from "@/components/studio/ViewToggle";
@@ -203,34 +204,41 @@ export function WorkoutBuilder({
           </div>
         </div>
 
-        {blocks.length === 0 && <Empty title={t("noExercises")} hint={t("noExercisesHint")} />}
-
-        <div className="space-y-3">
-          {blocks.map((block, index) => (
-            <BlockCard
-              key={block.id}
-              workoutId={workout.id}
-              block={block}
-              exercises={exercises}
-              canMoveUp={index > 0}
-              canMoveDown={index < blocks.length - 1}
-              onMoveAction={(delta) => moveBlock(block.id, delta)}
-              selection={{ selected: selectedIds, onToggleAction: toggleSelected }}
-              view={view}
-              draggingId={dragging?.itemId ?? null}
-              overId={overId}
-              onDragStartAction={(itemId, blockId) => setDragging({ itemId, blockId })}
-              onDragEndAction={() => {
-                setDragging(null);
-                setOverId(null);
-              }}
-              onDragOverItemAction={setOverId}
-              onDropOnItemAction={drop}
-              onDropAtEndAction={(blockId) => drop(blockId, "end")}
-              onNudgeAction={nudge}
-            />
-          ))}
-        </div>
+        <MorphHeight
+          fade={false}
+          contentKey={`${view}:${blocks.map((block) => `${block.id}:${block.items.length}`).join("|")}`}
+        >
+          {blocks.length === 0 ? (
+            <Empty title={t("noExercises")} hint={t("noExercisesHint")} />
+          ) : (
+            <div className="space-y-3">
+              {blocks.map((block, index) => (
+                <BlockCard
+                  key={block.id}
+                  workoutId={workout.id}
+                  block={block}
+                  exercises={exercises}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < blocks.length - 1}
+                  onMoveAction={(delta) => moveBlock(block.id, delta)}
+                  selection={{ selected: selectedIds, onToggleAction: toggleSelected }}
+                  view={view}
+                  draggingId={dragging?.itemId ?? null}
+                  overId={overId}
+                  onDragStartAction={(itemId, blockId) => setDragging({ itemId, blockId })}
+                  onDragEndAction={() => {
+                    setDragging(null);
+                    setOverId(null);
+                  }}
+                  onDragOverItemAction={setOverId}
+                  onDropOnItemAction={drop}
+                  onDropAtEndAction={(blockId) => drop(blockId, "end")}
+                  onNudgeAction={nudge}
+                />
+              ))}
+            </div>
+          )}
+        </MorphHeight>
 
         <button
           type="button"

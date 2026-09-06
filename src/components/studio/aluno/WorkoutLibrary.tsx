@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useLocale, useTranslations } from "next-intl";
 import { Empty } from "@/components/studio/Empty";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { formatDayKey } from "@/components/studio/format";
 import { eyebrow } from "@/components/studio/theme";
@@ -113,6 +114,7 @@ export function WorkoutLibrary({
         onViewChangeAction={setView}
       />
 
+      <MorphHeight contentKey={`${view}:${focus ?? ""}:${query}:${results.length === 0 ? "empty" : "list"}`}>
       {results.length === 0 ? (
         <Empty title={t("workouts.noResults")} hint={t("workouts.noResultsHint")} />
       ) : (
@@ -147,6 +149,7 @@ export function WorkoutLibrary({
           )}
         </>
       )}
+      </MorphHeight>
     </div>
   );
 }

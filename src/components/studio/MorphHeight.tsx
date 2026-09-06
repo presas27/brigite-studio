@@ -12,24 +12,26 @@ const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
  *
  * Height is real CSS, not a transform: the node sits in document flow, and
  * only a real height change lets everything below it reflow frame by frame.
- * Same idea as the armed row in `ExitSheet` and the cues panel in
- * `ExerciseStage`, driven by a CSS transition.
  *
- * The `from` height is painted for one frame with transitions off, then the
- * target is applied on the next frame — a same-commit from/to never paints
- * `from`, so the browser has nothing to interpolate.
+ * `fade` (default on) cross-fades the inner content. Turn it off when a
+ * transformed ancestor would trap `position: fixed` descendants — the session
+ * player's stage — or when the content is growing in place (composer, cells).
  *
- * Overflow is clipped only while the tween runs. Left on, it trims 1px rings
- * and swallows the focus ring.
+ * `appear` tweens from 0 on first mount, so a dropdown opening is a morph
+ * rather than a pop.
  */
 export function MorphHeight({
   contentKey,
   children,
   className,
+  fade = true,
+  appear = false,
 }: {
   contentKey: string;
   children: React.ReactNode;
   className?: string;
+  fade?: boolean;
+  appear?: boolean;
 }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function MorphHeight({
     void contentKey;
 
     const to = content.getBoundingClientRect().height;
-    const from = prevHeight.current;
+    const from = prevHeight.current ?? (appear ? 0 : null);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const shouldTween = from != null && Math.abs(from - to) >= 1 && !reduced;
 
@@ -57,9 +59,11 @@ export function MorphHeight({
     box.style.transition = "none";
     box.style.height = `${from}px`;
     box.style.overflow = "hidden";
-    content.style.transition = "none";
-    content.style.opacity = "0.45";
-    content.style.transform = "translateY(8px)";
+    if (fade) {
+      content.style.transition = "none";
+      content.style.opacity = "0.45";
+      content.style.transform = "translateY(8px)";
+    }
 
     let settled = false;
     const settle = () => {
@@ -68,9 +72,11 @@ export function MorphHeight({
       box.style.height = "";
       box.style.overflow = "";
       box.style.transition = "";
-      content.style.opacity = "";
-      content.style.transform = "";
-      content.style.transition = "";
+      if (fade) {
+        content.style.opacity = "";
+        content.style.transform = "";
+        content.style.transition = "";
+      }
       prevHeight.current = content.getBoundingClientRect().height;
     };
 
@@ -83,17 +89,19 @@ export function MorphHeight({
     window.setTimeout(() => {
       if (!box.isConnected) return;
       box.style.transition = `height ${DURATION_MS}ms ${EASE}`;
-      content.style.transition = `opacity 300ms ${EASE}, transform 300ms ${EASE}`;
       box.style.height = `${to}px`;
-      content.style.opacity = "1";
-      content.style.transform = "translateY(0)";
+      if (fade) {
+        content.style.transition = `opacity 300ms ${EASE}, transform 300ms ${EASE}`;
+        content.style.opacity = "1";
+        content.style.transform = "translateY(0)";
+      }
     }, 16);
 
     return () => {
       box.removeEventListener("transitionend", onEnd);
       window.clearTimeout(fallback);
     };
-  }, [contentKey]);
+  }, [appear, contentKey, fade]);
 
   return (
     <div ref={outer} className={cn(className)}>

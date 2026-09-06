@@ -9,6 +9,7 @@ import { PhotoFields } from "@/components/studio/checkin/PhotoFields";
 import { CheckinPanel } from "@/components/studio/checkin/CheckinPanel";
 import { WeightField } from "@/components/studio/checkin/WeightField";
 import { Field } from "@/components/studio/Field";
+import { AutoResizeTextarea } from "@/components/studio/AutoResizeTextarea";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { field, surface, surfaceAccent } from "@/components/studio/theme";
@@ -69,7 +70,7 @@ export default async function ClientCheckinPage() {
               </div>
             </div>
             <Field label={t("winsLabel")} htmlFor="checkin-wins">
-              <textarea
+              <AutoResizeTextarea
                 id="checkin-wins"
                 name="wins"
                 rows={2}
@@ -79,7 +80,7 @@ export default async function ClientCheckinPage() {
               />
             </Field>
             <Field label={t("blockersLabel")} htmlFor="checkin-blockers">
-              <textarea
+              <AutoResizeTextarea
                 id="checkin-blockers"
                 name="blockers"
                 rows={2}

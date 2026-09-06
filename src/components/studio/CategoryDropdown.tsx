@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { field } from "@/components/studio/theme";
+import { MorphHeight } from "@/components/studio/MorphHeight";
 import { cn, searchKey } from "@/lib/utils";
-
 export type CategoryOption = { value: string; label: string; count: number };
 
 /**
@@ -99,44 +99,46 @@ export function CategoryDropdown({
               className="w-full rounded-[0.6rem] bg-cream/5 px-2.5 py-1.5 font-sans text-sm text-cream placeholder:text-cream/35 outline-none"
             />
           </div>
-          <ul role="listbox" className="max-h-64 overflow-y-auto p-1">
-            <li>
-              <button
-                type="button"
-                role="option"
-                aria-selected={value === null}
-                onClick={() => choose(null)}
-                className={cn(
-                  "flex w-full items-center rounded-[0.6rem] px-3 py-2 text-left font-sans text-sm transition-colors",
-                  value === null ? "bg-caramel/15 text-accent-ink" : "text-cream/80 hover:bg-cream/5",
-                )}
-              >
-                {common("allCategories")}
-              </button>
-            </li>
-            {results.map((option) => (
-              <li key={option.value}>
+          <MorphHeight contentKey={`${query}:${results.length}`} fade={false} appear>
+            <ul role="listbox" className="max-h-64 overflow-y-auto p-1">
+              <li>
                 <button
                   type="button"
                   role="option"
-                  aria-selected={value === option.value}
-                  onClick={() => choose(option.value)}
+                  aria-selected={value === null}
+                  onClick={() => choose(null)}
                   className={cn(
-                    "flex w-full items-center justify-between gap-2 rounded-[0.6rem] px-3 py-2 text-left font-sans text-sm transition-colors",
-                    value === option.value
-                      ? "bg-caramel/15 text-accent-ink"
-                      : "text-cream/80 hover:bg-cream/5",
+                    "flex w-full items-center rounded-[0.6rem] px-3 py-2 text-left font-sans text-sm transition-colors",
+                    value === null ? "bg-caramel/15 text-accent-ink" : "text-cream/80 hover:bg-cream/5",
                   )}
                 >
-                  <span className="truncate">{option.label}</span>
-                  <span className="text-xs text-cream/40">{option.count}</span>
+                  {common("allCategories")}
                 </button>
               </li>
-            ))}
-            {results.length === 0 && (
-              <li className="px-3 py-2 font-sans text-sm text-cream/40">{common("noMatches")}</li>
-            )}
-          </ul>
+              {results.map((option) => (
+                <li key={option.value}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={value === option.value}
+                    onClick={() => choose(option.value)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 rounded-[0.6rem] px-3 py-2 text-left font-sans text-sm transition-colors",
+                      value === option.value
+                        ? "bg-caramel/15 text-accent-ink"
+                        : "text-cream/80 hover:bg-cream/5",
+                    )}
+                  >
+                    <span className="truncate">{option.label}</span>
+                    <span className="text-xs text-cream/40">{option.count}</span>
+                  </button>
+                </li>
+              ))}
+              {results.length === 0 && (
+                <li className="px-3 py-2 font-sans text-sm text-cream/40">{common("noMatches")}</li>
+              )}
+            </ul>
+          </MorphHeight>
         </div>
       )}
     </div>
