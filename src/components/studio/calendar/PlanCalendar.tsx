@@ -13,7 +13,6 @@ import { MorphHeight } from "../MorphHeight";
 import { SegmentedTrack } from "../SegmentedTrack";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
-import { CalendarAddButton } from "./CalendarAddButton";
 import { DayAgenda } from "./DayAgenda";
 import type { CalendarSubject, CalendarView, SessionsByDay } from "./types";
 
@@ -52,20 +51,27 @@ const ARROW_STEP: Record<string, number> = {
   ArrowDown: 7,
 };
 
+/** Shared chrome for the Today stepper and the Month/Week toggle. */
+const periodChrome =
+  "flex h-10 min-w-0 flex-1 items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10 sm:flex-none";
+
 /** The "hoje" control in the period-nav pill, link or button depending on where you are. */
 const todayButton =
-  "rounded-full px-3 py-1.5 font-sans text-xs font-semibold text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream";
+  "inline-flex h-8 min-w-0 flex-1 items-center justify-center rounded-full px-3 font-sans text-xs font-semibold text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream sm:flex-none";
 
 /** Round icon button in the period-nav pill. */
 const stepButton =
-  "inline-flex h-8 w-8 items-center justify-center rounded-full text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream";
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream";
 
 function tabClass(active: boolean) {
   return cn(
-    "relative z-10 rounded-full px-3.5 py-1.5 font-sans text-xs font-semibold transition-colors",
+    "relative z-10 inline-flex h-8 flex-1 items-center justify-center rounded-full px-3.5 font-sans text-xs font-semibold transition-colors sm:flex-none",
     active ? "text-accent-ink" : "text-cream/50 hover:text-cream",
   );
 }
+
+/** Horizontal swipe past this (and steeper than vertical) turns the period. */
+const SWIPE_PX = 56;
 
 /**
  * The studio's training calendar: a month — or a week — of everyone's
@@ -99,6 +105,8 @@ export function PlanCalendar({
   const gridRef = useRef<HTMLDivElement>(null);
   const firstDay = days[0];
   const prevFirstDayRef = useRef(firstDay);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
 
   useGSAP(
     () => {
@@ -173,6 +181,10 @@ export function PlanCalendar({
    * keyboard path deliberately skips this so focus never scrolls away.
    */
   function selectDay(date: string) {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
     setSelected(date);
     if (window.matchMedia("(min-width: 80rem)").matches) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -203,10 +215,27 @@ export function PlanCalendar({
     cells.current[next]?.focus();
   }
 
+  function onSwipeStart(event: React.TouchEvent<HTMLDivElement>) {
+    const touch = event.changedTouches[0];
+    swipeStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function onSwipeEnd(event: React.TouchEvent<HTMLDivElement>) {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    swiped.current = true;
+    router.push(dx < 0 ? hrefs.next : hrefs.prev);
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-8">
       <div className="min-w-0 space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-x-6">
           <div className="min-w-0">
             {eyebrowLabel && <p className={eyebrow}>{eyebrowLabel}</p>}
             <h1 className={cn(heading, "flex flex-wrap items-baseline gap-x-3", eyebrowLabel && "mt-1.5")}>
@@ -215,9 +244,8 @@ export function PlanCalendar({
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {subject === "workout" && <CalendarAddButton date={selected} />}
-            <div className="flex items-center gap-1 rounded-full bg-cream/5 p-1 ring-1 ring-cream/10">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-wrap">
+            <div className={periodChrome}>
               <Link
                 href={hrefs.prev}
                 aria-label={isMonth ? t("calendar.prevMonth") : t("prevWeek")}
@@ -245,7 +273,7 @@ export function PlanCalendar({
               </Link>
             </div>
 
-            <SegmentedTrack value={view} className="flex">
+            <SegmentedTrack value={view} className={cn(periodChrome, "flex")}>
               <Link
                 href={hrefs.month}
                 aria-current={isMonth ? "page" : undefined}
@@ -276,7 +304,14 @@ export function PlanCalendar({
         </div>
 
         <MorphHeight contentKey={view}>
-          <div className="space-y-2">
+          <div
+            className="space-y-2 touch-pan-y"
+            onTouchStart={onSwipeStart}
+            onTouchEnd={onSwipeEnd}
+            onTouchCancel={() => {
+              swipeStart.current = null;
+            }}
+          >
             {isMonth && (
               <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                 {days.slice(0, 7).map((date) => (
