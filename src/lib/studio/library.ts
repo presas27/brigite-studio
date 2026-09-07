@@ -5,6 +5,7 @@ import { sa, sm, sq } from "@/lib/studio/convexServer";
 import type {
   BlockKind,
   Exercise,
+  ExerciseDigest,
   LibraryCategory,
   Tracking,
   Workout,
@@ -34,8 +35,16 @@ import type {
 
 export async function listExercises(
   options: { search?: string; tag?: string } = {},
-): Promise<Exercise[]> {
+): Promise<ExerciseDigest[]> {
   return sq(api.library.listExercises, options);
+}
+
+/** Grid + tag counts from one Convex read. */
+export async function listExerciseLibrary(): Promise<{
+  exercises: ExerciseDigest[];
+  tags: { tag: string; count: number }[];
+}> {
+  return sq(api.library.listExerciseLibrary);
 }
 
 /**

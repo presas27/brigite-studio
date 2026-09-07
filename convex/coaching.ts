@@ -134,7 +134,7 @@ function mapMessage(doc: Doc<"messages">, clientId: Id<"users">): Message {
  * of a thread. Reading a badge therefore costs a handful of documents rather
  * than the length of the conversation.
  */
-async function unreadTail(
+export async function unreadTail(
   ctx: Ctx,
   clientId: Id<"users">,
   readerId: Id<"users">,
@@ -225,13 +225,7 @@ export const unreadCount = query({
 export const unreadTotal = query({
   args: {},
   handler: async (ctx): Promise<number> => {
-    const coach = await requireCoach(ctx);
-
-    let total = 0;
-    for (const client of await roster(ctx, coach._id)) {
-      total += (await unreadTail(ctx, client._id, coach._id)).length;
-    }
-    return total;
+    return (await collectCoachShell(ctx)).unread;
   },
 });
 
@@ -507,126 +501,135 @@ async function roster(ctx: Ctx, coachId: Id<"users">): Promise<Doc<"users">[]> {
  * to flatten the studio into one list, and routing it through the plan API would
  * mean either a round trip per client or a plan function that knows about
  * alerts. Nothing here writes to `assignments`.
+ *
+ * Inactivity is measured in calendar days from `dayKey()`, not `Date.now()`, so
+ * the query cache survives for the rest of the Lisbon day.
  */
-export const coachAlerts = query({
-  args: {},
-  handler: async (ctx): Promise<CoachAlert[]> => {
-    const coach = await requireCoach(ctx);
+async function collectCoachShell(ctx: Ctx): Promise<{ alerts: CoachAlert[]; unread: number }> {
+  const coach = await requireCoach(ctx);
 
-    const today = dayKey();
-    const missedFrom = shiftDay(today, -MISSED_WINDOW_DAYS);
-    const now = Date.now();
+  const today = dayKey();
+  const missedFrom = shiftDay(today, -MISSED_WINDOW_DAYS);
 
-    const checkins: CoachAlert[] = [];
-    const messages: CoachAlert[] = [];
-    const missed: CoachAlert[] = [];
-    const inactive: CoachAlert[] = [];
+  const checkins: CoachAlert[] = [];
+  const messages: CoachAlert[] = [];
+  const missed: CoachAlert[] = [];
+  const inactive: CoachAlert[] = [];
+  let unread = 0;
 
-    for (const client of await roster(ctx, coach._id)) {
-      const clientName = client.name;
+  for (const client of await roster(ctx, coach._id)) {
+    const clientName = client.name;
 
-      // Submitted and still unanswered.
-      const recentCheckins = await ctx.db
-        .query("checkins")
-        .withIndex("by_client_and_week", (q) => q.eq("clientId", client._id))
-        .order("desc")
-        .take(CHECKIN_ALERT_SCAN);
+    const recentCheckins = await ctx.db
+      .query("checkins")
+      .withIndex("by_client_and_week", (q) => q.eq("clientId", client._id))
+      .order("desc")
+      .take(CHECKIN_ALERT_SCAN);
 
-      for (const checkin of recentCheckins) {
-        if (checkin.submittedAt == null || checkin.repliedAt != null) continue;
-        checkins.push({
-          kind: "checkin",
-          clientId: client._id,
-          clientName,
-          weekOf: checkin.weekOf,
-          at: checkin.submittedAt,
-        });
-      }
-
-      // Unread from the client's side, quoting whatever the thread ends with —
-      // which may well be Sara's own last message, exactly as the old
-      // correlated subquery had it.
-      const unread = await unreadTail(ctx, client._id, coach._id);
-      if (unread.length > 0) {
-        const latest = await ctx.db
-          .query("messages")
-          .withIndex("by_client", (q) => q.eq("clientId", client._id))
-          .order("desc")
-          .first();
-
-        messages.push({
-          kind: "message",
-          clientId: client._id,
-          clientName,
-          preview: (latest?.body ?? "").slice(0, MESSAGE_PREVIEW_LENGTH),
-          at: unread[0]._creationTime,
-        });
-      }
-
-      // Still scheduled, the day has passed, and it was recent enough to chase.
-      // The range is what keeps this cheap; `status` is filtered afterwards
-      // because the index that has the date is the one scoped to a client.
-      const overdue = await ctx.db
-        .query("assignments")
-        .withIndex("by_client_and_date", (q) =>
-          q.eq("clientId", client._id).gte("date", missedFrom).lt("date", today),
-        )
-        .order("desc")
-        .take(ALERTS_PER_SOURCE);
-
-      for (const assignment of overdue) {
-        if (assignment.status !== "scheduled" || assignment.date == null) continue;
-        missed.push({
-          kind: "missed",
-          clientId: client._id,
-          clientName,
-          date: assignment.date,
-          at: atNoon(assignment.date),
-        });
-      }
-
-      // Nothing completed in a week and a half. Only for accounts that are
-      // actually training: an invited client has not gone quiet, she has simply
-      // not started.
-      if (client.status !== "active") continue;
-
-      const completed = await ctx.db
-        .query("assignments")
-        .withIndex("by_client_and_status", (q) =>
-          q.eq("clientId", client._id).eq("status", "done"),
-        )
-        .order("desc")
-        .take(DONE_SCAN);
-
-      let lastDone: number | null = null;
-      for (const assignment of completed) {
-        if (assignment.doneAt != null && (lastDone == null || assignment.doneAt > lastDone)) {
-          lastDone = assignment.doneAt;
-        }
-      }
-      if (lastDone == null) continue;
-
-      const days = Math.floor((now - lastDone) / DAY_MS);
-      if (days >= INACTIVE_DAYS) {
-        inactive.push({
-          kind: "inactive",
-          clientId: client._id,
-          clientName,
-          days,
-          at: lastDone,
-        });
-      }
+    for (const checkin of recentCheckins) {
+      if (checkin.submittedAt == null || checkin.repliedAt != null) continue;
+      checkins.push({
+        kind: "checkin",
+        clientId: client._id,
+        clientName,
+        weekOf: checkin.weekOf,
+        at: checkin.submittedAt,
+      });
     }
 
-    // Each source capped on its own before the merge, as the four `LIMIT 30`s
-    // did: one client with a long backlog must not crowd the others out.
-    const byNewest = (a: CoachAlert, b: CoachAlert) => b.at - a.at;
-    return [
+    const unreadDocs = await unreadTail(ctx, client._id, coach._id);
+    unread += unreadDocs.length;
+    if (unreadDocs.length > 0) {
+      const latest = await ctx.db
+        .query("messages")
+        .withIndex("by_client", (q) => q.eq("clientId", client._id))
+        .order("desc")
+        .first();
+
+      messages.push({
+        kind: "message",
+        clientId: client._id,
+        clientName,
+        preview: (latest?.body ?? "").slice(0, MESSAGE_PREVIEW_LENGTH),
+        at: unreadDocs[0]._creationTime,
+      });
+    }
+
+    const overdue = await ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_date", (q) =>
+        q.eq("clientId", client._id).gte("date", missedFrom).lt("date", today),
+      )
+      .order("desc")
+      .take(ALERTS_PER_SOURCE);
+
+    for (const assignment of overdue) {
+      if (assignment.status !== "scheduled" || assignment.date == null) continue;
+      missed.push({
+        kind: "missed",
+        clientId: client._id,
+        clientName,
+        date: assignment.date,
+        at: atNoon(assignment.date),
+      });
+    }
+
+    if (client.status !== "active") continue;
+
+    const completed = await ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_status", (q) =>
+        q.eq("clientId", client._id).eq("status", "done"),
+      )
+      .order("desc")
+      .take(DONE_SCAN);
+
+    let lastDone: number | null = null;
+    for (const assignment of completed) {
+      if (assignment.doneAt != null && (lastDone == null || assignment.doneAt > lastDone)) {
+        lastDone = assignment.doneAt;
+      }
+    }
+    if (lastDone == null) continue;
+
+    const days = Math.round(
+      (Date.parse(`${today}T12:00:00Z`) - Date.parse(`${dayKey(new Date(lastDone))}T12:00:00Z`)) /
+        DAY_MS,
+    );
+    if (days >= INACTIVE_DAYS) {
+      inactive.push({
+        kind: "inactive",
+        clientId: client._id,
+        clientName,
+        days,
+        at: lastDone,
+      });
+    }
+  }
+
+  const byNewest = (a: CoachAlert, b: CoachAlert) => b.at - a.at;
+  return {
+    unread,
+    alerts: [
       ...checkins.sort(byNewest).slice(0, ALERTS_PER_SOURCE),
       ...messages.sort(byNewest).slice(0, ALERTS_PER_SOURCE),
       ...missed.sort(byNewest).slice(0, ALERTS_PER_SOURCE),
       ...inactive,
-    ].sort(byNewest);
+    ].sort(byNewest),
+  };
+}
+
+export const coachAlerts = query({
+  args: {},
+  handler: async (ctx): Promise<CoachAlert[]> => {
+    return (await collectCoachShell(ctx)).alerts;
+  },
+});
+
+export const coachShell = query({
+  args: {},
+  handler: async (ctx): Promise<{ alerts: CoachAlert[]; unread: number }> => {
+    return collectCoachShell(ctx);
   },
 });
 

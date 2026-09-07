@@ -1,24 +1,23 @@
-import { findCheckin, listCheckins, measurements, messagesFor } from "./coaching";
-import { dayKey, shiftDay, weekKey } from "./dates";
-import { assignmentsBetween, assignmentsOn } from "./plan";
+import { cache } from "react";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { sq } from "./convexServer";
+import { listCheckins, messagesFor } from "./coaching";
+import { dayKey, shiftDay } from "./dates";
+import { assignmentsBetween } from "./plan";
 import { type AssignmentStatus, type ScheduledSummary } from "./types";
 
 /**
  * The aluna's side of the console — the mirror of `coachAlerts` /
  * `recentActivity` in `coaching.ts`, from the other end of the relationship.
  *
- * Everything here composes the already-exported reads rather than querying
- * Convex directly — the coaching and plan modules stay the single place that
- * knows the schema. Each read is a network round trip now, so independent
- * ones run together in a `Promise.all` instead of one after another.
+ * Chrome and the landing grid are Convex queries (`clientChrome`,
+ * `clientOverview`). The activity feed still composes the already-exported
+ * reads: it is not on the hot path of every page.
  */
 
 /** How far back the feed looks. A year of training is plenty of history. */
 const HISTORY_DAYS = 365;
-/** How far ahead. Sara plans in weeks, never in seasons. */
-const HORIZON_DAYS = 120;
-/** A missed session older than this is history, not a nudge. */
-const MISSED_WINDOW_DAYS = 14;
 
 /** One row of the aluna's "Precisa de ti" — everything still waiting on her. */
 export type ClientAlert =
@@ -32,6 +31,19 @@ function atNoon(key: string): number {
   return Date.parse(`${key}T12:00:00Z`);
 }
 
+export type ClientChrome = {
+  unread: number;
+  checkinPending: boolean;
+  today: ScheduledSummary[];
+  next: ScheduledSummary | null;
+  alerts: ClientAlert[];
+};
+
+/** Rail badges, next session, and the bell — one Convex read. */
+export const clientChrome = cache(async (clientId: string): Promise<ClientChrome> => {
+  return sq(api.plan.clientChrome, { clientId: clientId as Id<"users"> });
+});
+
 /**
  * What is waiting on the aluna, newest first.
  *
@@ -41,66 +53,13 @@ function atNoon(key: string): number {
  * makes the bell worth opening.
  */
 export async function clientAlerts(clientId: string): Promise<ClientAlert[]> {
-  const alerts: ClientAlert[] = [];
-  const today = dayKey();
-  const week = weekKey();
-
-  const [todaySessions, checkin, messages, missedAssignments] = await Promise.all([
-    assignmentsOn(clientId, today),
-    findCheckin(clientId, week),
-    messagesFor(clientId),
-    assignmentsBetween(clientId, shiftDay(today, -MISSED_WINDOW_DAYS), shiftDay(today, -1)),
-  ]);
-
-  for (const assignment of todaySessions) {
-    if (assignment.status !== "scheduled") continue;
-    alerts.push({
-      kind: "session",
-      at: atNoon(today),
-      assignmentId: assignment.id,
-      name: assignment.name,
-    });
-  }
-
-  if (checkin?.submittedAt == null) {
-    alerts.push({ kind: "checkin", at: atNoon(week), weekOf: week });
-  }
-
-  const unread = messages.filter(
-    (message) => message.authorRole === "coach" && message.readAt == null,
-  );
-  if (unread.length > 0) {
-    alerts.push({
-      kind: "message",
-      at: unread[unread.length - 1].createdAt,
-      count: unread.length,
-    });
-  }
-
-  for (const assignment of missedAssignments) {
-    if (assignment.status !== "scheduled") continue;
-    alerts.push({
-      kind: "missed",
-      at: atNoon(assignment.date),
-      assignmentId: assignment.id,
-      date: assignment.date,
-      name: assignment.name,
-    });
-  }
-
-  return alerts.sort((a, b) => b.at - a.at);
+  return (await clientChrome(clientId)).alerts;
 }
 
 /** One line of the aluna's feed — what *happened*, in her own second person. */
 export type ClientActivityItem = {
   id: string;
-  kind:
-    | "session"
-    | "skipped"
-    | "checkin"
-    | "checkinReply"
-    | "message"
-    | "coachMessage";
+  kind: "session" | "skipped" | "checkin" | "checkinReply" | "message" | "coachMessage";
   /** The thing the line is about: a workout name, an exercise, a week. May be absent. */
   subject: string | null;
   href: string;
@@ -221,129 +180,10 @@ export type ClientOverview = {
   streakWeeks: number;
 };
 
-/** The window behind the adherence headline. Same span as `adherence()` in `plan.ts`. */
-const ADHERENCE_DAYS = 28;
-/** How many sessions the "a seguir" list can ever need — hero plus three rows. */
-const UPCOMING_LIMIT = 4;
-/** Readings behind the weight sparkline. Roughly three months of weekly check-ins. */
-const WEIGHT_POINTS = 12;
-/** Nobody needs to be told they are on a 300-week streak; the walk stops here. */
-const STREAK_LIMIT = 52;
-
 /**
- * The day's ring: done only when nothing is left, missed only when nothing is
- * still pending.
- *
- * A day already behind us with a session nobody ever marked reads as missed
- * rather than as pending — the same rule `clientAlerts` applies, so the ring
- * and the bell can never say different things about the same Tuesday.
+ * The aluna's landing grid, in one Convex read: week rings, adherence, upcoming,
+ * weight, and streak. Streak used to walk a query per week.
  */
-function dayStatus(
-  sessions: ScheduledSummary[],
-  date: string,
-  today: string,
-): AssignmentStatus | null {
-  if (sessions.length === 0) return null;
-  if (sessions.every((session) => session.status === "done")) return "done";
-  if (date < today) return "skipped";
-  if (sessions.some((session) => session.status === "scheduled")) return "scheduled";
-  return "skipped";
-}
-
-function toOverviewSession(assignment: ScheduledSummary): OverviewSession {
-  return {
-    id: assignment.id,
-    date: assignment.date,
-    name: assignment.name,
-    focus: (assignment.focus ?? "").trim(),
-    itemCount: assignment.itemCount,
-    estimatedMinutes: assignment.estimatedMinutes,
-    videoUrl: assignment.videoUrl,
-    startedAt: assignment.startedAt,
-  };
-}
-
-/**
- * Weeks in a row, ending last week, where every scheduled session got done.
- *
- * The current week is excluded on purpose: it is still being lived, and a
- * streak that resets every Monday morning and climbs back by Sunday is noise
- * rather than a measure. A week with nothing scheduled ends the walk — a
- * streak has to be built out of training, not out of empty calendars.
- */
-async function weekStreak(clientId: string, thisMonday: string): Promise<number> {
-  let streak = 0;
-  for (let back = 1; back <= STREAK_LIMIT; back += 1) {
-    const monday = shiftDay(thisMonday, -7 * back);
-    const week = await assignmentsBetween(clientId, monday, shiftDay(monday, 6));
-    if (week.length === 0) break;
-    if (!week.every((assignment) => assignment.status === "done")) break;
-    streak += 1;
-  }
-  return streak;
-}
-
-/**
- * The aluna's landing grid, in one place.
- *
- * The adherence count and its dot grid come out of the same query on purpose:
- * computed apart they drift by a day at the window's edge, and a headline that
- * disagrees with the dots beside it is worse than either one alone.
- */
-export async function clientOverview(clientId: string): Promise<ClientOverview> {
-  const today = dayKey();
-  const monday = weekKey();
-  const days = Array.from({ length: 7 }, (_, offset) => shiftDay(monday, offset));
-
-  const [thisWeek, window, upcomingAssignments, weightReadings, streakWeeks] = await Promise.all([
-    assignmentsBetween(clientId, monday, days[6]),
-    assignmentsBetween(clientId, shiftDay(today, -ADHERENCE_DAYS), today),
-    assignmentsBetween(clientId, shiftDay(today, 1), shiftDay(today, HORIZON_DAYS)),
-    measurements(clientId, "weight", WEIGHT_POINTS),
-    weekStreak(clientId, monday),
-  ]);
-
-  const byDate = new Map<string, ScheduledSummary[]>();
-  for (const assignment of thisWeek) {
-    byDate.set(assignment.date, [...(byDate.get(assignment.date) ?? []), assignment]);
-  }
-
-  const week: OverviewDay[] = days.map((date) => {
-    const sessions = byDate.get(date) ?? [];
-    return {
-      date,
-      status: dayStatus(sessions, date, today),
-      total: sessions.length,
-      done: sessions.filter((session) => session.status === "done").length,
-    };
-  });
-
-  const adherenceDone = window.filter((assignment) => assignment.status === "done").length;
-  const upcoming = upcomingAssignments
-    .filter((assignment) => assignment.status === "scheduled")
-    .slice(0, UPCOMING_LIMIT)
-    .map(toOverviewSession);
-
-  const readings = weightReadings
-    .slice()
-    .reverse()
-    .map((measurement) => measurement.value);
-  const latest = readings[readings.length - 1];
-
-  return {
-    week,
-    adherenceDone,
-    adherenceTotal: window.length,
-    adherencePct: window.length > 0 ? Math.round((adherenceDone / window.length) * 100) : 0,
-    upcoming,
-    weight:
-      latest == null
-        ? null
-        : {
-            latest,
-            delta: readings.length > 1 ? Number((latest - readings[0]).toFixed(1)) : null,
-            series: readings,
-          },
-    streakWeeks,
-  };
-}
+export const clientOverview = cache(async (clientId: string): Promise<ClientOverview> => {
+  return sq(api.plan.clientOverview, { clientId: clientId as Id<"users"> });
+});

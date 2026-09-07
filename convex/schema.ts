@@ -297,6 +297,14 @@ export default defineSchema({
      * would be listed twice.
      */
     programPhaseId: v.optional(v.union(v.null(), v.id("programPhases"))),
+    /**
+     * How many exercise rows the workout holds (rests excluded), and how many
+     * blocks they sit in. Written on every block/item touch so list pages do
+     * not recount. Absent on rows written before the fields existed — readers
+     * fall back to counting.
+     */
+    itemCount: v.optional(v.number()),
+    blockCount: v.optional(v.number()),
   })
     .index("by_archived_and_updated", ["archived", "updatedAt"])
     .index("by_phase_and_position", ["phaseId", "position"])

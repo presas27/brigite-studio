@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { sm, sq } from "./convexServer";
@@ -12,9 +13,9 @@ export async function intakeFormForInvite(token: string) {
   return sq(api.intake.formForInvite, { token });
 }
 
-export async function myPendingIntake() {
+export const myPendingIntake = cache(async () => {
   return sq(api.intake.myPendingIntake);
-}
+});
 
 export async function saveIntakeForm(input: {
   title: string;

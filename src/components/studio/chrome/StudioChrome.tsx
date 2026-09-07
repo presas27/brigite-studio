@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AccountMenu } from "@/components/studio/AccountMenu";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
@@ -26,11 +24,7 @@ export type ChromeItem = {
 /** A titled run of destinations. The first one carries no title. */
 export type ChromeSection = { titleKey?: string; items: ChromeItem[] };
 
-/** Rail width, expanded and collapsed to icons-only. Mirrors the `16.5rem` /
- * `4.75rem` Tailwind values below — kept in px so the tween below can drive
- * the `--rail-w` custom property with plain numbers. */
-const RAIL_WIDTH_EXPANDED = 264;
-const RAIL_WIDTH_COLLAPSED = 76;
+
 
 /**
  * The studio's application chrome: a persistent, collapsible rail on the left,
@@ -56,6 +50,8 @@ export function StudioChrome({
   badges,
   actions,
   notifications,
+  mobileChrome = "drawer",
+  mobileDock,
   children,
 }: {
   role: "coach" | "client";
@@ -71,94 +67,27 @@ export function StudioChrome({
   actions?: React.ReactNode;
   /** The bell, already fed with this role's alerts. */
   notifications?: React.ReactNode;
+  /** Phone shell. `dock` hides the drawer and topbar — the aluna's glass pill. */
+  mobileChrome?: "drawer" | "dock";
+  mobileDock?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const dock = mobileChrome === "dock";
   const t = useTranslations("Studio.nav");
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const asideRef = useRef<HTMLElement>(null);
-  // The rail is genuinely `position: fixed` at every breakpoint (see the aside's
-  // className below) — nothing short of that is immune to the browser's overscroll
-  // rubber-banding, which a `sticky` rail would still visibly shift with. Fixed
-  // elements take themselves out of layout, so the content column needs its own
-  // offset that shrinks/grows in lockstep; both read the same `--rail-w` custom
-  // property off this shell so one tween drives both, frame for frame.
-  const shellRef = useRef<HTMLDivElement>(null);
-  const railWidthRef = useRef({ w: RAIL_WIDTH_EXPANDED });
-
-  const { contextSafe } = useGSAP({ scope: asideRef });
-
-  function setRailWidth(px: number) {
-    shellRef.current?.style.setProperty("--rail-w", `${px}px`);
-  }
-
-  /**
-   * One timeline per toggle, built fresh so it always animates from the
-   * current state rather than replaying a pre-baked one. Closing fades the
-   * labels out fast and lets the rail keep shrinking after they're gone;
-   * opening grows the rail first and fades labels in once there's room —
-   * that ordering is what keeps the text from visibly reflowing mid-tween.
-   */
-  // contextSafe defers this closure to the click handler below (toggleCollapsed); the ref is
-  // never read during render, but the compiler can't see through contextSafe to know that.
-  // eslint-disable-next-line react-hooks/refs
-  const animateCollapse = contextSafe((next: boolean) => {
-    const aside = asideRef.current;
-    if (!aside) return;
-    const fadeTargets = aside.querySelectorAll<HTMLElement>("[data-sidebar-fade]");
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const target = next ? RAIL_WIDTH_COLLAPSED : RAIL_WIDTH_EXPANDED;
-
-    const railWidth = railWidthRef.current;
-
-    if (reduced) {
-      railWidth.w = target;
-      setRailWidth(target);
-      gsap.set(fadeTargets, { autoAlpha: next ? 0 : 1 });
-      return;
-    }
-
-    const tl = gsap.timeline({ defaults: { ease: "power2.out" }, overwrite: true });
-    if (next) {
-      tl.to(fadeTargets, { autoAlpha: 0, duration: 0.15 }, 0).to(
-        railWidth,
-        { w: target, duration: 0.35, onUpdate: () => setRailWidth(railWidth.w) },
-        0,
-      );
-    } else {
-      tl.to(railWidth, { w: target, duration: 0.35, onUpdate: () => setRailWidth(railWidth.w) }, 0).to(
-        fadeTargets,
-        { autoAlpha: 1, duration: 0.2 },
-        0.18,
-      );
-    }
-  });
 
   function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      animateCollapse(next);
-      return next;
-    });
+    setCollapsed((prev) => !prev);
   }
 
-  // The toggle only exists at `lg`; if the viewport narrows past that while
-  // collapsed (a resized window, not a reload), the mobile drawer must not
-  // inherit the icon-only width.
   useEffect(() => {
     const query = window.matchMedia("(min-width: 1024px)");
     const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
       if (event.matches) return;
       setCollapsed(false);
-      railWidthRef.current.w = RAIL_WIDTH_EXPANDED;
-      shellRef.current?.style.removeProperty("--rail-w");
-      const aside = asideRef.current;
-      if (!aside) return;
-      gsap.set(aside.querySelectorAll<HTMLElement>("[data-sidebar-fade]"), {
-        clearProps: "opacity,visibility",
-      });
     };
     query.addEventListener("change", handleChange);
     return () => query.removeEventListener("change", handleChange);
@@ -189,7 +118,7 @@ export function StudioChrome({
           {section.titleKey && (
             // Fades with the rest of the labels when the rail collapses; the
             // line it leaves behind is what keeps the icon stack in runs.
-            <p data-sidebar-fade className={cn(eyebrow, "px-3 pb-1")}>
+            <p data-sidebar-fade className={cn(eyebrow, "px-3 pb-1", collapsed && "lg:hidden")}>
               {t(section.titleKey)}
             </p>
           )}
@@ -229,7 +158,13 @@ export function StudioChrome({
                       )
                     ))}
                 </span>
-                <span data-sidebar-fade className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
+                <span
+                  data-sidebar-fade
+                  className={cn(
+                    "relative z-[1] flex min-w-0 flex-1 items-center gap-3",
+                    collapsed && "lg:hidden",
+                  )}
+                >
                   <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
                   {!item.urgentBadge && badge != null && badge > 0 && (
                     <span
@@ -273,9 +208,9 @@ export function StudioChrome({
     // few px past its edges and flash the near-black `body` underneath `.studio`. Pinning the
     // shell to exactly the viewport and letting `<main>` below carry its own scrollbar keeps
     // that motion (and the reveal) contained inside `<main>` instead of on the document.
-    <div ref={shellRef} className="studio min-h-dvh lg:h-dvh lg:overflow-hidden">
+    <div className="studio min-h-dvh lg:h-dvh lg:overflow-hidden">
       {/* Drawer scrim. Rendered only when open so it never eats taps on lg. */}
-      {drawerOpen && (
+      {!dock && drawerOpen && (
         <button
           type="button"
           aria-label={t("closeMenu")}
@@ -285,18 +220,13 @@ export function StudioChrome({
       )}
 
       <aside
-        ref={asideRef}
         className={cn(
-          // A flat lift is not enough separation at this width, so the rail gets
-          // a faint caramel wash from the top-left corner — the same layering
-          // trick the site's hero uses, at a tenth of the intensity.
           "fixed inset-y-0 left-0 z-40 flex w-[16.5rem] flex-col gap-6 overflow-x-hidden border-r border-cream/12 bg-rail px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
           "bg-[radial-gradient(115%_55%_at_0%_0%,rgba(143,42,58,0.11),transparent_62%)]",
-          // Genuinely fixed at every breakpoint — immune to scroll and to the
-          // overscroll rubber-band bounce, which `sticky` still visibly moves
-          // with. The content column carries a matching `--rail-w` offset below.
-          "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:w-[var(--rail-w,16.5rem)] lg:translate-x-0",
+          "transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0",
+          collapsed ? "lg:w-[4.75rem]" : "lg:w-[16.5rem]",
           drawerOpen ? "translate-x-0" : "-translate-x-full",
+          dock && "max-lg:hidden",
         )}
       >
         {/* px-3 mirrors the nav links' own left inset (see `nav` below) so the
@@ -306,7 +236,10 @@ export function StudioChrome({
             <SolMark className="h-6 w-6 shrink-0 text-accent-ink transition-transform duration-500 group-hover:rotate-45" />
             <span
               data-sidebar-fade
-              className="overflow-hidden font-display text-base leading-[0.95] uppercase tracking-[0.06em] text-cream"
+              className={cn(
+                "overflow-hidden font-display text-base leading-[0.95] uppercase tracking-[0.06em] text-cream",
+                collapsed && "lg:hidden",
+              )}
             >
               Brigite&rsquo;s
               <br />
@@ -336,7 +269,12 @@ export function StudioChrome({
         {nav}
       </aside>
 
-      <div className="flex min-w-0 flex-col lg:h-full lg:ml-[var(--rail-w,16.5rem)]">
+      <div
+        className={cn(
+          "flex min-w-0 flex-col lg:h-full lg:transition-[margin] lg:duration-300",
+          collapsed ? "lg:ml-[4.75rem]" : "lg:ml-[16.5rem]",
+        )}
+      >
         {/* Opaque, not a translucent blur: `<main>` scrolls directly under this bar,
             and a gold hero card or a display heading passing beneath a 95% wash reads
             as a rendering fault, not as depth. */}
@@ -347,15 +285,22 @@ export function StudioChrome({
          * the battery sit on top of this row. Same reasoning for the sides,
          * which is landscape and the curved edges.
          */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background px-[max(1rem,env(safe-area-inset-left))] pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 sm:px-[max(1.5rem,env(safe-area-inset-left))]">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label={t("openMenu")}
-            className="rounded-full p-2 text-cream/70 transition-colors hover:bg-cream/5 hover:text-cream lg:hidden"
-          >
-            <Icon name="menu" className="h-5 w-5" />
-          </button>
+        <header
+          className={cn(
+            "sticky top-0 z-20 flex items-center gap-3 border-b border-cream/10 bg-background px-[max(1rem,env(safe-area-inset-left))] pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 sm:px-[max(1.5rem,env(safe-area-inset-left))]",
+            dock && "hidden lg:flex",
+          )}
+        >
+          {!dock && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label={t("openMenu")}
+              className="rounded-full p-2 text-cream/70 transition-colors hover:bg-cream/5 hover:text-cream lg:hidden"
+            >
+              <Icon name="menu" className="h-5 w-5" />
+            </button>
+          )}
 
           {/* Slots rather than imports: both are server components, so the
               layout hands them in already rendered. */}
@@ -370,7 +315,11 @@ export function StudioChrome({
 
         <main
           id="main"
-          className="min-w-0 grow px-[max(1rem,env(safe-area-inset-left))] pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:pt-8 sm:pb-[calc(2rem+env(safe-area-inset-bottom))] lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+          className={cn(
+            "min-w-0 grow px-[max(1rem,env(safe-area-inset-left))] pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:pt-8 sm:pb-[calc(2rem+env(safe-area-inset-bottom))] lg:min-h-0 lg:flex-1 lg:overflow-y-auto",
+            dock &&
+              "max-lg:pt-[max(1.25rem,env(safe-area-inset-top))] max-lg:pb-[calc(6.75rem+env(safe-area-inset-bottom))]",
+          )}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -385,6 +334,7 @@ export function StudioChrome({
           </AnimatePresence>
         </main>
       </div>
+      {dock && mobileDock}
     </div>
   );
 }

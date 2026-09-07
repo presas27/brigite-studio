@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useLocale, useTranslations } from "next-intl";
+import Image from "next/image";
 import type { SessionStep } from "@/lib/studio/session-queue";
 import type { Locale } from "@/i18n/config";
 import { cuesFor } from "@/lib/studio/cues";
@@ -14,7 +15,7 @@ import type { SetValue } from "./useSessionLog";
 import { Icon } from "../coach/icons";
 import { heading } from "../theme";
 import { cn } from "@/lib/utils";
-import { youtubeEmbed, youtubeId } from "@/lib/youtube";
+import { youtubeEmbed, youtubeId, youtubeThumb } from "@/lib/youtube";
 
 /**
  * The one screen the client looks at while she trains, in two shapes.
@@ -33,7 +34,7 @@ import { youtubeEmbed, youtubeId } from "@/lib/youtube";
  * counter and the fields — the name and the demo stay exactly where they were,
  * because nothing about them changed. A new exercise moves the whole panel in.
  */
-export function ExerciseStage({
+export const ExerciseStage = memo(function ExerciseStage({
   step,
   value,
   previous,
@@ -357,7 +358,7 @@ export function ExerciseStage({
       </div>
     </div>
   );
-}
+});
 
 function StatCard({
   label,
@@ -400,7 +401,7 @@ function StatCard({
  * The outer element is the one the parent animates — it carries no ratio of its
  * own, so collapsing it is a plain height tween with nothing to fight.
  */
-function StageMedia({
+const StageMedia = memo(function StageMedia({
   videoId,
   title,
   ref,
@@ -409,6 +410,8 @@ function StageMedia({
   title: string;
   ref?: React.Ref<HTMLDivElement>;
 }) {
+  const [play, setPlay] = useState(false);
+
   return (
     <div
       ref={ref}
@@ -416,16 +419,37 @@ function StageMedia({
       className="order-3 w-full overflow-hidden md:order-none md:self-start"
     >
       <div className="relative aspect-video w-full max-h-[16vh] overflow-hidden rounded-[1rem] bg-cream/[0.06] ring-1 ring-cream/10 md:max-h-[11.5rem]">
-        <iframe
-          title={title}
-          src={youtubeEmbed(videoId)}
-          allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
-          className="absolute inset-0 h-full w-full"
-        />
+        {play ? (
+          <iframe
+            title={title}
+            src={youtubeEmbed(videoId)}
+            allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPlay(true)}
+            className="absolute inset-0"
+            aria-label={title}
+          >
+            <Image
+              src={youtubeThumb(videoId)}
+              alt=""
+              fill
+              sizes="640px"
+              className="object-cover"
+              unoptimized
+            />
+            <span className="absolute inset-0 grid place-items-center bg-ink/25">
+              <Icon name="play" className="h-10 w-10 text-cream" />
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
-}
+});
 
 /**
  * The coach's cues, behind one bar instead of a wall of text. Closed is the

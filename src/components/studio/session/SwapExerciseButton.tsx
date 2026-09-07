@@ -1,8 +1,8 @@
 "use client";
 
 import { useDeferredValue, useEffect, useRef, useState, useTransition } from "react";
-import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Icon } from "@/components/studio/coach/icons";
@@ -66,7 +66,7 @@ export function SwapExerciseButton({
   // Typing runs ahead of the subscription: the field stays responsive and the
   // list catches up, rather than a new query being opened per keystroke.
   const search = useDeferredValue(query);
-  const options = useQuery(
+  const options = useAuthedQuery(
     api.plan.swapOptions,
     open || eager ? { assignmentId: assignmentId as Id<"assignments">, itemId, search } : "skip",
   );

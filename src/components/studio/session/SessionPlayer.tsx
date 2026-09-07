@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
@@ -96,7 +96,7 @@ export function SessionPlayer({
 }) {
   const t = useTranslations("Studio.session");
   const router = useRouter();
-  const live = useQuery(api.plan.findAssignment, {
+  const live = useAuthedQuery(api.plan.findAssignment, {
     assignmentId: assignment.id as Id<"assignments">,
   });
   const current = live ?? assignment;
@@ -733,7 +733,6 @@ export function SessionPlayer({
                 <>
                   <SwapExerciseButton
                     compact
-                    eager
                     assignmentId={assignment.id}
                     itemId={step.itemId}
                     exerciseName={step.item.exerciseName}

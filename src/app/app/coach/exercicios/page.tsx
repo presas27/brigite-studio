@@ -5,7 +5,7 @@ import { ExerciseLibrary } from "@/components/studio/library/ExerciseLibrary";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { requireCoach } from "@/lib/studio/auth";
-import { exerciseTags, listExercises } from "@/lib/studio/library";
+import { listExerciseLibrary } from "@/lib/studio/library";
 
 export const metadata: Metadata = {
   title: "Exercícios",
@@ -19,11 +19,11 @@ export const metadata: Metadata = {
 export default async function LibraryPage() {
   await requireCoach();
 
-  const [t, exercises, tags] = await Promise.all([
+  const [t, library] = await Promise.all([
     getTranslations("Studio.library"),
-    listExercises(),
-    exerciseTags(),
+    listExerciseLibrary(),
   ]);
+  const { exercises, tags } = library;
 
   return (
     <div className="space-y-8">

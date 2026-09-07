@@ -9,7 +9,7 @@ import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
-import type { Exercise } from "@/lib/studio/types";
+import type { ExerciseDigest } from "@/lib/studio/types";
 import { capitalize, searchKey } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseListRow } from "./ExerciseListRow";
@@ -27,7 +27,7 @@ export function ExerciseLibrary({
   exercises,
   tags,
 }: {
-  exercises: Exercise[];
+  exercises: ExerciseDigest[];
   tags: { tag: string; count: number }[];
 }) {
   const t = useTranslations("Studio.library");
@@ -46,8 +46,6 @@ export function ExerciseLibrary({
       const matchesQuery =
         !needle ||
         searchKey(exercise.name).includes(needle) ||
-        searchKey(exercise.cues).includes(needle) ||
-        searchKey(exercise.cuesEn).includes(needle) ||
         exercise.tags.some((exerciseTag) => searchKey(exerciseTag).includes(needle));
       const matchesTag = !tag || exercise.tags.includes(tag);
       return matchesQuery && matchesTag;

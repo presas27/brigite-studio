@@ -6,7 +6,7 @@ import { Empty } from "@/components/studio/Empty";
 import { shortWeekday } from "@/components/studio/format";
 import { chip, chipAccent, eyebrow, heading, surfaceLink } from "@/components/studio/theme";
 import { requireCoach } from "@/lib/studio/auth";
-import { coachAlerts, recentActivity, unreadTotal } from "@/lib/studio/coaching";
+import { coachShell, recentActivity } from "@/lib/studio/coaching";
 import { dayKey } from "@/lib/studio/dates";
 import { studioAssignmentsBetween } from "@/lib/studio/plan";
 import { listClients } from "@/lib/studio/users";
@@ -26,14 +26,13 @@ import { cn } from "@/lib/utils";
  */
 export default async function OverviewPage() {
   const today = dayKey();
-  const [coach, t, locale, clients, alerts, activity, unreadMessages, todaySessions] = await Promise.all([
+  const [coach, t, locale, clients, shell, activity, todaySessions] = await Promise.all([
     requireCoach(),
     getTranslations("Studio.overview"),
     getLocale(),
     listClients(),
-    coachAlerts(),
+    coachShell(),
     recentActivity(24),
-    unreadTotal(),
     studioAssignmentsBetween(today, today),
   ]);
 
@@ -47,8 +46,8 @@ export default async function OverviewPage() {
         </header>
 
         <OverviewInbox
-          initialAlerts={alerts}
-          initialUnread={unreadMessages}
+          initialAlerts={shell.alerts}
+          initialUnread={shell.unread}
           clientCount={clients.length}
         />
 

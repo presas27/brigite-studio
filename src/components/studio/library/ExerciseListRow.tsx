@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { Exercise } from "@/lib/studio/types";
+import type { ExerciseDigest } from "@/lib/studio/types";
 import { capitalize } from "@/lib/utils";
 import { ExerciseThumb } from "./ExerciseThumb";
 
@@ -10,7 +10,7 @@ import { ExerciseThumb } from "./ExerciseThumb";
  * One exercise as a row rather than a tile — same picture-first identity as
  * the grid card, just compact enough to scan a long library at a glance.
  */
-export function ExerciseListRow({ exercise }: { exercise: Exercise }) {
+export function ExerciseListRow({ exercise }: { exercise: ExerciseDigest }) {
   const t = useTranslations("Studio.library");
   const context = [t(`tracking.${exercise.tracking}`), ...exercise.tags.map((tag) => capitalize(tag))].join(
     " · ",

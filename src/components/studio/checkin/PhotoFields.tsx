@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { eyebrow, muted } from "@/components/studio/theme";
+import { eyebrow } from "@/components/studio/theme";
 import { PHOTO_ANGLES } from "@/lib/studio/photos";
 import type { ProgressPhoto } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,6 @@ export async function PhotoFields({
   return (
     <fieldset className="space-y-2">
       <legend className={cn(eyebrow, "mb-1")}>{t("fieldsLabel")}</legend>
-      <p className={cn(muted, "text-xs")}>{t("fieldsHint")}</p>
       <div className="grid grid-cols-3 gap-3">
         {PHOTO_ANGLES.map((angle) => (
           <PhotoAngleField

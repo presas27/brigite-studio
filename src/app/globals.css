@@ -119,6 +119,36 @@ html[data-studio-theme="light"] .studio {
   color: var(--foreground);
 }
 
+/*
+ * Aluna phone dock. Real glass, not a grey rectangle: the page shows through,
+ * a 1px inner highlight fakes the rim, and reduced-transparency falls back to
+ * an opaque lift so the icons never float on unreadable blur.
+ */
+.aluno-dock {
+  background: color-mix(in srgb, var(--ink-lift) 58%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--on-dark) 32%, transparent),
+    0 18px 40px -18px rgba(18, 4, 10, 0.38);
+  outline: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+  contain: layout;
+}
+html[data-studio-theme="light"] .aluno-dock {
+  background: color-mix(in srgb, #fffdfd 64%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 16px 36px -16px rgba(36, 26, 30, 0.2);
+  outline-color: color-mix(in srgb, var(--cream) 10%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .aluno-dock {
+    background: var(--ink-lift);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Trackpad rubber-band bounce and touch fling overscroll both scroll the
    document a few (or, on a fast mobile fling, a few hundred) px past its own
    content, which is exactly what exposes the near-black `body`/`html` beneath

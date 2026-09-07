@@ -4,7 +4,9 @@ import { useState } from "react";
 import { MorphHeight } from "../MorphHeight";
 import { SegmentedTrack } from "../SegmentedTrack";
 import { Icon, type IconName } from "../coach/icons";
+import { heading } from "../theme";
 import { cn } from "@/lib/utils";
+
 type View = "form" | "history";
 
 function ViewTab({
@@ -36,19 +38,20 @@ function ViewTab({
 }
 
 /**
- * Two views of the same week, one card. The toggle sits above the card on the
- * same edge as the submit button, so the whole panel has a single right margin.
- *
- * Both views stay mounted and the inactive one is hidden: the form is
- * uncontrolled, and unmounting it to peek at last week would throw away
- * whatever had been typed.
+ * Title, lead and the form/history switch share one row so the toggle sits
+ * where the page action always sits — top right, against the display face —
+ * instead of floating in the gap above the card.
  */
 export function CheckinPanel({
+  title,
+  lead,
   formLabel,
   historyLabel,
   form,
   history,
 }: {
+  title: string;
+  lead?: string;
   formLabel: string;
   historyLabel: string;
   form: React.ReactNode;
@@ -57,22 +60,28 @@ export function CheckinPanel({
   const [view, setView] = useState<View>("form");
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-end">
-        <SegmentedTrack value={view} thumbClassName="bg-butter">
-          <ViewTab
-            icon="checkin"
-            label={formLabel}
-            active={view === "form"}
-            onSelect={() => setView("form")}
-          />
-          <ViewTab
-            icon="history"
-            label={historyLabel}
-            active={view === "history"}
-            onSelect={() => setView("history")}
-          />
-        </SegmentedTrack>
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className={cn(heading, "text-[1.75rem] sm:text-[2.25rem]")}>{title}</h1>
+          {lead && <p className="mt-2 max-w-prose text-sm leading-relaxed text-cream/60">{lead}</p>}
+        </div>
+        <div className="mt-1 shrink-0">
+          <SegmentedTrack value={view} thumbClassName="bg-butter">
+            <ViewTab
+              icon="checkin"
+              label={formLabel}
+              active={view === "form"}
+              onSelect={() => setView("form")}
+            />
+            <ViewTab
+              icon="history"
+              label={historyLabel}
+              active={view === "history"}
+              onSelect={() => setView("history")}
+            />
+          </SegmentedTrack>
+        </div>
       </div>
       <MorphHeight contentKey={view}>
         <div hidden={view !== "form"}>{form}</div>

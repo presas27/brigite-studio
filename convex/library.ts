@@ -80,6 +80,14 @@ const exerciseShape = v.object({
   createdAt: v.number(),
 });
 
+const exerciseDigestShape = v.object({
+  id: v.string(),
+  name: v.string(),
+  videoUrl: v.union(v.null(), v.string()),
+  tags: v.array(v.string()),
+  tracking,
+});
+
 const itemShape = v.object({
   id: v.string(),
   position: v.number(),
@@ -335,16 +343,47 @@ async function orderBlocks(
 
 export const listExercises = query({
   args: { search: v.optional(v.string()), tag: v.optional(v.string()) },
-  returns: v.array(exerciseShape),
+  returns: v.array(exerciseDigestShape),
   handler: async (ctx, args) => {
     await requireBuilder(ctx);
     const search = args.search?.trim();
     const tag = args.tag?.trim();
     const docs = search ? await searchExercises(ctx, search) : await liveExercises(ctx);
-    // Tags are an array field, so there is no index to range over: the SQL
-    // matched them with `tags LIKE '%"mobilidade"%'`, which was a table scan too.
     const matching = tag ? docs.filter((doc) => doc.tags.includes(tag)) : docs;
-    return matching.map(mapExercise);
+    return matching.map((doc) => ({
+      id: doc._id as string,
+      name: doc.name,
+      videoUrl: doc.videoUrl,
+      tags: doc.tags,
+      tracking: doc.tracking,
+    }));
+  },
+});
+
+/** Library grid: digest rows plus tag counts, from one table read. */
+export const listExerciseLibrary = query({
+  args: {},
+  returns: v.object({
+    exercises: v.array(exerciseDigestShape),
+    tags: v.array(tagCountShape),
+  }),
+  handler: async (ctx) => {
+    await requireBuilder(ctx);
+    const docs = await liveExercises(ctx);
+    const counts = new Map<string, number>();
+    for (const doc of docs) {
+      for (const tag of doc.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+    return {
+      exercises: docs.map((doc) => ({
+        id: doc._id as string,
+        name: doc.name,
+        videoUrl: doc.videoUrl,
+        tags: doc.tags,
+        tracking: doc.tracking,
+      })),
+      tags: byFrequency(counts),
+    };
   },
 });
 

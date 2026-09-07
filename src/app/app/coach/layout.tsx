@@ -1,27 +1,22 @@
 import { CoachChrome } from "@/components/studio/coach/CoachChrome";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { requireCoach } from "@/lib/studio/auth";
-import { coachAlerts, unreadTotal } from "@/lib/studio/coaching";
+import { coachShell } from "@/lib/studio/coaching";
 import { getThemeMode } from "@/lib/studio/theme-mode";
 
 /**
  * Shell for every coach screen: persistent sidebar, topbar, main column.
  *
- * The badge counts are computed here rather than per page so the rail is a
- * standing answer to "does anything need me" — Sara should be able to tell
- * without navigating.
+ * Badge counts and the bell come from one Convex query (`coachShell`) rather
+ * than unread + alerts as two roster walks. The chrome resubscribes live.
  */
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const coach = await requireCoach();
 
-  const [unreadMessages, alerts, themeMode] = await Promise.all([
-    unreadTotal(),
-    coachAlerts(),
-    getThemeMode(),
-  ]);
+  const [shell, themeMode] = await Promise.all([coachShell(), getThemeMode()]);
 
   const badges: Record<string, number> = {};
-  if (unreadMessages > 0) badges["/app/coach/mensagens"] = unreadMessages;
+  if (shell.unread > 0) badges["/app/coach/mensagens"] = shell.unread;
 
   return (
     <CoachChrome
@@ -29,7 +24,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
       email={coach.email}
       themeMode={themeMode}
       badges={badges}
-      alerts={alerts}
+      alerts={shell.alerts}
       quickAdd={<AddWorkoutModal compact />}
     >
       {children}

@@ -8,9 +8,8 @@ import { WeekProgressCard } from "@/components/studio/aluno/overview/WeekProgres
 import { WeightCard } from "@/components/studio/aluno/overview/WeightCard";
 import { heading } from "@/components/studio/theme";
 import { requireClient } from "@/lib/studio/auth";
-import { clientOverview } from "@/lib/studio/clientConsole";
+import { clientChrome, clientOverview } from "@/lib/studio/clientConsole";
 import { dayKey } from "@/lib/studio/dates";
-import { assignmentsOn, nextAssignment } from "@/lib/studio/plan";
 import { myCoach } from "@/lib/studio/users";
 import { cn } from "@/lib/utils";
 
@@ -32,12 +31,13 @@ export default async function AlunoHojePage() {
   const t = await getTranslations("Studio.aluno");
 
   const today = dayKey();
-  const [overview, todaySessions, next, coach] = await Promise.all([
+  const [overview, chrome, coach] = await Promise.all([
     clientOverview(client.id),
-    assignmentsOn(client.id, today),
-    nextAssignment(client.id, today),
+    clientChrome(client.id),
     myCoach(),
   ]);
+  const todaySessions = chrome.today;
+  const next = chrome.next ?? undefined;
 
   // Today's session is the hero — the one still to do, same rule as the
   // topbar's button, so the two never point at different sessions. With

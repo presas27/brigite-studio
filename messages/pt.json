@@ -162,7 +162,8 @@
       "expand": "Expandir",
       "collapse": "Fechar",
       "programs": "Programas",
-      "intake": "Formulário"
+      "intake": "Formulário",
+      "more": "Mais"
     },
     "signIn": {
       "title": "Área de treino",
@@ -1016,6 +1017,8 @@
       "winsPlaceholder": "Consegui 20 segundos de parada de mãos.",
       "blockersLabel": "O que atrapalhou",
       "blockersPlaceholder": "Semana cheia no trabalho, dormi mal.",
+      "notesToggle": "Adicionar notas",
+      "notesPlaceholder": "O que correu bem, o que atrapalhou…",
       "submit": "Enviar check-in",
       "submitted": "Check-in enviado.",
       "alreadyDone": "Já enviaste o check-in desta semana. Podes atualizar.",

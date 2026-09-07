@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { StudioConvexProvider } from "@/components/studio/ConvexProvider";
 import { getToken } from "@/lib/studio/auth-server";
 
@@ -38,6 +40,11 @@ export const viewport: Viewport = {
 };
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
-  const token = await getToken();
-  return <StudioConvexProvider initialToken={token ?? null}>{children}</StudioConvexProvider>;
+  const [token, all] = await Promise.all([getToken(), getMessages()]);
+  const messages = { Studio: all.Studio, Error: all.Error };
+  return (
+    <NextIntlClientProvider messages={messages}>
+      <StudioConvexProvider initialToken={token ?? null}>{children}</StudioConvexProvider>
+    </NextIntlClientProvider>
+  );
 }

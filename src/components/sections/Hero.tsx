@@ -9,6 +9,7 @@ import { SplitText } from "gsap/SplitText";
 import { useGSAP } from "@gsap/react";
 import { Button } from "@/components/ui/Button";
 import { SolMark } from "@/components/ui/SolMark";
+import { playfair } from "./playfair";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -130,7 +131,7 @@ export function Hero() {
             >
               {t.rich("title", {
                 i: (chunks) => (
-                  <em className="font-serif text-[0.92em] lowercase italic">
+                  <em className={`${playfair.className} text-[0.92em] lowercase italic`}>
                     {chunks}
                   </em>
                 ),

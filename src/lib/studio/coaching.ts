@@ -1,6 +1,7 @@
+import { cache } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { sm, sq } from "@/lib/studio/convexServer";
+import { sm, sq } from "./convexServer";
 import type { ActivityItem, Checkin, CoachAlert, Measurement, Message } from "./types";
 
 /**
@@ -126,8 +127,12 @@ export async function measurements(
  * — the whole point is that she never has to go looking. Ordering is by
  * timestamp so the console reads like an inbox, not a dashboard.
  */
+export const coachShell = cache(async (): Promise<{ alerts: CoachAlert[]; unread: number }> => {
+  return sq(api.coaching.coachShell, {});
+});
+
 export async function coachAlerts(): Promise<CoachAlert[]> {
-  return sq(api.coaching.coachAlerts, {});
+  return (await coachShell()).alerts;
 }
 
 /**

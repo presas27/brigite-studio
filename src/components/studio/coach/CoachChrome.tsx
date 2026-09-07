@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
 import { StudioChrome, type ChromeSection } from "@/components/studio/chrome/StudioChrome";
 import { api } from "@convex/_generated/api";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
@@ -69,12 +69,11 @@ export function CoachChrome({
   alerts: CoachAlert[];
   children: React.ReactNode;
 }) {
-  const liveUnread = useQuery(api.coaching.unreadTotal, {});
-  const liveAlerts = useQuery(api.coaching.coachAlerts, {});
-  const alerts = liveAlerts ?? initialAlerts;
+  const live = useAuthedQuery(api.coaching.coachShell, {});
+  const alerts = live?.alerts ?? initialAlerts;
   const badges = { ...initialBadges };
-  if (liveUnread !== undefined) {
-    if (liveUnread > 0) badges["/app/coach/mensagens"] = liveUnread;
+  if (live !== undefined) {
+    if (live.unread > 0) badges["/app/coach/mensagens"] = live.unread;
     else delete badges["/app/coach/mensagens"];
   }
 

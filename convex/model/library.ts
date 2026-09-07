@@ -325,7 +325,8 @@ export async function workoutSize(
  * `workoutWithBlocks`: no exercise, cue or video is fetched to draw a card.
  */
 export async function workoutSummary(ctx: Ctx, doc: Doc<"workouts">): Promise<WorkoutSummary> {
-  const { itemCount } = await workoutSize(ctx, doc._id);
+  const itemCount =
+    typeof doc.itemCount === "number" ? doc.itemCount : (await workoutSize(ctx, doc._id)).itemCount;
   return { ...workoutMeta(doc), itemCount };
 }
 
@@ -377,6 +378,8 @@ export async function insertWorkout(
     position: input.position,
     archived: false,
     updatedAt: Date.now(),
+    itemCount: 0,
+    blockCount: 0,
     estimatedMinutes: input.estimatedMinutes ?? null,
     libraryCategory: input.libraryCategory ?? "master",
     programPhaseId: input.programPhaseId ?? null,
@@ -525,7 +528,8 @@ export async function deleteWorkoutCascade(
  * last touched, and adding an exercise to it is touching it.
  */
 export async function touchWorkout(ctx: MutationCtx, workoutId: Id<"workouts">): Promise<void> {
-  await ctx.db.patch("workouts", workoutId, { updatedAt: Date.now() });
+  const { itemCount, blockCount } = await workoutSize(ctx, workoutId);
+  await ctx.db.patch("workouts", workoutId, { updatedAt: Date.now(), itemCount, blockCount });
 }
 
 /**

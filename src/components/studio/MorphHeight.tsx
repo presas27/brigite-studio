@@ -3,9 +3,8 @@
 import { useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
-const DURATION_MS = 400;
-const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
-
+const DEFAULT_DURATION_MS = 400;
+const DEFAULT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /**
  * Tweens its own height when `contentKey` changes, so a swap of inner content
  * (chart → empty, form → history, month → week) does not jump.
@@ -26,12 +25,16 @@ export function MorphHeight({
   className,
   fade = true,
   appear = false,
+  durationMs = DEFAULT_DURATION_MS,
+  ease = DEFAULT_EASE,
 }: {
   contentKey: string;
   children: React.ReactNode;
   className?: string;
   fade?: boolean;
   appear?: boolean;
+  durationMs?: number;
+  ease?: string;
 }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -84,14 +87,14 @@ export function MorphHeight({
       if (event.propertyName === "height") settle();
     };
     box.addEventListener("transitionend", onEnd);
-    const fallback = window.setTimeout(settle, DURATION_MS + 80);
+    const fallback = window.setTimeout(settle, durationMs + 80);
 
     window.setTimeout(() => {
       if (!box.isConnected) return;
-      box.style.transition = `height ${DURATION_MS}ms ${EASE}`;
+      box.style.transition = `height ${durationMs}ms ${ease}`;
       box.style.height = `${to}px`;
       if (fade) {
-        content.style.transition = `opacity 300ms ${EASE}, transform 300ms ${EASE}`;
+        content.style.transition = `opacity 300ms ${ease}, transform 300ms ${ease}`;
         content.style.opacity = "1";
         content.style.transform = "translateY(0)";
       }
@@ -101,7 +104,7 @@ export function MorphHeight({
       box.removeEventListener("transitionend", onEnd);
       window.clearTimeout(fallback);
     };
-  }, [appear, contentKey, fade]);
+  }, [appear, contentKey, durationMs, ease, fade]);
 
   return (
     <div ref={outer} className={cn(className)}>

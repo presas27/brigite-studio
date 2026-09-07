@@ -7,6 +7,7 @@ import BatteryPauseIcon from "@/components/ui/battery-pause-icon";
 import ChartBarIcon from "@/components/ui/chart-bar-icon";
 import ChartLineIcon from "@/components/ui/chart-line-icon";
 import ClockIcon from "@/components/ui/clock-icon";
+import ClipboardListIcon from "@/components/ui/clipboard-list-icon";
 import CopyIcon from "@/components/ui/copy-icon";
 import DotsVerticalIcon from "@/components/ui/dots-vertical-icon";
 import DownloadIcon from "@/components/ui/download-icon";
@@ -33,6 +34,7 @@ import SendIcon from "@/components/ui/send-icon";
 import SimpleCheckedIcon from "@/components/ui/simple-checked-icon";
 import SlidersHorizontalIcon from "@/components/ui/sliders-horizontal-icon";
 import Stack3Icon from "@/components/ui/stack-3-icon";
+import SquatBarbellIcon from "@/components/ui/squat-barbell-icon";
 import TargetIcon from "@/components/ui/target-icon";
 import TelephoneIcon from "@/components/ui/telephone-icon";
 import TrashIcon from "@/components/ui/trash-icon";
@@ -56,9 +58,10 @@ const ICONS = {
   clients: UsersGroupIcon,
   calendar: ClockIcon,
   video: PlayerIcon,
-  checkin: SimpleCheckedIcon,
+  checkin: ClipboardListIcon,
   library: LibraryIcon,
   dumbbell: TargetIcon,
+  squat: SquatBarbellIcon,
   bell: FilledBellIcon,
   alert: TriangleAlertIcon,
   print: FileDescriptionIcon,

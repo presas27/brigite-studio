@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
 import { useTranslations } from "next-intl";
 import { api } from "@convex/_generated/api";
 import type { CoachAlert } from "@/lib/studio/types";
@@ -35,8 +35,9 @@ export function OverviewInbox({
   const t = useTranslations("Studio.overview");
   const tToday = useTranslations("Studio.today");
   const tClients = useTranslations("Studio.clients");
-  const alerts = useQuery(api.coaching.coachAlerts, {}) ?? initialAlerts;
-  const unread = useQuery(api.coaching.unreadTotal, {}) ?? initialUnread;
+  const shell = useAuthedQuery(api.coaching.coachShell, {});
+  const alerts = shell?.alerts ?? initialAlerts;
+  const unread = shell?.unread ?? initialUnread;
 
   const stats: { key: string; value: number; href: string }[] = [
     { key: "activeClients", value: clientCount, href: "/app/coach/alunos" },

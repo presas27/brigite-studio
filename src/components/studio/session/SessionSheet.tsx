@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
@@ -288,7 +288,7 @@ function previousLabel(step: SessionStep, previous?: SetLog) {
   return previous.seconds != null ? `${previous.seconds}s` : "—";
 }
 
-function SheetSetRow({
+const SheetSetRow = memo(function SheetSetRow({
   step,
   value,
   previous,
@@ -440,4 +440,4 @@ function SheetSetRow({
       </button>
     </div>
   );
-}
+});

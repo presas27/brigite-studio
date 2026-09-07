@@ -3,9 +3,8 @@ import { AlunoChrome } from "@/components/studio/aluno/AlunoChrome";
 import { CoachChrome } from "@/components/studio/coach/CoachChrome";
 import { AddWorkoutModal } from "@/components/studio/workout/AddWorkoutModal";
 import { currentUser } from "@/lib/studio/auth";
-import { clientAlerts } from "@/lib/studio/clientConsole";
-import { coachAlerts, findCheckin, unreadCount, unreadTotal } from "@/lib/studio/coaching";
-import { weekKey } from "@/lib/studio/dates";
+import { clientChrome } from "@/lib/studio/clientConsole";
+import { coachShell } from "@/lib/studio/coaching";
 import { getThemeMode } from "@/lib/studio/theme-mode";
 import { myCoach } from "@/lib/studio/users";
 
@@ -25,10 +24,10 @@ export default async function AccountLayout({ children }: { children: React.Reac
   const themeMode = await getThemeMode();
 
   if (user.role === "coach") {
-    const [unread, alerts] = await Promise.all([unreadTotal(), coachAlerts()]);
+    const shell = await coachShell();
 
     const badges: Record<string, number> = {};
-    if (unread > 0) badges["/app/coach/mensagens"] = unread;
+    if (shell.unread > 0) badges["/app/coach/mensagens"] = shell.unread;
 
     return (
       <CoachChrome
@@ -36,7 +35,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
         email={user.email}
         themeMode={themeMode}
         badges={badges}
-        alerts={alerts}
+        alerts={shell.alerts}
         quickAdd={<AddWorkoutModal compact />}
       >
         {children}
@@ -44,16 +43,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
     );
   }
 
-  const [unread, checkin, alerts, coach] = await Promise.all([
-    unreadCount(user.id),
-    findCheckin(user.id, weekKey()),
-    clientAlerts(user.id),
-    myCoach(),
-  ]);
-
-  const badges: Record<string, number> = {};
-  if (unread > 0) badges["/app/aluno/mensagens"] = unread;
-  if (checkin?.submittedAt == null) badges["/app/aluno/checkin"] = 1;
+  const [chrome, coach] = await Promise.all([clientChrome(user.id), myCoach()]);
 
   return (
     <AlunoChrome
@@ -61,8 +51,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       name={user.name}
       email={user.email}
       themeMode={themeMode}
-      badges={badges}
-      alerts={alerts}
+      initialChrome={chrome}
       solo={!coach}
     >
       {children}

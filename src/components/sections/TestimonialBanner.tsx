@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { useGSAP } from "@gsap/react";
 import { SolMark } from "@/components/ui/SolMark";
+import { playfair } from "./playfair";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -114,7 +115,7 @@ export function TestimonialBanner() {
           </p>
         </blockquote>
         <figcaption ref={attrRef} className="mt-8">
-          <span className="font-serif text-xl italic">{t("name")}</span>
+          <span className={`${playfair.className} text-xl italic`}>{t("name")}</span>
           <span className="mt-1 block text-sm text-on-dark/65">{t("role")}</span>
         </figcaption>
       </figure>

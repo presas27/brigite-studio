@@ -66,6 +66,9 @@ export type Exercise = {
   createdAt: number;
 };
 
+/** List/picker row: identity without bilingual cues. */
+export type ExerciseDigest = Pick<Exercise, "id" | "name" | "videoUrl" | "tags" | "tracking">;
+
 /**
  * One row of the seeded library: what a library entry looks like before it has
  * an id, a demo or a history. Hand-written entries live in `seed.ts`; the ones

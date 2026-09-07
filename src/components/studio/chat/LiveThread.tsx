@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useTranslations } from "next-intl";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Empty } from "@/components/studio/Empty";
@@ -36,7 +37,7 @@ export function LiveThread({
 }) {
   const t = useTranslations("Studio.messages");
   const id = clientId as Id<"users">;
-  const messages = useQuery(api.coaching.messagesFor, { clientId: id }) ?? initialMessages;
+  const messages = useAuthedQuery(api.coaching.messagesFor, { clientId: id }) ?? initialMessages;
   const send = useMutation(api.coaching.sendMessage);
   const markRead = useMutation(api.coaching.markThreadRead);
 

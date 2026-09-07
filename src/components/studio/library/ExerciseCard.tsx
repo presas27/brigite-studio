@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { Exercise } from "@/lib/studio/types";
+import type { ExerciseDigest } from "@/lib/studio/types";
 import { capitalize } from "@/lib/utils";
 import { ExerciseThumb } from "./ExerciseThumb";
 
@@ -12,7 +12,7 @@ import { ExerciseThumb } from "./ExerciseThumb";
  * on the exercise's own page, so the grid stays something Sara can scan for the
  * movement she has in mind instead of a wall of open forms.
  */
-export function ExerciseCard({ exercise }: { exercise: Exercise }) {
+export function ExerciseCard({ exercise }: { exercise: ExerciseDigest }) {
   const t = useTranslations("Studio.library");
   const context = [t(`tracking.${exercise.tracking}`), ...exercise.tags.map((tag) => capitalize(tag))].join(
     " · ",

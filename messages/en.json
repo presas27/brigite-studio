@@ -162,7 +162,8 @@
       "expand": "Expand",
       "collapse": "Collapse",
       "programs": "Programs",
-      "intake": "Form"
+      "intake": "Form",
+      "more": "More"
     },
     "signIn": {
       "title": "Training area",
@@ -1016,6 +1017,8 @@
       "winsPlaceholder": "Held a 20 second handstand.",
       "blockersLabel": "What got in the way",
       "blockersPlaceholder": "Busy week at work, slept badly.",
+      "notesToggle": "Add notes",
+      "notesPlaceholder": "What went well, what got in the way…",
       "submit": "Send check-in",
       "submitted": "Check-in sent.",
       "alreadyDone": "You already sent this week's check-in. You can update it.",

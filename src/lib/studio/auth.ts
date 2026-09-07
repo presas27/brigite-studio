@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -24,15 +25,15 @@ export type Session =
   | { state: "new"; email: string; name: string }
   | { state: "ready"; user: User };
 
-export async function session(): Promise<Session> {
+export const session = cache(async (): Promise<Session> => {
   return sq(api.users.me);
-}
+});
 
 /** The signed-in user, or `undefined`. Safe to call from any server context. */
-export async function currentUser(): Promise<User | undefined> {
+export const currentUser = cache(async (): Promise<User | undefined> => {
   const current = await session();
   return current.state === "ready" ? current.user : undefined;
-}
+});
 
 /** Where a session with no account yet goes, and where anonymous visitors go. */
 function bounce(current: Session): never {
@@ -40,45 +41,47 @@ function bounce(current: Session): never {
 }
 
 /** Gate for coach-only routes and actions. Redirects when not a coach. */
-export async function requireCoach(): Promise<User> {
+export const requireCoach = cache(async (): Promise<User> => {
   const current = await session();
   if (current.state !== "ready") bounce(current);
   if (current.user.role !== "coach") redirect("/app/aluno");
   return current.user;
-}
+});
+
+const meAsClient = cache(async () => sq(api.users.meAsClient));
 
 /** Gate for client-only routes and actions. */
-export async function requireClient(): Promise<Client> {
+export const requireClient = cache(async (): Promise<Client> => {
   const current = await session();
   if (current.state !== "ready") bounce(current);
   if (current.user.role === "coach") redirect("/app/coach");
-  const client = await sq(api.users.meAsClient);
+  const client = await meAsClient();
   if (!client) redirect("/app/entrar");
   return client;
-}
+});
 
 /**
  * Gate for the workout builder: a coach, or a client training alone — who
  * writes their own sessions. A coached client is sent to their plan instead.
  * Mirrors `requireBuilder` in `convex/model/authz.ts`.
  */
-export async function requireBuilder(): Promise<User> {
+export const requireBuilder = cache(async (): Promise<User> => {
   const current = await session();
   if (current.state !== "ready") bounce(current);
   if (current.user.role === "coach") return current.user;
-  const client = await sq(api.users.meAsClient);
+  const client = await meAsClient();
   if (!client || client.profile.coachId !== null) redirect("/app/aluno");
   return current.user;
-}
+});
 
 /**
  * Gate for anything scoped to one client that either side may open: the
  * client's own coach, or the client themselves.
  */
-export async function requireClientAccess(clientId: string): Promise<{
+export const requireClientAccess = cache(async (clientId: string): Promise<{
   viewer: User;
   client: Client;
-}> {
+}> => {
   const current = await session();
   if (current.state !== "ready") bounce(current);
   const viewer = current.user;
@@ -91,4 +94,4 @@ export async function requireClientAccess(clientId: string): Promise<{
   );
   if (!client) redirect(viewer.role === "coach" ? "/app/coach/alunos" : "/app/aluno");
   return { viewer, client };
-}
+});

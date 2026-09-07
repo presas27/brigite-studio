@@ -1,11 +1,16 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import Link from "next/link";
+import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
+import { useTranslations } from "next-intl";
 import { StudioChrome, type ChromeSection } from "@/components/studio/chrome/StudioChrome";
+import { buttonPrimary } from "@/components/studio/theme";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import type { ClientAlert } from "@/lib/studio/clientConsole";
+import type { ClientChrome } from "@/lib/studio/clientConsole";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
+import { cn } from "@/lib/utils";
+import { AlunoDock } from "./AlunoDock";
 import { AlunoNotifications } from "./AlunoNotifications";
 
 /**
@@ -28,7 +33,7 @@ function sections(solo: boolean): ChromeSection[] {
       titleKey: "sections.training",
       items: [
         { href: "/app/aluno/plano", labelKey: "plan", icon: "calendar" },
-        { href: "/app/aluno/treinos", labelKey: "workouts", icon: "dumbbell" },
+        { href: "/app/aluno/treinos", labelKey: "workouts", icon: "squat" },
       ],
     },
     {
@@ -48,21 +53,15 @@ function sections(solo: boolean): ChromeSection[] {
 }
 
 /**
- * Aluna navigation. Same frame as the coach's — one app, one way of moving
- * through it — with her own eight destinations and her own bell.
- *
- * The rail collapses to icons on a laptop and becomes a drawer on a phone,
- * which is the shape that matters here: most of these screens get opened
- * between sets, one-handed.
+ * Aluna navigation. Same frame as the coach's on a laptop; on a phone the rail
+ * and topbar give way to a floating glass dock — one-handed, between sets.
  */
 export function AlunoChrome({
   clientId,
   name,
   email,
   themeMode,
-  badges: initialBadges,
-  alerts,
-  quickAction,
+  initialChrome,
   solo,
   children,
 }: {
@@ -70,37 +69,59 @@ export function AlunoChrome({
   name: string;
   email: string;
   themeMode: ThemeMode;
-  /** Counts keyed by href — rendered as a caramel pip on the nav item. */
-  badges: Record<string, number>;
-  /** Feeds the bell — the same list as the landing screen's "Para ti" panel. */
-  alerts: ClientAlert[];
-  /** The topbar's primary control: start or resume today's session. */
-  quickAction?: React.ReactNode;
+  initialChrome: ClientChrome;
   /** Training with no coach: no thread to open. */
   solo: boolean;
   children: React.ReactNode;
 }) {
-  const liveUnread = useQuery(
-    api.coaching.unreadCount,
-    solo ? "skip" : { clientId: clientId as Id<"users"> },
-  );
-  const badges = { ...initialBadges };
-  if (liveUnread !== undefined) {
-    if (liveUnread > 0) badges["/app/aluno/mensagens"] = liveUnread;
-    else delete badges["/app/aluno/mensagens"];
-  }
+  const t = useTranslations("Studio.session");
+  const live = useAuthedQuery(api.plan.clientChrome, { clientId: clientId as Id<"users"> });
+  const chrome = live ?? initialChrome;
 
+  const badges: Record<string, number> = {};
+  if (chrome.unread > 0) badges["/app/aluno/mensagens"] = chrome.unread;
+  if (chrome.checkinPending) badges["/app/aluno/checkin"] = 1;
+
+  const session =
+    chrome.today.find((assignment) => assignment.status === "scheduled") ?? chrome.next;
+  const nav = sections(solo);
   return (
     <StudioChrome
       role="client"
       homeHref="/app/aluno"
-      sections={sections(solo)}
+      sections={nav}
       name={name}
       email={email}
       themeMode={themeMode}
       badges={badges}
-      actions={quickAction}
-      notifications={<AlunoNotifications alerts={alerts} />}
+      mobileChrome="dock"
+      mobileDock={
+        <AlunoDock
+          items={nav.flatMap((section) => section.items)}
+          badges={badges}
+          name={name}
+          alerts={chrome.alerts}
+          session={
+            session
+              ? {
+                  href: `/app/aluno/treino/${session.id}`,
+                  label: session.startedAt ? t("resume") : t("start"),
+                }
+              : null
+          }
+        />
+      }
+      actions={
+        session && (
+          <Link
+            href={`/app/aluno/treino/${session.id}`}
+            className={cn(buttonPrimary, "whitespace-nowrap px-5 py-2.5 text-xs")}
+          >
+            {session.startedAt ? t("resume") : t("start")}
+          </Link>
+        )
+      }
+      notifications={<AlunoNotifications alerts={chrome.alerts} />}
     >
       {children}
     </StudioChrome>

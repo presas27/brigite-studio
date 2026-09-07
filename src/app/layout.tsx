@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Geist, Playfair_Display } from "next/font/google";
+import { Anton, Geist } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getThemeMode } from "@/lib/studio/theme-mode";
@@ -20,14 +20,7 @@ const anton = Anton({
   display: "swap",
 });
 
-// Playfair survives italic-only, in exactly two places: one lowercase
-// word in the hero headline and the testimonial attribution name.
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  style: ["italic"],
-  display: "swap",
-});
+
 
 export const viewport: Viewport = {
   themeColor: "#8f2a3a",
@@ -66,7 +59,7 @@ export default async function RootLayout({
       lang={locale}
       data-scroll-behavior="smooth"
       data-studio-theme={themeMode}
-      className={`${geistSans.variable} ${anton.variable} ${playfair.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${anton.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>

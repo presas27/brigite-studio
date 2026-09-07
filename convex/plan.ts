@@ -10,9 +10,10 @@ import {
   workoutWithBlocks,
 } from "./model/library";
 import schema from "./schema";
-import { dayKey, shiftDay } from "../src/lib/studio/dates";
+import { dayKey, shiftDay, weekKey } from "../src/lib/studio/dates";
 import { searchKey } from "../src/lib/utils";
 import { buildSessionQueue } from "../src/lib/studio/session-queue";
+import { unreadTail } from "./coaching";
 import type {
   Assignment,
   AssignmentSummary,
@@ -94,6 +95,53 @@ const assignmentSummaryShape = v.object({
 });
 
 const scheduledSummaryShape = v.object({ ...assignmentSummaryFields, date: v.string() });
+
+const overviewDayShape = v.object({
+  date: v.string(),
+  status: v.union(v.null(), assignmentColumns.status),
+  total: v.number(),
+  done: v.number(),
+});
+
+const overviewSessionShape = v.object({
+  id: v.string(),
+  date: v.string(),
+  name: v.string(),
+  focus: v.string(),
+  itemCount: v.number(),
+  estimatedMinutes: v.union(v.null(), v.number()),
+  videoUrl: v.union(v.null(), v.string()),
+  startedAt: v.union(v.null(), v.number()),
+});
+
+const clientAlertShape = v.union(
+  v.object({
+    kind: v.literal("session"),
+    at: v.number(),
+    assignmentId: v.string(),
+    name: v.string(),
+  }),
+  v.object({ kind: v.literal("checkin"), at: v.number(), weekOf: v.string() }),
+  v.object({ kind: v.literal("message"), at: v.number(), count: v.number() }),
+  v.object({
+    kind: v.literal("missed"),
+    at: v.number(),
+    assignmentId: v.string(),
+    date: v.string(),
+    name: v.string(),
+  }),
+);
+
+const ADHERENCE_DAYS = 28;
+const UPCOMING_LIMIT = 4;
+const WEIGHT_POINTS = 12;
+const STREAK_LIMIT = 52;
+const HORIZON_DAYS = 120;
+const MISSED_WINDOW_DAYS = 14;
+
+function atNoon(key: string): number {
+  return Date.parse(`${key}T12:00:00Z`);
+}
 
 const studioSummaryShape = v.object({
   ...assignmentSummaryFields,
@@ -694,23 +742,31 @@ export const clientWorkouts = query({
         : [];
     const workouts = [...inPlan, ...own];
 
+    const allAssignments = await ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId))
+      .collect();
+    const assignmentsByWorkout = new Map<string, Doc<"assignments">[]>();
+    for (const assignment of allAssignments) {
+      if (!assignment.workoutId) continue;
+      const key = assignment.workoutId as string;
+      const list = assignmentsByWorkout.get(key);
+      if (list) list.push(assignment);
+      else assignmentsByWorkout.set(key, [assignment]);
+    }
+
     const rows = await Promise.all(
       workouts.map(async (doc) => {
-        const [size, assignments] = await Promise.all([
-          workoutSize(ctx, doc._id),
-          ctx.db
-            .query("assignments")
-            .withIndex("by_workout", (q) => q.eq("workoutId", doc._id))
-            .collect(),
-        ]);
+        const size =
+          typeof doc.itemCount === "number" && typeof doc.blockCount === "number"
+            ? { itemCount: doc.itemCount, blockCount: doc.blockCount }
+            : await workoutSize(ctx, doc._id);
+        const assignments = assignmentsByWorkout.get(doc._id as string) ?? [];
 
         let lastDoneDate: string | null = null;
         let doneCount = 0;
         let open: Doc<"assignments"> | null = null;
         for (const assignment of assignments) {
-          // A phase copy belongs to one client, but the index is not scoped by
-          // one — so the ownership is checked rather than assumed.
-          if (assignment.clientId !== args.clientId) continue;
           if (assignment.status === "done") {
             doneCount += 1;
             if (assignment.date && (!lastDoneDate || assignment.date > lastDoneDate)) {
@@ -854,6 +910,236 @@ export const nextAssignment = query({
       return { ...mapAssignmentSummary(doc), date: doc.date };
     }
     return null;
+  },
+});
+
+/**
+ * The aluna landing grid, in one indexed range: this week, 28-day adherence,
+ * upcoming sessions, weight sparkline, and week streak. Streak used to be one
+ * query per week (up to 52); it now walks the same documents already loaded
+ * for the rest of the grid.
+ */
+export const clientOverview = query({
+  args: { clientId: v.id("users") },
+  returns: v.object({
+    week: v.array(overviewDayShape),
+    adherenceDone: v.number(),
+    adherenceTotal: v.number(),
+    adherencePct: v.number(),
+    upcoming: v.array(overviewSessionShape),
+    weight: v.union(
+      v.null(),
+      v.object({
+        latest: v.number(),
+        delta: v.union(v.null(), v.number()),
+        series: v.array(v.number()),
+      }),
+    ),
+    streakWeeks: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const today = dayKey();
+    const monday = weekKey();
+    const from = shiftDay(monday, -7 * STREAK_LIMIT);
+    const to = shiftDay(today, HORIZON_DAYS);
+    const days = Array.from({ length: 7 }, (_, offset) => shiftDay(monday, offset));
+
+    const [docs, hidden, weightNewestFirst] = await Promise.all([
+      ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) =>
+          q.eq("clientId", args.clientId).gte("date", from).lte("date", to),
+        )
+        .collect(),
+      hiddenFor(ctx, args.clientId, viewer),
+      (async () => {
+        const found: number[] = [];
+        let scanned = 0;
+        for await (const doc of ctx.db
+          .query("measurements")
+          .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId))
+          .order("desc")) {
+          scanned += 1;
+          if (doc.kind === "weight") found.push(doc.value);
+          if (found.length >= WEIGHT_POINTS || scanned >= 600) break;
+        }
+        return found;
+      })(),
+    ]);
+
+    const summaries = scheduledSummaries(visible(docs, hidden));
+
+    const byDate = new Map<string, ScheduledSummary[]>();
+    for (const assignment of summaries) {
+      const list = byDate.get(assignment.date);
+      if (list) list.push(assignment);
+      else byDate.set(assignment.date, [assignment]);
+    }
+
+    const week = days.map((date) => {
+      const sessions = byDate.get(date) ?? [];
+      let status: Infer<typeof assignmentColumns.status> | null = null;
+      if (sessions.length === 0) status = null;
+      else if (sessions.every((session) => session.status === "done")) status = "done";
+      else if (date < today) status = "skipped";
+      else if (sessions.some((session) => session.status === "scheduled")) status = "scheduled";
+      else status = "skipped";
+      return {
+        date,
+        status,
+        total: sessions.length,
+        done: sessions.filter((session) => session.status === "done").length,
+      };
+    });
+
+    const adherenceFrom = shiftDay(today, -ADHERENCE_DAYS);
+    let adherenceDone = 0;
+    let adherenceTotal = 0;
+    const upcoming: Infer<typeof overviewSessionShape>[] = [];
+    for (const assignment of summaries) {
+      if (assignment.date >= adherenceFrom && assignment.date <= today) {
+        adherenceTotal += 1;
+        if (assignment.status === "done") adherenceDone += 1;
+      }
+      if (
+        assignment.date > today &&
+        assignment.status === "scheduled" &&
+        upcoming.length < UPCOMING_LIMIT
+      ) {
+        upcoming.push({
+          id: assignment.id,
+          date: assignment.date,
+          name: assignment.name,
+          focus: assignment.focus.trim(),
+          itemCount: assignment.itemCount,
+          estimatedMinutes: assignment.estimatedMinutes,
+          videoUrl: assignment.videoUrl,
+          startedAt: assignment.startedAt,
+        });
+      }
+    }
+
+    let streakWeeks = 0;
+    for (let back = 1; back <= STREAK_LIMIT; back += 1) {
+      const weekMonday = shiftDay(monday, -7 * back);
+      const weekEnd = shiftDay(weekMonday, 6);
+      let scheduled = 0;
+      let allDone = true;
+      for (const assignment of summaries) {
+        if (assignment.date < weekMonday || assignment.date > weekEnd) continue;
+        scheduled += 1;
+        if (assignment.status !== "done") allDone = false;
+      }
+      if (scheduled === 0 || !allDone) break;
+      streakWeeks += 1;
+    }
+
+    const readings = weightNewestFirst.slice().reverse();
+    const latest = readings[readings.length - 1];
+
+    return {
+      week,
+      adherenceDone,
+      adherenceTotal,
+      adherencePct: adherenceTotal > 0 ? Math.round((adherenceDone / adherenceTotal) * 100) : 0,
+      upcoming,
+      weight:
+        latest == null
+          ? null
+          : {
+              latest,
+              delta: readings.length > 1 ? Number((latest - readings[0]).toFixed(1)) : null,
+              series: readings,
+            },
+      streakWeeks,
+    };
+  },
+});
+
+/**
+ * Everything the aluna chrome needs on every page: unread, check-in pip,
+ * today's sessions, the next one, and the bell. One assignment range covers
+ * missed + today + upcoming instead of four round trips that overlapped.
+ */
+export const clientChrome = query({
+  args: { clientId: v.id("users") },
+  returns: v.object({
+    unread: v.number(),
+    checkinPending: v.boolean(),
+    today: v.array(scheduledSummaryShape),
+    next: v.union(v.null(), scheduledSummaryShape),
+    alerts: v.array(clientAlertShape),
+  }),
+  handler: async (ctx, args) => {
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    const today = dayKey();
+    const week = weekKey();
+    const from = shiftDay(today, -MISSED_WINDOW_DAYS);
+    const to = shiftDay(today, HORIZON_DAYS);
+
+    const [docs, hidden, checkin, unreadDocs] = await Promise.all([
+      ctx.db
+        .query("assignments")
+        .withIndex("by_client_and_date", (q) =>
+          q.eq("clientId", args.clientId).gte("date", from).lte("date", to),
+        )
+        .collect(),
+      hiddenFor(ctx, args.clientId, viewer),
+      ctx.db
+        .query("checkins")
+        .withIndex("by_client_and_week", (q) =>
+          q.eq("clientId", args.clientId).eq("weekOf", week),
+        )
+        .first(),
+      unreadTail(ctx, args.clientId, viewer._id),
+    ]);
+
+    const summaries = scheduledSummaries(visible(docs, hidden));
+    const todaySessions = summaries.filter((assignment) => assignment.date === today);
+    let next: Infer<typeof scheduledSummaryShape> | null = null;
+    for (const assignment of summaries) {
+      if (assignment.date < today || assignment.status !== "scheduled") continue;
+      next = assignment;
+      break;
+    }
+
+    const unread = unreadDocs.length;
+    const checkinPending = checkin?.submittedAt == null;
+
+    const alerts: Infer<typeof clientAlertShape>[] = [];
+    for (const assignment of todaySessions) {
+      if (assignment.status !== "scheduled") continue;
+      alerts.push({
+        kind: "session",
+        at: atNoon(today),
+        assignmentId: assignment.id,
+        name: assignment.name,
+      });
+    }
+    if (checkinPending) {
+      alerts.push({ kind: "checkin", at: atNoon(week), weekOf: week });
+    }
+    if (unread > 0) {
+      alerts.push({
+        kind: "message",
+        at: unreadDocs[0]._creationTime,
+        count: unread,
+      });
+    }
+    for (const assignment of summaries) {
+      if (assignment.date >= today || assignment.status !== "scheduled") continue;
+      alerts.push({
+        kind: "missed",
+        at: atNoon(assignment.date),
+        assignmentId: assignment.id,
+        date: assignment.date,
+        name: assignment.name,
+      });
+    }
+    alerts.sort((a, b) => b.at - a.at);
+
+    return { unread, checkinPending, today: todaySessions, next, alerts };
   },
 });
 
