@@ -132,7 +132,6 @@ html[data-studio-theme="light"] .studio {
     inset 0 1px 0 color-mix(in srgb, var(--on-dark) 32%, transparent),
     0 18px 40px -18px rgba(18, 4, 10, 0.38);
   outline: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
-  contain: layout;
 }
 html[data-studio-theme="light"] .aluno-dock {
   background: color-mix(in srgb, #fffdfd 64%, transparent);

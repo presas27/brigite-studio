@@ -101,14 +101,15 @@ export function AlunoDock({
           )}
         </AnimatePresence>
 
-        <nav aria-label={t("mainMenu")} className="aluno-dock overflow-hidden rounded-[1.75rem]">
-          <MorphHeight
-            appear={false}
-            fade={false}
-            contentKey={more ? "open" : "shut"}
-            durationMs={520}
-            ease="cubic-bezier(0.22, 1, 0.36, 1)"
-          >
+        <nav aria-label={t("mainMenu")} className="aluno-dock rounded-[1.75rem]">
+          <div className="overflow-hidden rounded-[inherit]">
+            <MorphHeight
+              appear={false}
+              fade={false}
+              contentKey={more ? "open" : "shut"}
+              durationMs={520}
+              ease="cubic-bezier(0.22, 1, 0.36, 1)"
+            >
             {more ? (
               <div className="px-3 pt-3">
                 <ul className="space-y-0.5">
@@ -228,6 +229,7 @@ export function AlunoDock({
                 </span>
               </Link>
             </div>
+          </div>
           </div>
         </nav>
       </div>
