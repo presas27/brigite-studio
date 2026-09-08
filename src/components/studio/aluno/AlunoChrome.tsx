@@ -10,6 +10,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import type { ClientChrome } from "@/lib/studio/clientConsole";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
 import { cn } from "@/lib/utils";
+import { DayMarksProvider } from "@/components/studio/calendar/DayMarksProvider";
 import { AlunoDock } from "./AlunoDock";
 import { AlunoNotifications } from "./AlunoNotifications";
 
@@ -86,44 +87,46 @@ export function AlunoChrome({
     chrome.today.find((assignment) => assignment.status === "scheduled") ?? chrome.next;
   const nav = sections(solo);
   return (
-    <StudioChrome
-      role="client"
-      homeHref="/app/aluno"
-      sections={nav}
-      name={name}
-      email={email}
-      themeMode={themeMode}
-      badges={badges}
-      mobileChrome="dock"
-      mobileDock={
-        <AlunoDock
-          items={nav.flatMap((section) => section.items)}
-          badges={badges}
-          name={name}
-          alerts={chrome.alerts}
-          session={
-            session
-              ? {
-                  href: `/app/aluno/treino/${session.id}`,
-                  label: session.startedAt ? t("resume") : t("start"),
-                }
-              : null
-          }
-        />
-      }
-      actions={
-        session && (
-          <Link
-            href={`/app/aluno/treino/${session.id}`}
-            className={cn(buttonPrimary, "whitespace-nowrap px-5 py-2.5 text-xs")}
-          >
-            {session.startedAt ? t("resume") : t("start")}
-          </Link>
-        )
-      }
-      notifications={<AlunoNotifications alerts={chrome.alerts} />}
-    >
-      {children}
-    </StudioChrome>
+    <DayMarksProvider>
+      <StudioChrome
+        role="client"
+        homeHref="/app/aluno"
+        sections={nav}
+        name={name}
+        email={email}
+        themeMode={themeMode}
+        badges={badges}
+        mobileChrome="dock"
+        mobileDock={
+          <AlunoDock
+            items={nav.flatMap((section) => section.items)}
+            badges={badges}
+            name={name}
+            alerts={chrome.alerts}
+            session={
+              session
+                ? {
+                    href: `/app/aluno/treino/${session.id}`,
+                    label: session.startedAt ? t("resume") : t("start"),
+                  }
+                : null
+            }
+          />
+        }
+        actions={
+          session && (
+            <Link
+              href={`/app/aluno/treino/${session.id}`}
+              className={cn(buttonPrimary, "whitespace-nowrap px-5 py-2.5 text-xs")}
+            >
+              {session.startedAt ? t("resume") : t("start")}
+            </Link>
+          )
+        }
+        notifications={<AlunoNotifications alerts={chrome.alerts} />}
+      >
+        {children}
+      </StudioChrome>
+    </DayMarksProvider>
   );
 }

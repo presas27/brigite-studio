@@ -726,7 +726,8 @@
           "photos": "Photos",
           "bodyStats": "Body stats",
           "sleep": "Sleep"
-        }
+        },
+        "pinned": "Reminder"
       },
       "status": {
         "scheduled": "Scheduled",

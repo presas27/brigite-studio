@@ -1,6 +1,7 @@
 "use client";
 
 import { capitalize, cn } from "@/lib/utils";
+import { Icon } from "../coach/icons";
 import { formatDayNumber, formatLongDate, shortWeekday } from "../format";
 import { MorphHeight } from "../MorphHeight";
 import type { Translate } from "../plan/types";
@@ -12,6 +13,7 @@ import {
   type CalendarSubject,
   type CalendarView,
 } from "./types";
+import { markByKind, type DayMarkKind } from "./dayMarks";
 
 /** Tapes a month cell shows before it collapses the rest into "+n". */
 const MONTH_TAPES = 3;
@@ -31,6 +33,7 @@ type Props = {
   isToday: boolean;
   isSelected: boolean;
   sessions: CalendarSession[];
+  marks?: DayMarkKind[];
   locale: string;
   t: Translate;
   onSelect: (date: string) => void;
@@ -55,6 +58,7 @@ export function CalendarDay({
   isToday,
   isSelected,
   sessions,
+  marks = [],
   locale,
   t,
   onSelect,
@@ -73,6 +77,7 @@ export function CalendarDay({
   return (
     <button
       ref={innerRef}
+      data-plan-cell=""
       type="button"
       onClick={() => onSelect(date)}
       tabIndex={isSelected ? 0 : -1}
@@ -111,14 +116,25 @@ export function CalendarDay({
 
       {/* Below `sm` a month cell is ~44px wide: no name fits, so the day's load
           becomes a row of dots. The tapes take over as soon as there is room. */}
-      {isMonth && sessions.length > 0 && (
-        <span className="flex flex-wrap gap-1 sm:hidden">
-          {sessions.slice(0, 6).map((session) => (
+      {isMonth && (sessions.length > 0 || marks.length > 0) && (
+        <span className="flex flex-wrap items-center gap-1 sm:hidden">
+          {sessions.slice(0, 4).map((session) => (
             <span
               key={session.id}
               className={cn("h-1.5 w-1.5 rounded-full", STATUS_MARK[session.status])}
             />
           ))}
+          {marks.slice(0, 4).map((kind) => {
+            const mark = markByKind(kind);
+            return (
+              <span
+                key={kind}
+                className={cn("grid h-3.5 w-3.5 place-items-center rounded-full text-white", mark.swatch)}
+              >
+                <Icon name={mark.icon} className="h-2 w-2" />
+              </span>
+            );
+          })}
         </span>
       )}
 
@@ -163,6 +179,25 @@ export function CalendarDay({
         {hidden > 0 && (
           <span className="pl-1.5 font-sans text-[0.65rem] font-medium leading-none text-cream/55">
             +{hidden}
+          </span>
+        )}
+        {marks.length > 0 && (
+          <span className={cn("flex flex-wrap gap-1", isMonth ? "pt-0.5" : "pt-1")}>
+            {marks.map((kind) => {
+              const mark = markByKind(kind);
+              return (
+                <span
+                  key={kind}
+                  className={cn(
+                    "grid place-items-center rounded-full text-white",
+                    isMonth ? "h-4 w-4" : "h-5 w-5",
+                    mark.swatch,
+                  )}
+                >
+                  <Icon name={mark.icon} className={isMonth ? "h-2.5 w-2.5" : "h-3 w-3"} />
+                </span>
+              );
+            })}
           </span>
         )}
       </span>

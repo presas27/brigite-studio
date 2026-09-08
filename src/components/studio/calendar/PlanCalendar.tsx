@@ -14,6 +14,7 @@ import { SegmentedTrack } from "../SegmentedTrack";
 import { eyebrow, heading } from "../theme";
 import { CalendarDay } from "./CalendarDay";
 import { DayAgenda } from "./DayAgenda";
+import { useDayMarks } from "./DayMarksProvider";
 import type { CalendarSubject, CalendarView, SessionsByDay } from "./types";
 
 /** Where each control points. Built on the server, which owns the date maths. */
@@ -100,6 +101,8 @@ export function PlanCalendar({
   const t = useTranslations("Studio.plan");
   const isMonth = view === "month";
   const router = useRouter();
+  const add = useDayMarks();
+  const canPin = subject === "workout";
   const cells = useRef<(HTMLButtonElement | null)[]>([]);
   const agenda = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -186,7 +189,9 @@ export function PlanCalendar({
       return;
     }
     setSelected(date);
+    if (canPin) add.openFor(date);
     if (window.matchMedia("(min-width: 80rem)").matches) return;
+    if (canPin) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     agenda.current?.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" });
   }
@@ -343,6 +348,7 @@ export function PlanCalendar({
                   isToday={date === today}
                   isSelected={index === selectedIndex}
                   sessions={sessions[date] ?? []}
+                  marks={canPin ? add.marksOn(date) : []}
                   locale={locale}
                   t={t}
                   onSelect={selectDay}
@@ -361,6 +367,10 @@ export function PlanCalendar({
           <DayAgenda
             date={selectedDay}
             sessions={sessions[selectedDay] ?? []}
+            marks={canPin ? add.marksOn(selectedDay) : []}
+            onToggleMark={
+              canPin ? (kind) => add.toggle(kind, selectedDay) : undefined
+            }
             subject={subject}
             isToday={selectedDay === today}
             emptyTitle={dayEmptyTitle}

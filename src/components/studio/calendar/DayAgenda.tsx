@@ -5,6 +5,7 @@ import { formatWeekday } from "../format";
 import { parseDayKey } from "../plan/date";
 import type { Translate } from "../plan/types";
 import { eyebrow, heading, muted, surface } from "../theme";
+import { DAY_MARKS, markByKind, type DayMarkKind } from "./dayMarks";
 import { STATUS_MARK, type CalendarSession, type CalendarSubject } from "./types";
 
 /**
@@ -17,6 +18,8 @@ import { STATUS_MARK, type CalendarSession, type CalendarSubject } from "./types
 export function DayAgenda({
   date,
   sessions,
+  marks = [],
+  onToggleMark,
   subject,
   isToday,
   emptyTitle,
@@ -26,6 +29,8 @@ export function DayAgenda({
 }: {
   date: string;
   sessions: CalendarSession[];
+  marks?: DayMarkKind[];
+  onToggleMark?: (kind: DayMarkKind) => void;
   subject: CalendarSubject;
   isToday: boolean;
   /** Overrides for the aluna's own calendar, where "open an aluna" makes no sense. */
@@ -58,7 +63,7 @@ export function DayAgenda({
         {done > 0 && ` · ${t("calendar.done", { count: done })}`}
       </p>
 
-      {sessions.length === 0 ? (
+      {sessions.length === 0 && marks.length === 0 ? (
         <div className="mt-5 border-t border-cream/10 pt-4">
           <p className="font-sans text-sm font-semibold text-cream/85">
             {emptyTitle ?? t("calendar.dayEmpty")}
@@ -99,7 +104,60 @@ export function DayAgenda({
               </Link>
             </li>
           ))}
+          {marks.map((kind) => {
+            const mark = markByKind(kind);
+            return (
+              <li key={kind}>
+                <button
+                  type="button"
+                  onClick={() => onToggleMark?.(kind)}
+                  className="flex w-full items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-left transition-colors hover:bg-surface-hover"
+                >
+                  <span
+                    className={cn(
+                      "grid h-8 w-8 shrink-0 place-items-center rounded-full text-white",
+                      mark.swatch,
+                    )}
+                  >
+                    <Icon name={mark.icon} className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-sans text-sm font-semibold text-cream">
+                      {t(`calendar.addKind.${kind}`)}
+                    </span>
+                    <span className="block font-sans text-xs text-cream/55">
+                      {t("calendar.pinned")}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
+      )}
+
+      {onToggleMark && (
+        <div className="mt-4 hidden gap-1.5 lg:flex">
+          {DAY_MARKS.map((mark) => {
+            const on = marks.includes(mark.kind);
+            return (
+              <button
+                key={mark.kind}
+                type="button"
+                onClick={() => onToggleMark(mark.kind)}
+                aria-pressed={on}
+                aria-label={t(`calendar.addKind.${mark.kind}`)}
+                className={cn(
+                  "grid h-9 w-9 place-items-center rounded-full text-white transition-transform",
+                  mark.swatch,
+                  on ? "ring-2 ring-cream/70" : "opacity-55 hover:opacity-100",
+                )}
+              >
+                <Icon name={mark.icon} className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
       )}
     </aside>
   );

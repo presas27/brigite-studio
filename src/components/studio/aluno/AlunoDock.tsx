@@ -8,6 +8,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
 import { MorphHeight } from "@/components/studio/MorphHeight";
 import type { ChromeItem } from "@/components/studio/chrome/StudioChrome";
+import { DAY_MARKS, type DayMarkKind } from "@/components/studio/calendar/dayMarks";
+import { useDayMarks } from "@/components/studio/calendar/DayMarksProvider";
 import type { ClientAlert } from "@/lib/studio/clientConsole";
 import { cn } from "@/lib/utils";
 import { formatDayKey } from "../format";
@@ -39,14 +41,24 @@ export function AlunoDock({
 }) {
   const t = useTranslations("Studio.nav");
   const tAluno = useTranslations("Studio.aluno");
+  const tPlan = useTranslations("Studio.plan.calendar");
   const locale = useLocale();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [more, setMore] = useState(false);
+  const add = useDayMarks();
 
   useEffect(() => {
     setMore(false);
+    add.close();
+    // Intentionally not depending on `add`: a new object on open would
+    // immediately shut the sheet we just opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  useEffect(() => {
+    if (add.open) setMore(false);
+  }, [add.open]);
 
   const primary = PRIMARY.map((href) => items.find((item) => item.href === href)).filter(
     (item): item is ChromeItem => item != null,
@@ -66,7 +78,7 @@ export function AlunoDock({
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.7rem,env(safe-area-inset-bottom))] lg:hidden">
       <AnimatePresence>
-        {more && (
+        {(more || add.open) && (
           <motion.button
             type="button"
             aria-label={t("closeMenu")}
@@ -74,7 +86,10 @@ export function AlunoDock({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setMore(false)}
+            onClick={() => {
+              setMore(false);
+              add.close();
+            }}
             className="pointer-events-auto absolute inset-x-0 bottom-0 h-[100dvh] bg-ink/25"
           />
         )}
@@ -82,7 +97,7 @@ export function AlunoDock({
 
       <div className="pointer-events-auto relative mx-auto w-full max-w-[22.5rem]">
         <AnimatePresence>
-          {session && (
+          {session && !add.open && (
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -101,16 +116,28 @@ export function AlunoDock({
           )}
         </AnimatePresence>
 
-        <nav aria-label={t("mainMenu")} className="aluno-dock rounded-[1.75rem]">
+        <nav
+          aria-label={t("mainMenu")}
+          data-day-add-menu={add.open ? "" : undefined}
+          className="aluno-dock rounded-[1.75rem]"
+        >
           <div className="overflow-hidden rounded-[inherit]">
             <MorphHeight
               appear={false}
               fade={false}
-              contentKey={more ? "open" : "shut"}
+              contentKey={add.open ? "add" : more ? "open" : "shut"}
               durationMs={520}
               ease="cubic-bezier(0.22, 1, 0.36, 1)"
             >
-            {more ? (
+            {add.open ? (
+              <AddMarksSheet
+                date={add.date}
+                pinned={add.date ? add.marksOn(add.date) : []}
+                onToggle={add.toggle}
+                t={tPlan}
+                reduceMotion={!!reduceMotion}
+              />
+            ) : more ? (
               <div className="px-3 pt-3">
                 <ul className="space-y-0.5">
                   {extra.map((item) => {
@@ -182,9 +209,15 @@ export function AlunoDock({
             <div className="flex shrink-0 items-center gap-2 pl-2">
               <button
                 type="button"
-                onClick={() => setMore((open) => !open)}
-                aria-expanded={more}
-                aria-label={more ? t("closeMenu") : t("more")}
+                onClick={() => {
+                  if (add.open) {
+                    add.close();
+                    return;
+                  }
+                  setMore((open) => !open);
+                }}
+                aria-expanded={more || add.open}
+                aria-label={more || add.open ? t("closeMenu") : t("more")}
                 className={cn(
                   "relative grid h-11 w-11 place-items-center rounded-full text-cream/65 transition-colors",
                   (more || extraActive) && "text-cream",
@@ -204,7 +237,7 @@ export function AlunoDock({
                   name="chevron"
                   className={cn(
                     "relative z-[1] h-4 w-4 transition-transform duration-200",
-                    more ? "rotate-90" : "-rotate-90",
+                    more || add.open ? "rotate-90" : "-rotate-90",
                   )}
                 />
                 {moreBadge > 0 && !more && (
@@ -233,6 +266,62 @@ export function AlunoDock({
           </div>
         </nav>
       </div>
+    </div>
+  );
+}
+
+function AddMarksSheet({
+  date,
+  pinned,
+  onToggle,
+  t,
+  reduceMotion,
+}: {
+  date: string | null;
+  pinned: DayMarkKind[];
+  onToggle: (kind: DayMarkKind) => void;
+  t: (key: string) => string;
+  reduceMotion: boolean;
+}) {
+  return (
+    <div className="px-3 pt-3 pb-1" data-day-add-menu="">
+      <ul className="flex flex-col items-stretch gap-1">
+        {DAY_MARKS.map((mark, index) => {
+          const on = pinned.includes(mark.kind);
+          return (
+            <motion.li
+              key={mark.kind}
+              initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ ...SPRING, delay: reduceMotion ? 0 : index * 0.028 }}
+            >
+              <button
+                type="button"
+                onClick={() => onToggle(mark.kind)}
+                aria-pressed={on}
+                className={cn(
+                  "flex w-full items-center justify-end gap-3 rounded-[1.1rem] px-2 py-1.5 transition-colors",
+                  on ? "bg-cream/[0.07]" : "hover:bg-cream/[0.05]",
+                )}
+              >
+                <span className="font-sans text-sm font-semibold text-cream">
+                  {t(`addKind.${mark.kind}`)}
+                </span>
+                <span
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-full text-white shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)]",
+                    mark.swatch,
+                    on && "ring-2 ring-cream/80 ring-offset-2 ring-offset-transparent",
+                  )}
+                >
+                  <Icon name={mark.icon} className="h-5 w-5" />
+                </span>
+              </button>
+            </motion.li>
+          );
+        })}
+      </ul>
+      {date ? <p className="sr-only">{date}</p> : null}
     </div>
   );
 }

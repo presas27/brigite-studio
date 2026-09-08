@@ -726,7 +726,8 @@
           "photos": "Fotos",
           "bodyStats": "Medidas",
           "sleep": "Sono"
-        }
+        },
+        "pinned": "Lembrete"
       },
       "status": {
         "scheduled": "Agendado",
