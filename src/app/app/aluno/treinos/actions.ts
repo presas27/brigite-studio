@@ -2,8 +2,10 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireClient } from "@/lib/studio/auth";
-import { startWorkoutNow } from "@/lib/studio/plan";
+import { startEmptySession, startWorkoutNow } from "@/lib/studio/plan";
+import { capitalize } from "@/lib/utils";
 
 /**
  * Start a workout of your own plan, now.
@@ -29,6 +31,35 @@ export async function startWorkout(formData: FormData): Promise<void> {
     return;
   }
 
+  refresh();
+  redirect(`/app/aluno/treino/${assignmentId}`);
+}
+
+/**
+ * Start a session with no template — a blank sheet, or a run, that they fill
+ * in as they go. Named here, in the client's language, because the generic
+ * "treino de terça-feira" is a display string and the translations live on
+ * this side. Today's open live session is reused, so a double tap is a
+ * resume.
+ */
+export async function startLiveWorkout(formData: FormData): Promise<void> {
+  const client = await requireClient();
+  const kind = String(formData.get("kind") ?? "empty") === "run" ? "run" : "empty";
+  const t = await getTranslations("Studio.aluno.workouts");
+  const locale = (await getLocale()) === "en" ? "en" : "pt";
+  const weekday = capitalize(
+    new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      timeZone: "Europe/Lisbon",
+    }).format(new Date()),
+    locale,
+  );
+  const name = kind === "run" ? t("liveNameRun", { day: weekday }) : t("liveName", { day: weekday });
+  const assignmentId = await startEmptySession(client.id, name, kind);
+  if (!assignmentId) {
+    refresh();
+    return;
+  }
   refresh();
   redirect(`/app/aluno/treino/${assignmentId}`);
 }

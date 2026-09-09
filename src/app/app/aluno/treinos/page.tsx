@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { StartLiveBand } from "@/components/studio/aluno/StartLiveBand";
 import { WorkoutLibrary } from "@/components/studio/aluno/WorkoutLibrary";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
@@ -8,7 +9,7 @@ import { requireClient } from "@/lib/studio/auth";
 import { dayKey } from "@/lib/studio/dates";
 import { clientWorkouts } from "@/lib/studio/plan";
 import type { ClientWorkout } from "@/lib/studio/types";
-import { startWorkout } from "./actions";
+import { startLiveWorkout, startWorkout } from "./actions";
 
 export const metadata: Metadata = { title: "Treinos" };
 
@@ -43,6 +44,8 @@ export default async function AlunoTreinosPage() {
         lead={solo ? t("workouts.leadSolo") : t("workouts.lead")}
         action={solo ? <AddWorkoutModal compact /> : undefined}
       />
+
+      <StartLiveBand action={startLiveWorkout} />
 
       {workouts.length === 0 ? (
         <Empty

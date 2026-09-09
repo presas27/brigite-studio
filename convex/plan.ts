@@ -541,6 +541,81 @@ export const startWorkoutNow = mutation({
 });
 
 /**
+ * The client training from scratch today — no template, a blank sheet they
+ * fill in as they go. `workoutId` stays null so the session is a record of
+ * what they did, not a copy of a plan, and finishing it still writes every
+ * set against the library exercise ids: squat from a live session and squat
+ * from Thursday's programme are the same movement in the history.
+ *
+ * Today's open live session is reused, so a double tap on "começar treino"
+ * lands on the one already going rather than stacking blanks. A finished
+ * one is not reused: two live sessions on the same day are two sessions.
+ *
+ * `kind: "run"` seeds the sheet with a distance-tracked run when the library
+ * has one; without a match the sheet is still blank and they add it themselves.
+ */
+export const startEmptySession = mutation({
+  args: {
+    clientId: v.id("users"),
+    name: v.string(),
+    kind: v.union(v.literal("empty"), v.literal("run")),
+  },
+  returns: v.union(v.null(), v.id("assignments")),
+  handler: async (ctx, args) => {
+    const { viewer } = await requireClientAccess(ctx, args.clientId);
+    if (viewer._id !== args.clientId) {
+      throw new Error("Only the client starts their own live session");
+    }
+
+    const today = dayKey();
+    const todays = await ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_date", (q) => q.eq("clientId", args.clientId).eq("date", today))
+      .collect();
+    const open = todays.find((doc) => doc.workoutId === null && doc.status === "scheduled");
+
+    const name = args.name.trim().slice(0, 80) || "Treino";
+    let seed: Doc<"exercises"> | null = null;
+    if (args.kind === "run") {
+      seed = await findRunExercise(ctx);
+    }
+
+    if (open) {
+      if (open.startedAt == null) {
+        await ctx.db.patch("assignments", open._id, { startedAt: Date.now() });
+      }
+      if (seed) {
+        const already = open.snapshot.blocks.some((block) =>
+          block.items.some((item) => item.kind !== "rest" && item.exerciseId === seed!._id),
+        );
+        if (!already) {
+          await ctx.db.patch("assignments", open._id, {
+            snapshot: appendExerciseToSnapshot(open.snapshot, seed),
+          });
+        }
+      }
+      return open._id;
+    }
+
+    const snapshot = emptyLiveSnapshot(name);
+    const seeded = seed ? appendExerciseToSnapshot(snapshot, seed) : snapshot;
+    return await ctx.db.insert("assignments", {
+      clientId: args.clientId,
+      workoutId: null,
+      date: today,
+      status: "scheduled",
+      snapshot: seeded,
+      note: "",
+      startedAt: Date.now(),
+      doneAt: null,
+      effort: null,
+      extraRestSeconds: 0,
+    });
+  },
+});
+
+
+/**
  * Replace a phase workout's calendar placement: weekly repeats, specific dates,
  * or no day at all. Finished sessions stay; unfinished ones are rewritten to
  * match the new method.
@@ -1292,6 +1367,13 @@ export const discardAssignment = mutation({
   handler: async (ctx, args) => {
     const doc = await writable(ctx, args.assignmentId);
     await deleteSessionEntries(ctx, doc._id);
+    // A live session has no template to return to. Resetting it would leave a
+    // nameless blank on today's calendar that the client already walked away
+    // from; deleting it is the same as never having opened it.
+    if (doc.workoutId === null) {
+      await ctx.db.delete("assignments", doc._id);
+      return null;
+    }
     await ctx.db.patch("assignments", doc._id, {
       status: "scheduled",
       startedAt: null,
@@ -1572,6 +1654,104 @@ const swapOptionShape = v.object({
 /** How many suggestions the picker shows before the client has typed anything. */
 const SWAP_SUGGESTIONS = 24;
 
+
+const LIVE_SET_MAX = 20;
+
+type Snapshot = Doc<"assignments">["snapshot"];
+type SnapshotItem = Snapshot["blocks"][number]["items"][number];
+
+function emptyLiveSnapshot(name: string): Snapshot {
+  return {
+    name,
+    focus: "",
+    instructions: "",
+    estimatedMinutes: null,
+    blocks: [
+      {
+        id: crypto.randomUUID(),
+        position: 0,
+        kind: "normal",
+        label: "",
+        rounds: 1,
+        restSeconds: 0,
+        items: [],
+      },
+    ],
+  };
+}
+
+function snapshotItemFromExercise(exercise: Doc<"exercises">, position: number): SnapshotItem {
+  const timed = exercise.tracking === "time" || exercise.tracking === "hold";
+  const distance = exercise.tracking === "distance";
+  return {
+    id: crypto.randomUUID(),
+    position,
+    kind: "exercise",
+    exerciseId: exercise._id as string,
+    exerciseName: exercise.name,
+    tracking: exercise.tracking,
+    videoUrl: exercise.videoUrl,
+    cues: exercise.cues,
+    cuesEn: exercise.cuesEn,
+    sets: timed || distance ? 1 : 3,
+    reps: exercise.tracking === "reps" ? "8" : "",
+    seconds: timed ? 30 : null,
+    tempo: "",
+    restSeconds: exercise.tracking === "reps" ? 90 : 0,
+    rpe: "",
+    notes: "",
+  };
+}
+
+function appendExerciseToSnapshot(snapshot: Snapshot, exercise: Doc<"exercises">): Snapshot {
+  const blocks = snapshot.blocks.map((block) => ({ ...block, items: [...block.items] }));
+  let block = blocks[blocks.length - 1];
+  if (!block || block.kind !== "normal") {
+    block = {
+      id: crypto.randomUUID(),
+      position: blocks.length,
+      kind: "normal",
+      label: "",
+      rounds: 1,
+      restSeconds: 0,
+      items: [],
+    };
+    blocks.push(block);
+  }
+  block.items.push(snapshotItemFromExercise(exercise, block.items.length));
+  return { ...snapshot, blocks };
+}
+
+async function findRunExercise(ctx: Ctx): Promise<Doc<"exercises"> | null> {
+  const hits = [
+    ...(await searchExercises(ctx, "run")),
+    ...(await searchExercises(ctx, "corrida")),
+    ...(await searchExercises(ctx, "treadmill")),
+  ];
+  const seen = new Set<string>();
+  const unique: Doc<"exercises">[] = [];
+  for (const exercise of hits) {
+    if (seen.has(exercise._id)) continue;
+    seen.add(exercise._id);
+    unique.push(exercise);
+  }
+  return (
+    unique.find((exercise) => exercise.tracking === "distance") ?? unique[0] ?? null
+  );
+}
+
+async function assertClientOwnsOpenSession(
+  ctx: MutationCtx,
+  assignmentId: Id<"assignments">,
+): Promise<Doc<"assignments">> {
+  const doc = await ctx.db.get("assignments", assignmentId);
+  if (!doc) throw new Error("No such assignment");
+  const { viewer } = await requireClientAccess(ctx, doc.clientId);
+  if (viewer._id !== doc.clientId) throw new Error("Only the client edits their own session");
+  if (doc.status !== "scheduled") throw new Error("Session is closed");
+  return doc;
+}
+
 /** The exercise item behind an `itemId` in a snapshot, or `undefined` for a rest row or no such item. */
 function snapshotExercise(
   snapshot: Doc<"assignments">["snapshot"],
@@ -1789,6 +1969,167 @@ export const swapExercise = mutation({
         readAt: null,
       });
     }
+    return null;
+  },
+});
+
+
+/**
+ * Exercises the client could add to an open session, as they train.
+ *
+ * Typed into, it is the library name search. Left blank, it is the movements
+ * this client has actually logged before — the ones they are most likely to
+ * reach for on a blank sheet — newest session first, unique, capped at the
+ * same size as the swap picker. An empty history means an empty list until
+ * they type, which is honest: suggesting the alphabet of two thousand
+ * imported names is not a suggestion.
+ */
+export const sessionExerciseOptions = query({
+  args: { assignmentId: v.id("assignments"), search: v.string() },
+  returns: v.array(swapOptionShape),
+  handler: async (ctx, args) => {
+    const doc = await readable(ctx, args.assignmentId);
+    if (!doc) return [];
+
+    const lean = (exercise: Doc<"exercises">) => ({
+      id: exercise._id as string,
+      name: exercise.name,
+      videoUrl: exercise.videoUrl,
+      tracking: exercise.tracking,
+      tags: exercise.tags,
+    });
+
+    const search = args.search.trim();
+    if (search) {
+      return (await searchExercises(ctx, search)).slice(0, SWAP_SUGGESTIONS).map(lean);
+    }
+
+    const recents: Doc<"exercises">[] = [];
+    const seen = new Set<string>();
+    for await (const assignment of ctx.db
+      .query("assignments")
+      .withIndex("by_client_and_date", (q) => q.eq("clientId", doc.clientId))
+      .order("desc")) {
+      if (assignment._id === doc._id) continue;
+      if (assignment.status === "scheduled" && assignment.startedAt == null) continue;
+      for (const block of assignment.snapshot.blocks) {
+        for (const item of block.items) {
+          if (item.kind === "rest" || !item.exerciseId || seen.has(item.exerciseId)) continue;
+          seen.add(item.exerciseId);
+          const exercise = await ctx.db.get("exercises", item.exerciseId as Id<"exercises">);
+          if (exercise && !exercise.archived) recents.push(exercise);
+          if (recents.length >= SWAP_SUGGESTIONS) {
+            return recents.map(lean);
+          }
+        }
+      }
+    }
+    return recents.map(lean);
+  },
+});
+
+/**
+ * Append a library exercise to an open session, this session only.
+ *
+ * Lands on the last normal block so a circuit the coach wrote is not quietly
+ * given another movement mid-round. A session with no block yet — the live
+ * blank sheet — gets one. Sets default from how the movement is measured:
+ * three for reps, one for a run or a hold. The library id is what the logs
+ * are keyed by, so this squat and the squat from last week's plan share a
+ * history.
+ */
+export const addSessionExercise = mutation({
+  args: { assignmentId: v.id("assignments"), exerciseId: v.id("exercises") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await assertClientOwnsOpenSession(ctx, args.assignmentId);
+    const exercise = await ctx.db.get("exercises", args.exerciseId);
+    if (!exercise || exercise.archived) throw new Error("No such exercise");
+    await ctx.db.patch("assignments", doc._id, {
+      snapshot: appendExerciseToSnapshot(doc.snapshot, exercise),
+    });
+    return null;
+  },
+});
+
+/**
+ * Change how many sets an item of an open session holds. Growing is how they
+ * add a set on the sheet; shrinking drops the trailing logs so the queue and
+ * the stored numbers cannot disagree. The plan's template is untouched.
+ */
+export const setSessionItemSets = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    itemId: v.string(),
+    sets: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await assertClientOwnsOpenSession(ctx, args.assignmentId);
+    const item = snapshotExercise(doc.snapshot, args.itemId);
+    if (!item) throw new Error("No such exercise in this session");
+    const sets = Math.min(LIVE_SET_MAX, Math.max(1, Math.round(args.sets)));
+    if (sets === item.sets) return null;
+
+    await ctx.db.patch("assignments", doc._id, {
+      snapshot: {
+        ...doc.snapshot,
+        blocks: doc.snapshot.blocks.map((block) => ({
+          ...block,
+          items: block.items.map((candidate) =>
+            candidate.id === item.id ? { ...candidate, sets } : candidate,
+          ),
+        })),
+      },
+    });
+
+    if (sets < item.sets) {
+      const logs = await logDocs(ctx, doc._id);
+      await Promise.all(
+        logs
+          .filter((log) => log.itemId === item.id && log.setIndex >= sets)
+          .map((log) => ctx.db.delete("setLogs", log._id)),
+      );
+    }
+    return null;
+  },
+});
+
+/**
+ * Drop an exercise from an open session, and the sets and note logged under
+ * it. The slot never existed as far as this session is concerned; next week's
+ * copy of the plan still asks for whatever the coach wrote.
+ */
+export const removeSessionExercise = mutation({
+  args: { assignmentId: v.id("assignments"), itemId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await assertClientOwnsOpenSession(ctx, args.assignmentId);
+    const item = snapshotExercise(doc.snapshot, args.itemId);
+    if (!item) return null;
+
+    const blocks = doc.snapshot.blocks
+      .map((block) => ({
+        ...block,
+        items: block.items.filter((candidate) => candidate.id !== item.id),
+      }))
+      .filter((block) => block.items.length > 0 || doc.snapshot.blocks.length === 1);
+
+    await ctx.db.patch("assignments", doc._id, {
+      snapshot: { ...doc.snapshot, blocks },
+    });
+
+    const logs = await logDocs(ctx, doc._id);
+    await Promise.all(
+      logs.filter((log) => log.itemId === item.id).map((log) => ctx.db.delete("setLogs", log._id)),
+    );
+    const notes = await ctx.db
+      .query("exerciseNotes")
+      .withIndex("by_assignment_and_item", (q) =>
+        q.eq("assignmentId", doc._id).eq("itemId", item.id),
+      )
+      .collect();
+    await Promise.all(notes.map((note) => ctx.db.delete("exerciseNotes", note._id)));
     return null;
   },
 });

@@ -88,6 +88,50 @@ export async function startWorkoutNow(
 }
 
 /**
+ * The client training from scratch today. `undefined` means nothing was
+ * written, which should not happen for a signed-in client — the mutation
+ * refuses only when the caller is not that client.
+ */
+export async function startEmptySession(
+  clientId: string,
+  name: string,
+  kind: "empty" | "run",
+): Promise<string | undefined> {
+  const assignmentId = await sm(api.plan.startEmptySession, {
+    clientId: clientId as Id<"users">,
+    name,
+    kind,
+  });
+  return assignmentId ?? undefined;
+}
+
+export async function addSessionExercise(assignmentId: string, exerciseId: string): Promise<void> {
+  await sm(api.plan.addSessionExercise, {
+    assignmentId: assignmentId as Id<"assignments">,
+    exerciseId: exerciseId as Id<"exercises">,
+  });
+}
+
+export async function setSessionItemSets(
+  assignmentId: string,
+  itemId: string,
+  sets: number,
+): Promise<void> {
+  await sm(api.plan.setSessionItemSets, {
+    assignmentId: assignmentId as Id<"assignments">,
+    itemId,
+    sets,
+  });
+}
+
+export async function removeSessionExercise(assignmentId: string, itemId: string): Promise<void> {
+  await sm(api.plan.removeSessionExercise, {
+    assignmentId: assignmentId as Id<"assignments">,
+    itemId,
+  });
+}
+
+/**
  * Every workout of a client's plan, phase order first, whatever day it was
  * given. The client's workout list draws this: the calendar says when the coach
  * suggests each one, and this says what there is to train.

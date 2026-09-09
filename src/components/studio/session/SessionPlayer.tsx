@@ -17,6 +17,8 @@ import { ExitSheet } from "./ExitSheet";
 import { RestScreen } from "./RestScreen";
 import { SessionListModal } from "./SessionListModal";
 import { SessionPreview } from "./SessionPreview";
+import { AddExerciseComposer } from "./AddExerciseComposer";
+import { ElapsedTime } from "./ElapsedTime";
 import { SessionSheet } from "./SessionSheet";
 import { SessionSummary } from "./SessionSummary";
 import { SessionViewToggle, type SessionView } from "./SessionViewToggle";
@@ -62,6 +64,9 @@ export function SessionPlayer({
   unlogSetAction,
   saveNoteAction,
   swapAction,
+  addExerciseAction,
+  setItemSetsAction,
+  removeExerciseAction,
   beginAction,
   finishAction,
   skipAction,
@@ -89,6 +94,9 @@ export function SessionPlayer({
     exerciseName: string;
     note: string;
   }) => Promise<void>;
+  addExerciseAction: (input: { assignmentId: string; exerciseId: string }) => Promise<void>;
+  setItemSetsAction: (input: { assignmentId: string; itemId: string; sets: number }) => Promise<void>;
+  removeExerciseAction: (input: { assignmentId: string; itemId: string }) => Promise<void>;
   beginAction: () => Promise<void>;
   finishAction: (input: { effort: number | null; extraRestSeconds: number }) => Promise<void>;
   skipAction: () => Promise<void>;
@@ -100,8 +108,29 @@ export function SessionPlayer({
     assignmentId: assignment.id as Id<"assignments">,
   });
   const current = live ?? assignment;
+  const isLive = current.workoutId === null;
 
   const steps = useMemo(() => buildSessionQueue(current.snapshot), [current.snapshot]);
+  const currentExerciseIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const block of current.snapshot.blocks) {
+      for (const item of block.items) {
+        if (item.kind !== "rest" && item.exerciseId) ids.push(item.exerciseId);
+      }
+    }
+    return ids;
+  }, [current.snapshot]);
+  const livePreviousRows = useAuthedQuery(api.plan.lastLogsForExercises, {
+    clientId: assignment.clientId as Id<"users">,
+    exerciseIds: currentExerciseIds,
+    excludeAssignmentId: assignment.id as Id<"assignments">,
+  });
+  const previousLogs = useMemo(() => {
+    if (!livePreviousRows) return previousByExercise;
+    const next: Record<string, SetLog[]> = { ...previousByExercise };
+    for (const row of livePreviousRows) next[row.exerciseId] = row.logs;
+    return next;
+  }, [livePreviousRows, previousByExercise]);
   const exerciseByItem = useMemo(() => {
     const byItem: Record<string, string> = {};
     for (const step of steps) byItem[step.itemId] = step.exerciseId;
@@ -169,8 +198,8 @@ export function SessionPlayer({
   });
   const [phase, setPhase] = useState<Phase>(() => {
     if (assignment.status !== "scheduled") return "summary";
-    if (assignment.startedAt == null) return "preview";
-    return "exercise";
+    if (assignment.workoutId === null || assignment.startedAt != null) return "exercise";
+    return "preview";
   });
   const [enterAs, setEnterAs] = useState<"set" | "exercise">("exercise");
   const [restKey, setRestKey] = useState(0);
@@ -191,12 +220,13 @@ export function SessionPlayer({
   // in the other), and a hydration mismatch is a thrown error in development
   // and a full client re-render in production, on every session opened with
   // the sheet remembered.
-  const [view, setView] = useState<SessionView>("focus");
+  const [view, setView] = useState<SessionView>(assignment.workoutId === null ? "sheet" : "focus");
 
   useEffect(() => {
+    if (assignment.workoutId === null) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from localStorage after mount, see above
     if (window.localStorage.getItem(viewKey) === "sheet") setView("sheet");
-  }, [viewKey]);
+  }, [assignment.workoutId, viewKey]);
 
   // Every way out of the player lands on the same screen. Fetching it while
   // she trains means leaving — discard, "leave and come back", the summary's
@@ -404,22 +434,6 @@ export function SessionPlayer({
     router.push("/app/aluno");
   }
 
-  if (steps.length === 0) {
-    return (
-      <Shell>
-        <Centred>
-          <div className="mx-auto max-w-md space-y-4 text-center">
-            <h1 className={cn(heading, "text-2xl")}>{current.snapshot.name}</h1>
-            <p className="text-sm text-cream/60">{t("emptyWorkout")}</p>
-            <button type="button" onClick={() => router.push("/app/aluno")} className={buttonPrimary}>
-              {t("backToApp")}
-            </button>
-          </div>
-        </Centred>
-      </Shell>
-    );
-  }
-
   if (phase === "summary") {
     return (
       <Shell>
@@ -523,7 +537,7 @@ export function SessionPlayer({
         <div
           className={cn(FRAME, "flex items-center justify-end gap-4 md:justify-start")}
         >
-          {phase === "exercise" && (
+          {phase === "exercise" && !isLive && (
             <div className="hidden shrink-0 md:order-2 md:block">
               <SessionViewToggle value={view} onChange={switchView} />
             </div>
@@ -557,7 +571,7 @@ export function SessionPlayer({
               draws it as segments; a phone as a hairline with the count and
               the list glyph, filling the toolbar with the one thing the panel
               below no longer needs to carry. */}
-          {phase !== "preview" && (
+          {phase !== "preview" && steps.length > 0 && !isLive && (
           <button
             type="button"
             onClick={() => setListOpen(true)}
@@ -589,10 +603,17 @@ export function SessionPlayer({
             in the row above and no heading. */}
         {phase === "exercise" && view === "sheet" && (
           <div className={cn(FRAME, "mt-2 flex items-center justify-between gap-3 md:hidden")}>
-            <h1 className={cn(heading, "min-w-0 text-[1.6rem] leading-[1.05]")}>
-              {current.snapshot.name}
-            </h1>
-            <SessionViewToggle value={view} onChange={switchView} />
+            <div className="min-w-0">
+              <h1 className={cn(heading, "min-w-0 text-[1.6rem] leading-[1.05]")}>
+                {current.snapshot.name}
+              </h1>
+              {isLive && (
+                <p className="mt-1 font-sans text-xs tabular-nums text-cream/45">
+                  <ElapsedTime startedAt={current.startedAt} />
+                </p>
+              )}
+            </div>
+            {isLive ? null : <SessionViewToggle value={view} onChange={switchView} />}
           </div>
         )}
       </header>
@@ -667,7 +688,7 @@ export function SessionPlayer({
                 steps={steps}
                 currentKey={step?.key}
                 entries={entries}
-                previousByExercise={previousByExercise}
+                previousByExercise={previousLogs}
                 onChange={updateSet}
                 onFlush={flushSet}
                 onJump={goTo}
@@ -678,6 +699,43 @@ export function SessionPlayer({
                   setRestKey((key) => key + 1);
                   setPhase("rest");
                 }}
+                onAddSet={(itemId) => {
+                  const item = current.snapshot.blocks
+                    .flatMap((block) => block.items)
+                    .find((candidate) => candidate.id === itemId);
+                  if (!item || item.kind === "rest") return;
+                  void setItemSetsAction({
+                    assignmentId: assignment.id,
+                    itemId,
+                    sets: item.sets + 1,
+                  });
+                }}
+                onRemoveSet={(itemId) => {
+                  const item = current.snapshot.blocks
+                    .flatMap((block) => block.items)
+                    .find((candidate) => candidate.id === itemId);
+                  if (!item || item.kind === "rest" || item.sets <= 1) return;
+                  void setItemSetsAction({
+                    assignmentId: assignment.id,
+                    itemId,
+                    sets: item.sets - 1,
+                  });
+                }}
+                onRemoveExercise={
+                  isLive
+                    ? (itemId) => {
+                        void removeExerciseAction({ assignmentId: assignment.id, itemId });
+                      }
+                    : undefined
+                }
+                footer={
+                  <AddExerciseComposer
+                    assignmentId={assignment.id}
+                    onAddAction={(exerciseId) =>
+                      addExerciseAction({ assignmentId: assignment.id, exerciseId })
+                    }
+                  />
+                }
                 renderNote={(itemId, exerciseId, name) => (
                   <ExerciseNoteButton
                     compact
@@ -714,7 +772,7 @@ export function SessionPlayer({
               step={step}
               enterAs={enterAs}
               value={entries[step.key] ?? EMPTY_SET}
-              previous={previousByExercise[step.exerciseId]?.find(
+              previous={previousLogs[step.exerciseId]?.find(
                 (log) => log.setIndex === step.setIndex,
               )}
               actions={stepActions}
@@ -859,8 +917,8 @@ export function SessionPlayer({
                   }}
                   className={cn(buttonPrimary, "h-14 flex-1 text-base")}
                 >
-                  {t("lastSet")}
-                  <Icon name="chevron" className="h-4 w-4" />
+                  {isLive ? t("finish") : t("lastSet")}
+                  <Icon name={isLive ? "check" : "chevron"} className="h-4 w-4" />
                 </button>
               </div>
             )}

@@ -3,13 +3,16 @@
 import { getTranslations } from "next-intl/server";
 import { requireClientAccess } from "@/lib/studio/auth";
 import {
+  addSessionExercise,
   clearSet,
   completeAssignment,
   discardAssignment,
   findAssignment,
   recordSet,
+  removeSessionExercise,
   saveExerciseNote,
   setAssignmentStatus,
+  setSessionItemSets,
   startAssignment,
   swapExercise,
 } from "@/lib/studio/plan";
@@ -180,4 +183,29 @@ export async function skipSession(assignmentId: string): Promise<void> {
 export async function discardSession(assignmentId: string): Promise<void> {
   const assignment = await assignmentFor(assignmentId);
   await discardAssignment(assignment.id);
+}
+
+export async function addExerciseToSession(input: {
+  assignmentId: string;
+  exerciseId: string;
+}): Promise<void> {
+  const assignment = await assignmentFor(input.assignmentId);
+  await addSessionExercise(assignment.id, input.exerciseId);
+}
+
+export async function setExerciseSets(input: {
+  assignmentId: string;
+  itemId: string;
+  sets: number;
+}): Promise<void> {
+  const assignment = await assignmentFor(input.assignmentId);
+  await setSessionItemSets(assignment.id, input.itemId, input.sets);
+}
+
+export async function removeExerciseFromSession(input: {
+  assignmentId: string;
+  itemId: string;
+}): Promise<void> {
+  const assignment = await assignmentFor(input.assignmentId);
+  await removeSessionExercise(assignment.id, input.itemId);
 }

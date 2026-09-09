@@ -3,11 +3,14 @@ import { requireClientAccess } from "@/lib/studio/auth";
 import { exerciseNotesFor, findAssignment, lastLogsForExercises, logsFor } from "@/lib/studio/plan";
 import { SessionPlayer } from "@/components/studio/session/SessionPlayer";
 import {
+  addExerciseToSession,
   beginSession,
   discardSession,
   finishSession,
   logSet,
+  removeExerciseFromSession,
   saveNote,
+  setExerciseSets,
   skipSession,
   swapSessionExercise,
   unlogSet,
@@ -65,6 +68,9 @@ export default async function TreinoPage({
       unlogSetAction={unlogSet}
       saveNoteAction={saveNote}
       swapAction={swapSessionExercise}
+      addExerciseAction={addExerciseToSession}
+      setItemSetsAction={setExerciseSets}
+      removeExerciseAction={removeExerciseFromSession}
       beginAction={beginSession.bind(null, assignment.id)}
       finishAction={finishSession.bind(null, assignment.id)}
       skipAction={skipSession.bind(null, assignment.id)}

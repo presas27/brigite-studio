@@ -90,6 +90,10 @@ export function SessionSheet({
   onFlush,
   onJump,
   onStartRest,
+  onAddSet,
+  onRemoveSet,
+  onRemoveExercise,
+  footer,
   renderNote,
   renderSwap,
 }: {
@@ -101,6 +105,10 @@ export function SessionSheet({
   onFlush: (itemId: string, setIndex: number) => void;
   onJump: (index: number) => void;
   onStartRest?: (step: SessionStep) => void;
+  onAddSet?: (itemId: string) => void;
+  onRemoveSet?: (itemId: string) => void;
+  onRemoveExercise?: (itemId: string) => void;
+  footer?: React.ReactNode;
   renderNote: (itemId: string, exerciseId: string, name: string) => React.ReactNode;
   renderSwap: (itemId: string, name: string, replaces: WorkoutItem["replaces"]) => React.ReactNode;
 }) {
@@ -190,6 +198,16 @@ export function SessionSheet({
                     <div className="flex shrink-0 items-center">
                       {renderSwap(exercise.itemId, exercise.item.exerciseName, exercise.item.replaces)}
                       {renderNote(exercise.itemId, exercise.exerciseId, exercise.item.exerciseName)}
+                      {onRemoveExercise && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveExercise(exercise.itemId)}
+                          aria-label={t("removeExercise")}
+                          className="inline-flex items-center rounded-full p-2 font-sans text-xs font-medium text-cream/50 transition-colors hover:bg-cream/8 hover:text-cream"
+                        >
+                          <Icon name="trash" className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -250,15 +268,38 @@ export function SessionSheet({
                     })}
                   </ul>
 
-                  {restStep && onStartRest && (
-                    <button
-                      type="button"
-                      onClick={() => onStartRest(restStep)}
-                      className="mt-2 ml-1 inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 hover:text-cream"
-                    >
-                      <Icon name="clock" className="h-3 w-3" />
-                      {t("startRest", { seconds: restStep.restSeconds })}
-                    </button>
+                  {(onAddSet || restStep) && (
+                    <div className="mt-2 ml-1 flex flex-wrap items-center gap-2">
+                      {onAddSet && (
+                        <button
+                          type="button"
+                          onClick={() => onAddSet(exercise.itemId)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 transition-colors hover:text-cream"
+                        >
+                          <Icon name="plus" className="h-3 w-3" />
+                          {t("addSet")}
+                        </button>
+                      )}
+                      {onRemoveSet && exercise.steps.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveSet(exercise.itemId)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 transition-colors hover:text-cream"
+                        >
+                          {t("removeSet")}
+                        </button>
+                      )}
+                      {restStep && onStartRest && (
+                        <button
+                          type="button"
+                          onClick={() => onStartRest(restStep)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-cream/[0.05] px-2.5 py-1 font-sans text-[0.65rem] font-medium text-cream/60 ring-1 ring-cream/10 hover:text-cream"
+                        >
+                          <Icon name="clock" className="h-3 w-3" />
+                          {t("startRest", { seconds: restStep.restSeconds })}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </li>
               );
@@ -266,6 +307,7 @@ export function SessionSheet({
           </ul>
         </section>
       ))}
+      {footer}
     </div>
   );
 }
