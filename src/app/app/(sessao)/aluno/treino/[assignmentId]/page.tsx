@@ -40,17 +40,20 @@ export default async function TreinoPage({
 
   const exerciseIds = Array.from(
     new Set(
-      assignment.snapshot.blocks.flatMap((block) =>
-        block.items.map((item) => item.exerciseId).filter((id) => id.length > 0),
+      (assignment.snapshot.blocks ?? []).flatMap((block) =>
+        (block.items ?? []).map((item) => item.exerciseId).filter((id) => id.length > 0),
       ),
     ),
   );
 
-  const [initialLogs, noteRows, previousByExercise] = await Promise.all([
+  const [initialLogs, noteRows, previousRows] = await Promise.all([
     logsFor(assignment.id),
     exerciseNotesFor(assignment.id),
-    lastLogsForExercises(client.id, exerciseIds, assignment.id),
+    exerciseIds.length > 0
+      ? lastLogsForExercises(client.id, exerciseIds, assignment.id)
+      : Promise.resolve({} as Awaited<ReturnType<typeof lastLogsForExercises>>),
   ]);
+  const previousByExercise = previousRows;
 
   // Keyed by `itemId` — the exercise's identity inside this session's frozen
   // snapshot — which is the same key the player already indexes its steps by.

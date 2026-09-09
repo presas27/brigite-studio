@@ -2,10 +2,10 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
 import { requireClient } from "@/lib/studio/auth";
 import { startEmptySession, startWorkoutNow } from "@/lib/studio/plan";
 import { capitalize } from "@/lib/utils";
+import { getUserLocale } from "@/i18n/locale";
 
 /**
  * Start a workout of your own plan, now.
@@ -45,8 +45,7 @@ export async function startWorkout(formData: FormData): Promise<void> {
 export async function startLiveWorkout(formData: FormData): Promise<void> {
   const client = await requireClient();
   const kind = String(formData.get("kind") ?? "empty") === "run" ? "run" : "empty";
-  const t = await getTranslations("Studio.aluno.workouts");
-  const locale = (await getLocale()) === "en" ? "en" : "pt";
+  const locale = await getUserLocale();
   const weekday = capitalize(
     new Intl.DateTimeFormat(locale, {
       weekday: "long",
@@ -54,12 +53,18 @@ export async function startLiveWorkout(formData: FormData): Promise<void> {
     }).format(new Date()),
     locale,
   );
-  const name = kind === "run" ? t("liveNameRun", { day: weekday }) : t("liveName", { day: weekday });
+  const name =
+    locale === "en"
+      ? kind === "run"
+        ? `${weekday} run`
+        : `${weekday} workout`
+      : kind === "run"
+        ? `Corrida de ${weekday}`
+        : `Treino de ${weekday}`;
   const assignmentId = await startEmptySession(client.id, name, kind);
   if (!assignmentId) {
     refresh();
     return;
   }
-  refresh();
   redirect(`/app/aluno/treino/${assignmentId}`);
 }

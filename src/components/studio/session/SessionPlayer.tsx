@@ -113,18 +113,23 @@ export function SessionPlayer({
   const steps = useMemo(() => buildSessionQueue(current.snapshot), [current.snapshot]);
   const currentExerciseIds = useMemo(() => {
     const ids: string[] = [];
-    for (const block of current.snapshot.blocks) {
-      for (const item of block.items) {
+    for (const block of current.snapshot.blocks ?? []) {
+      for (const item of block.items ?? []) {
         if (item.kind !== "rest" && item.exerciseId) ids.push(item.exerciseId);
       }
     }
     return ids;
   }, [current.snapshot]);
-  const livePreviousRows = useAuthedQuery(api.plan.lastLogsForExercises, {
-    clientId: assignment.clientId as Id<"users">,
-    exerciseIds: currentExerciseIds,
-    excludeAssignmentId: assignment.id as Id<"assignments">,
-  });
+  const livePreviousRows = useAuthedQuery(
+    api.plan.lastLogsForExercises,
+    currentExerciseIds.length === 0
+      ? "skip"
+      : {
+          clientId: assignment.clientId as Id<"users">,
+          exerciseIds: currentExerciseIds,
+          excludeAssignmentId: assignment.id as Id<"assignments">,
+        },
+  );
   const previousLogs = useMemo(() => {
     if (!livePreviousRows) return previousByExercise;
     const next: Record<string, SetLog[]> = { ...previousByExercise };

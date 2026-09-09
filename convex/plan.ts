@@ -563,9 +563,7 @@ export const startEmptySession = mutation({
   returns: v.union(v.null(), v.id("assignments")),
   handler: async (ctx, args) => {
     const { viewer } = await requireClientAccess(ctx, args.clientId);
-    if (viewer._id !== args.clientId) {
-      throw new Error("Only the client starts their own live session");
-    }
+    if (viewer._id !== args.clientId) return null;
 
     const today = dayKey();
     const todays = await ctx.db
@@ -1660,15 +1658,23 @@ const LIVE_SET_MAX = 20;
 type Snapshot = Doc<"assignments">["snapshot"];
 type SnapshotItem = Snapshot["blocks"][number]["items"][number];
 
+/** Snapshot ids are strings, not table ids — same idea as `users.ts` tokens. */
+function liveId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (const byte of bytes) out += byte.toString(16).padStart(2, "0");
+  return out;
+}
+
 function emptyLiveSnapshot(name: string): Snapshot {
   return {
     name,
     focus: "",
     instructions: "",
-    estimatedMinutes: null,
     blocks: [
       {
-        id: crypto.randomUUID(),
+        id: liveId(),
         position: 0,
         kind: "normal",
         label: "",
@@ -1684,7 +1690,7 @@ function snapshotItemFromExercise(exercise: Doc<"exercises">, position: number):
   const timed = exercise.tracking === "time" || exercise.tracking === "hold";
   const distance = exercise.tracking === "distance";
   return {
-    id: crypto.randomUUID(),
+    id: liveId(),
     position,
     kind: "exercise",
     exerciseId: exercise._id as string,
@@ -1708,7 +1714,7 @@ function appendExerciseToSnapshot(snapshot: Snapshot, exercise: Doc<"exercises">
   let block = blocks[blocks.length - 1];
   if (!block || block.kind !== "normal") {
     block = {
-      id: crypto.randomUUID(),
+      id: liveId(),
       position: blocks.length,
       kind: "normal",
       label: "",

@@ -60,7 +60,7 @@ function isInterleaved(kind: BlockKind): boolean {
 export function buildSessionQueue(snapshot: WorkoutSnapshot): SessionStep[] {
   const steps: SessionStep[] = [];
 
-  const blocks = [...snapshot.blocks].sort((a, b) => a.position - b.position);
+  const blocks = [...(snapshot.blocks ?? [])].sort((a, b) => a.position - b.position);
   for (const block of blocks) {
     const items = [...block.items].sort((a, b) => a.position - b.position);
     if (items.length === 0) continue;
