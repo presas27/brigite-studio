@@ -11,7 +11,7 @@ import { Icon } from "@/components/studio/coach/icons";
 import { eyebrow, heading } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { youtubeId } from "@/lib/youtube";
-import { setsOf } from "./prescription";
+import { prescriptionOf, setsOf } from "./prescription";
 
 type Row = {
   itemId: string;
@@ -52,22 +52,38 @@ export function SessionPreview({
 
   const labels = { reps: common("reps"), meters: t("metersShort"), sets: common("sets") };
   const rest = common("rest").toLowerCase();
-  const blocks: { id: string; label: string; kind: string; rows: Row[] }[] = [];
+  const blocks: {
+    id: string;
+    label: string;
+    kind: string;
+    roundCount: number | null;
+    rows: Row[];
+  }[] = [];
   for (const step of steps) {
     let block = blocks.find((entry) => entry.id === step.blockId);
     if (!block) {
-      block = { id: step.blockId, label: step.blockLabel, kind: step.blockKind, rows: [] };
+      block = {
+        id: step.blockId,
+        label: step.blockLabel,
+        kind: step.blockKind,
+        roundCount: step.roundCount,
+        rows: [],
+      };
       blocks.push(block);
     }
     if (block.rows.some((row) => row.itemId === step.itemId)) continue;
     const restItem = isRestItem(step.item);
+    const interleaved = step.round != null;
     block.rows.push({
       itemId: step.itemId,
       name: step.item.exerciseName,
       videoUrl: step.item.videoUrl && youtubeId(step.item.videoUrl) ? step.item.videoUrl : null,
       line: restItem
         ? `${step.item.seconds ?? 0}s`
-        : [setsOf(step, labels), step.item.restSeconds > 0 ? `${rest} ${step.item.restSeconds}s` : null]
+        : [
+            interleaved ? prescriptionOf(step, labels) : setsOf(step, labels),
+            step.item.restSeconds > 0 ? `${rest} ${step.item.restSeconds}s` : null,
+          ]
             .filter(Boolean)
             .join(" · "),
       rest: restItem,
@@ -101,10 +117,31 @@ export function SessionPreview({
         </div>
       )}
 
-      {blocks.map((block) => (
-        <section key={block.id} className="space-y-2">
-          <p className={eyebrow}>{block.label || workoutsT(`blockKind.${block.kind}`)}</p>
-          <ul className="space-y-1.5">
+      {blocks.map((block) => {
+        const isSuperset = block.kind === "superset";
+        const isCircuit = block.kind === "circuit" || block.kind === "interval";
+        const count = block.roundCount;
+        const countText = count
+          ? isSuperset
+            ? workoutsT("setsCount", { count })
+            : isCircuit
+              ? workoutsT("rounds", { count })
+              : null
+          : null;
+        const kindText = block.kind === "normal" ? null : workoutsT(`blockKind.${block.kind}`);
+        const header = [block.label, kindText, countText].filter(Boolean).join(" · ");
+
+        return (
+          <section
+            key={block.id}
+            className={cn(
+              "space-y-2",
+              isSuperset && "border-l-2 border-accent-ink pl-3",
+              isCircuit && "border-l-2 border-caramel pl-3",
+            )}
+          >
+            <p className={eyebrow}>{header || workoutsT(`blockKind.${block.kind}`)}</p>
+            <ul className="space-y-1.5">
             {block.rows.map((row) =>
               row.rest ? (
                 <li
@@ -132,8 +169,9 @@ export function SessionPreview({
               ),
             )}
           </ul>
-        </section>
-      ))}
+          </section>
+        );
+      })}
     </div>
   );
 }

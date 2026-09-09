@@ -690,7 +690,42 @@ export const updateBlock = mutation({
 
     const block = await ctx.db.get("workoutBlocks", args.blockId);
     if (!block) return null;
+
+    // When switching to a superset or circuit without specifying rounds,
+    // adopt the highest set count from the items inside (or default to 3).
+    if (
+      (patch.kind === "superset" || patch.kind === "circuit") &&
+      patch.rounds === undefined &&
+      block.rounds <= 1
+    ) {
+      const items = await ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", args.blockId))
+        .collect();
+      const maxSets = items.length > 0 ? Math.max(...items.map((i) => i.sets)) : 3;
+      patch.rounds = Math.max(1, maxSets);
+    }
+
     await ctx.db.patch("workoutBlocks", args.blockId, patch);
+
+    // Keep items' sets in sync with block rounds for interleaved blocks
+    const effectiveKind = patch.kind ?? block.kind;
+    const targetRounds = patch.rounds ?? block.rounds;
+    if (
+      (effectiveKind === "superset" || effectiveKind === "circuit") &&
+      patch.rounds !== undefined
+    ) {
+      const items = await ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", args.blockId))
+        .collect();
+      for (const item of items) {
+        if (item.sets !== targetRounds) {
+          await ctx.db.patch("workoutItems", item._id, { sets: targetRounds });
+        }
+      }
+    }
+
     await touchWorkout(ctx, block.workoutId);
     return null;
   },
@@ -1115,17 +1150,21 @@ export const groupItems = mutation({
 
     // Positions here are provisional — `orderBlocks` writes the real ones once
     // the whole sequence is known.
+    const effectiveRounds = whole(args.rounds ?? 3, 1);
     const groupId = await ctx.db.insert("workoutBlocks", {
       workoutId: args.workoutId,
       position: (await lastBlockPosition(ctx, args.workoutId)) + 1,
       kind: args.kind,
       label: "",
-      // Rounds are a circuit's idea. A superset is one pass through its
-      // exercises, so it is always 1 whatever the form sent.
-      rounds: args.kind === "circuit" ? whole(args.rounds ?? 3, 1) : 1,
+      rounds: effectiveRounds,
       restSeconds: 60,
     });
     await renumber(ctx, groupId, args.itemIds);
+    if (args.kind === "superset" || args.kind === "circuit") {
+      for (const itemId of args.itemIds) {
+        await ctx.db.patch("workoutItems", itemId, { sets: effectiveRounds });
+      }
+    }
 
     // The remainder of the split block is the same section as the block it came
     // from, so it keeps its name — but only when the original is going away

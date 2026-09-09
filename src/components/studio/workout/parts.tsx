@@ -13,7 +13,7 @@ export function prescription(item: WorkoutItem, circuit: boolean): string {
   const tracking = trackingFor(item);
   const timed = (tracking === "time" || tracking === "hold") && item.seconds != null;
   const measure = timed ? formatRestDuration(item.seconds ?? 0) : item.reps.trim();
-  if (circuit) return measure || "1×";
+  if (circuit) return measure || "—";
   return measure ? `${item.sets} × ${measure}` : `${item.sets}×`;
 }
 

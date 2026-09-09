@@ -9,7 +9,7 @@ import { isRestItem, type BlockKind, type SetLog, type WorkoutItem } from "@/lib
 import { Icon } from "@/components/studio/coach/icons";
 import { eyebrow } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
-import { setsOf } from "./prescription";
+import { prescriptionOf, setsOf } from "./prescription";
 import { EMPTY_SET, isFullyEmpty, type SetValue } from "./useSessionLog";
 
 type SheetExercise = {
@@ -24,6 +24,7 @@ type SheetBlock = {
   id: string;
   label: string;
   kind: BlockKind;
+  roundCount: number | null;
   interleaved: boolean;
   letter: string | null;
   exercises: SheetExercise[];
@@ -47,6 +48,7 @@ function groupSheet(steps: SessionStep[]): SheetBlock[] {
         id: step.blockId,
         label: step.blockLabel,
         kind: step.blockKind,
+        roundCount: step.roundCount,
         interleaved,
         letter: interleaved ? letter : null,
         exercises: [],
@@ -149,11 +151,14 @@ export function SessionSheet({
             </p>
             {block.interleaved && (
               <span className="font-sans text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-accent-ink">
-                {t("sheetSuperset")}
+                {block.roundCount
+                  ? block.kind === "superset"
+                    ? workoutsT("setsCount", { count: block.roundCount })
+                    : workoutsT("rounds", { count: block.roundCount })
+                  : t("sheetSuperset")}
               </span>
             )}
           </div>
-
           <ul>
             {block.exercises.map((exercise) => {
               const restStep = exercise.steps.find((step) => step.restSeconds > 0);
@@ -173,7 +178,9 @@ export function SessionSheet({
                       </p>
                       <p className="mt-0.5 font-sans text-xs text-cream/45">
                         {[
-                          setsOf(exercise.steps[0], prescriptionLabels),
+                          block.interleaved
+                            ? prescriptionOf(exercise.steps[0], prescriptionLabels)
+                            : setsOf(exercise.steps[0], prescriptionLabels),
                           exercise.item.tempo ? `${common("tempo")} ${exercise.item.tempo}` : null,
                         ]
                           .filter(Boolean)

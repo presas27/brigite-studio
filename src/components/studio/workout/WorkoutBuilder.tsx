@@ -162,8 +162,14 @@ export function WorkoutBuilder({
     if (ids.length < 2) return;
     startTransition(async () => {
       setSelectedIds(new Set());
-      if (kind === "superset") await groupItemsAction(workout.id, ids, "superset");
-      else await groupItemsAction(workout.id, ids, "circuit", 3);
+      const selectedItems = draft
+        .flatMap((block) => block.items)
+        .filter((item) => selectedIds.has(item.id));
+      const initialRounds = Math.max(
+        1,
+        ...selectedItems.map((item) => item.sets).filter((s) => s != null && s > 0),
+      );
+      await groupItemsAction(workout.id, ids, kind, initialRounds > 1 ? initialRounds : 3);
     });
   }
 

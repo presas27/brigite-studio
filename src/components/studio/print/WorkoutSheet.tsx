@@ -38,13 +38,13 @@ function setRows(item: WorkoutItem, rounds: number, circuit: boolean): number {
  * `workout/parts.tsx`, but counting a circuit's rounds instead of its sets,
  * because a printed sheet has no round counter above the list to carry it.
  */
-function target(item: WorkoutItem, rounds: number, circuit: boolean): string {
+function target(item: WorkoutItem, rounds: number, isInterleaved: boolean): string {
   if (isRestItem(item)) return formatRestDuration(item.seconds ?? 60);
   const tracking = trackingFor(item);
   const timed = (tracking === "time" || tracking === "hold") && item.seconds != null;
   const measure = timed ? formatRestDuration(item.seconds ?? 0) : item.reps.trim();
-  const count = circuit ? rounds : item.sets;
-  return measure ? `${count} × ${measure}` : `${count}×`;
+  if (isInterleaved) return measure || "—";
+  return measure ? `${item.sets} × ${measure}` : `${item.sets}×`;
 }
 
 export async function WorkoutSheet({
@@ -94,17 +94,22 @@ export async function WorkoutSheet({
       )}
 
       {blocks.map((block, blockIndex) => {
-        const circuit = block.kind === "circuit" || block.kind === "interval";
+        const isSuperset = block.kind === "superset";
+        const isCircuit = block.kind === "circuit" || block.kind === "interval";
+        const isInterleaved = isSuperset || isCircuit;
         const grouped = block.kind !== "normal";
+        const count = block.rounds || 1;
         // The block's own name when it has one, and what it is when it has not.
         // A named plain block ("Alongamentos") is a section on paper too; an
         // unnamed one is just the next few exercises and needs no heading.
         const name = block.label.trim();
-        const kind = circuit
-          ? `${tWorkouts("blockKind.circuit")} · ${tWorkouts("rounds", { count: block.rounds })}`
-          : grouped
-            ? tWorkouts("blockKind.superset")
-            : "";
+        const kind = isCircuit
+          ? `${tWorkouts("blockKind.circuit")} · ${tWorkouts("rounds", { count })}`
+          : isSuperset
+            ? `${tWorkouts("blockKind.superset")} · ${tWorkouts("setsCount", { count })}`
+            : grouped
+              ? tWorkouts(`blockKind.${block.kind}`)
+              : "";
         const title = [name, kind].filter(Boolean).join(" · ");
 
         return (
@@ -151,7 +156,7 @@ export async function WorkoutSheet({
                         </p>
                         {sections.prescription && (
                           <p className="text-sm tabular-nums text-neutral-700">
-                            {target(item, block.rounds, circuit)}
+                            {target(item, block.rounds, isInterleaved)}
                             {!rest && item.restSeconds > 0 && (
                               <span className="text-neutral-500">
                                 {" · "}
@@ -195,7 +200,7 @@ export async function WorkoutSheet({
                           </thead>
                           <tbody>
                             {Array.from(
-                              { length: setRows(item, block.rounds, circuit) },
+                              { length: setRows(item, block.rounds, isInterleaved) },
                               (_, setIndex) => (
                               <tr key={setIndex}>
                                 <td className="border border-neutral-300 px-1.5 py-2 tabular-nums text-neutral-400">

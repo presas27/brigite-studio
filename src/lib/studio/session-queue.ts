@@ -112,7 +112,7 @@ export function buildSessionQueue(snapshot: WorkoutSnapshot): SessionStep[] {
     // is how the workout builder writes a three-round circuit. An item that
     // does state its own count keeps it and drops out of the rounds past it.
     const roundsFor = (item: WorkoutItem) =>
-      block.rounds > 1 && item.sets <= 1 ? roundCount : Math.max(1, item.sets);
+      block.rounds > 1 ? block.rounds : Math.max(1, item.sets);
 
     for (let round = 0; round < roundCount; round += 1) {
       const inRound = items.filter((item) => round < roundsFor(item));

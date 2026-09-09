@@ -86,10 +86,10 @@ export function BlockCard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [, startTransition] = useTransition();
 
-  // A superset is exercises back to back, each still logging its own sets, and a
-  // plain block is one exercise at a time — both count sets per exercise. A
-  // circuit is the whole list repeated, so the round count replaces them.
-  const rounds = block.kind === "circuit" || block.kind === "interval";
+  // Circuits and supersets repeat the whole group of exercises:
+  // supersets for a set count ("3 séries"), circuits for rounds ("3 voltas").
+  const isSuperset = block.kind === "superset";
+  const hasRounds = isSuperset || block.kind === "circuit" || block.kind === "interval";
   const kinds = KINDS.includes(block.kind) ? KINDS : [...KINDS, block.kind];
 
   function commitRounds() {
@@ -123,7 +123,12 @@ export function BlockCard({
   return (
     <section
       aria-label={block.label.trim() || t(`blockKind.${block.kind}`)}
-      className={cn(surface, "space-y-3 p-3 sm:p-4")}
+      className={cn(
+        surface,
+        "space-y-3 p-3 sm:p-4 transition-all",
+        isSuperset && "border-l-4 border-l-accent-ink pl-3 sm:pl-4 bg-accent-ink/[0.02]",
+        block.kind === "circuit" && "border-l-4 border-l-caramel pl-3 sm:pl-4 bg-caramel/[0.02]",
+      )}
     >
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="flex items-center">
@@ -171,18 +176,24 @@ export function BlockCard({
           ))}
         </select>
 
-        {rounds && (
-          <label className="flex items-center gap-2 font-sans text-xs text-cream/55">
+        {hasRounds && (
+          <label className="flex items-center gap-1.5 font-sans text-xs font-medium text-cream/70">
             <input
               ref={roundsRef}
               type="number"
               min={1}
-              defaultValue={block.rounds}
-              aria-label={t("roundsLabel")}
+              defaultValue={block.rounds || 3}
+              aria-label={isSuperset ? t("setsLabel") : t("roundsLabel")}
               onBlur={commitRounds}
-              className={cn(smallField, "w-16 text-center")}
+              className={cn(
+                smallField,
+                "w-14 text-center font-semibold",
+                isSuperset ? "text-accent-ink" : "text-caramel",
+              )}
             />
-            {t("roundsShort")}
+            <span className="text-cream/55">
+              {isSuperset ? t("setsShort") : t("roundsShort")}
+            </span>
           </label>
         )}
 
@@ -209,7 +220,7 @@ export function BlockCard({
           rows={block.items.map((item) => ({ item, blockId: block.id }))}
           view={view}
           dense
-          circuit={rounds}
+          circuit={hasRounds}
           selectedIds={selection.selected}
           onToggleAction={selection.onToggleAction}
           draggingId={draggingId}
