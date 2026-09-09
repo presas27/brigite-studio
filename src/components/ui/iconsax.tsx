@@ -149,15 +149,15 @@ export function IconsaxWeight({ strokeWidth = 1.5, ...props }: IconsaxProps) {
 }
 IconsaxWeight.displayName = "IconsaxWeight";
 
-/** Iconsax dumbbell (sports) - tiered Olympic barbell / weights for workouts */
+/** Iconsax dumbbell (sports) - tiered Olympic barbell / weights for workouts (optically balanced) */
 export function IconsaxDumbbell({ strokeWidth = 1.5, ...props }: IconsaxProps) {
   return (
     <BaseSvg strokeWidth={strokeWidth} {...props}>
-      <path d="M15.5 17.5C14.67 17.5 14 16.83 14 16V8C14 7.17 14.67 6.5 15.5 6.5C16.33 6.5 17 7.17 17 8V16C17 16.83 16.33 17.5 15.5 17.5Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M20.5 15C19.67 15 19 14.33 19 13.5V10.5C19 9.67 19.67 9 20.5 9C21.33 9 22 9.67 22 10.5V13.5C22 14.33 21.33 15 20.5 15Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M8.5 17.5C9.33 17.5 10 16.83 10 16V8C10 7.17 9.33 6.5 8.5 6.5C7.67 6.5 7 7.17 7 8V16C7 16.83 7.67 17.5 8.5 17.5Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3.5 15C4.33 15 5 14.33 5 13.5V10.5C5 9.67 4.33 9 3.5 9C2.67 9 2 9.67 2 10.5V13.5C2 14.33 2.67 15 3.5 15Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M10 12H14" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15.5 19C14.4 19 13.6 18.1 13.6 17V7C13.6 5.9 14.4 5 15.5 5C16.6 5 17.4 5.9 17.4 7V17C17.4 18.1 16.6 19 15.5 19Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M21 16.2C20 16.2 19.2 15.3 19.2 14.2V9.8C19.2 8.7 20 7.8 21 7.8C22 7.8 22.8 8.7 22.8 9.8V14.2C22.8 15.3 22 16.2 21 16.2Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8.5 19C9.6 19 10.4 18.1 10.4 17V7C10.4 5.9 9.6 5 8.5 5C7.4 5 6.6 5.9 6.6 7V17C6.6 18.1 7.4 19 8.5 19Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3 16.2C4 16.2 4.8 15.3 4.8 14.2V9.8C4.8 8.7 4 7.8 3 7.8C2 7.8 1.2 8.7 1.2 9.8V14.2C1.2 15.3 2 16.2 3 16.2Z" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10.4 12H13.6" stroke="currentColor" strokeWidth={strokeWidth} strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
     </BaseSvg>
   );
 }
