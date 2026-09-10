@@ -1055,7 +1055,7 @@ export const collapseWorkoutNotes = internalMutation({
     let workouts = 0;
     for (const doc of await ctx.db.query("workouts").collect()) {
       if (doc.notes === undefined) continue;
-      const merged = doc.instructions.trim() ? doc.instructions : doc.notes;
+      const merged = (doc.instructions ?? "").trim() ? doc.instructions : doc.notes;
       // `undefined` is how Convex removes a field, and the merge and the
       // removal are one patch: a half-applied row would lose the text.
       await ctx.db.patch("workouts", doc._id, { instructions: merged, notes: undefined });
@@ -1066,7 +1066,7 @@ export const collapseWorkoutNotes = internalMutation({
     for (const doc of await ctx.db.query("assignments").collect()) {
       const { notes, ...rest } = doc.snapshot;
       if (notes === undefined) continue;
-      const merged = rest.instructions.trim() ? rest.instructions : notes;
+      const merged = (rest.instructions ?? "").trim() ? rest.instructions : notes;
       // The snapshot is one value, so the whole object is rewritten without
       // the key rather than patched field by field.
       await ctx.db.patch("assignments", doc._id, {

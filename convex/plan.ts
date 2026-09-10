@@ -246,15 +246,15 @@ function mapAssignment(doc: Doc<"assignments">): Assignment {
     effort: doc.effort,
     extraRestSeconds: doc.extraRestSeconds,
     createdAt: doc._creationTime,
-    snapshot: doc.snapshot,
+    snapshot: sanitizeSnapshot(doc.snapshot),
   };
 }
 
 function mapAssignmentSummary(doc: Doc<"assignments">): AssignmentSummary {
   let itemCount = 0;
   let videoUrl: string | null = null;
-  for (const block of doc.snapshot.blocks) {
-    for (const item of block.items) {
+  for (const block of doc.snapshot.blocks ?? []) {
+    for (const item of block.items ?? []) {
       if (item.kind !== "rest") itemCount += 1;
       if (videoUrl == null && item.videoUrl) videoUrl = item.videoUrl;
     }
@@ -451,13 +451,13 @@ async function freezeAssignment(
     workoutId: input.workoutId,
     date: input.date,
     status: "scheduled",
-    snapshot: {
+    snapshot: sanitizeSnapshot({
       name: workout.name,
       focus: workout.focus,
       instructions: workout.instructions,
       estimatedMinutes: workout.estimatedMinutes,
       blocks: workout.blocks,
-    },
+    }),
     note: input.note ?? "",
     startedAt: null,
     doneAt: null,
@@ -579,19 +579,12 @@ export const startEmptySession = mutation({
     }
 
     if (open) {
-      if (open.startedAt == null) {
-        await ctx.db.patch("assignments", open._id, { startedAt: Date.now() });
-      }
-      if (seed) {
-        const already = open.snapshot.blocks.some((block) =>
-          block.items.some((item) => item.kind !== "rest" && item.exerciseId === seed!._id),
-        );
-        if (!already) {
-          await ctx.db.patch("assignments", open._id, {
-            snapshot: appendExerciseToSnapshot(open.snapshot, seed),
-          });
-        }
-      }
+      const snapshot = sanitizeSnapshot(open.snapshot);
+      const seeded = seed ? appendExerciseToSnapshot(snapshot, seed) : snapshot;
+      await ctx.db.patch("assignments", open._id, {
+        snapshot: seeded,
+        ...(open.startedAt == null ? { startedAt: Date.now() } : {}),
+      });
       return open._id;
     }
 
@@ -660,13 +653,13 @@ export const rescheduleWorkout = mutation({
       await ctx.db.delete("assignments", doc._id);
     }
 
-    const snapshot = {
+    const snapshot = sanitizeSnapshot({
       name: workout.name,
       focus: workout.focus,
       instructions: workout.instructions,
       estimatedMinutes: workout.estimatedMinutes,
       blocks: workout.blocks,
-    };
+    });
 
     if (args.mode === "none") {
       const stillOpen = await ctx.db
@@ -1424,7 +1417,7 @@ export const repeatWeek = mutation({
           workoutId: doc.workoutId,
           date: shiftDay(doc.date, week * 7),
           status: "scheduled",
-          snapshot: doc.snapshot,
+          snapshot: sanitizeSnapshot(doc.snapshot),
           note: doc.note,
           startedAt: null,
           doneAt: null,
@@ -1660,10 +1653,67 @@ type SnapshotItem = Snapshot["blocks"][number]["items"][number];
 
 /** Snapshot ids are strings, not table ids — same idea as `users.ts` tokens. */
 function liveId(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  let out = "";
-  for (const byte of bytes) out += byte.toString(16).padStart(2, "0");
+  try {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    let out = "";
+    for (const byte of bytes) out += byte.toString(16).padStart(2, "0");
+    return out;
+  } catch {
+    // Convex mutations allow `Date.now` / `Math.random`; some isolates have
+    // `crypto.subtle` without `getRandomValues`.
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  }
+}
+
+/**
+ * Snapshots frozen before `instructions` existed, or written with extra
+ * fields, fail Convex return validators and blow the session page. Every
+ * reader and writer of a snapshot goes through here so a document from any
+ * generation of the schema still round-trips.
+ */
+function sanitizeSnapshot(snapshot: Snapshot): Snapshot {
+  const notes = "notes" in snapshot ? (snapshot as Snapshot & { notes?: string }).notes : undefined;
+  const instructions =
+    typeof snapshot.instructions === "string" && snapshot.instructions.trim().length > 0
+      ? snapshot.instructions
+      : (notes ?? "");
+  const out: Snapshot = {
+    name: snapshot.name ?? "",
+    focus: snapshot.focus ?? "",
+    instructions,
+    blocks: (snapshot.blocks ?? []).map((block) => ({
+      id: block.id,
+      position: block.position,
+      kind: block.kind,
+      label: block.label ?? "",
+      rounds: block.rounds ?? 1,
+      restSeconds: block.restSeconds ?? 0,
+      items: (block.items ?? []).map((item) => {
+        const next: SnapshotItem = {
+          id: item.id,
+          position: item.position,
+          exerciseId: item.exerciseId ?? "",
+          exerciseName: item.exerciseName ?? "",
+          tracking: item.tracking ?? "reps",
+          videoUrl: item.videoUrl ?? null,
+          cues: item.cues ?? "",
+          cuesEn: item.cuesEn ?? "",
+          sets: item.sets ?? 1,
+          reps: item.reps ?? "",
+          seconds: item.seconds ?? null,
+          tempo: item.tempo ?? "",
+          restSeconds: item.restSeconds ?? 0,
+          rpe: item.rpe ?? "",
+          notes: item.notes ?? "",
+        };
+        if (item.kind === "exercise" || item.kind === "rest") next.kind = item.kind;
+        if (item.replaces) next.replaces = item.replaces;
+        return next;
+      }),
+    })),
+  };
+  if (snapshot.estimatedMinutes !== undefined) out.estimatedMinutes = snapshot.estimatedMinutes;
   return out;
 }
 
@@ -1710,7 +1760,8 @@ function snapshotItemFromExercise(exercise: Doc<"exercises">, position: number):
 }
 
 function appendExerciseToSnapshot(snapshot: Snapshot, exercise: Doc<"exercises">): Snapshot {
-  const blocks = snapshot.blocks.map((block) => ({ ...block, items: [...block.items] }));
+  const clean = sanitizeSnapshot(snapshot);
+  const blocks = clean.blocks.map((block) => ({ ...block, items: [...block.items] }));
   let block = blocks[blocks.length - 1];
   if (!block || block.kind !== "normal") {
     block = {
@@ -1725,7 +1776,7 @@ function appendExerciseToSnapshot(snapshot: Snapshot, exercise: Doc<"exercises">
     blocks.push(block);
   }
   block.items.push(snapshotItemFromExercise(exercise, block.items.length));
-  return { ...snapshot, blocks };
+  return sanitizeSnapshot({ ...clean, blocks });
 }
 
 async function findRunExercise(ctx: Ctx): Promise<Doc<"exercises"> | null> {
@@ -1763,8 +1814,8 @@ function snapshotExercise(
   snapshot: Doc<"assignments">["snapshot"],
   itemId: string,
 ): Infer<typeof assignmentColumns.snapshot>["blocks"][number]["items"][number] | undefined {
-  for (const block of snapshot.blocks) {
-    for (const item of block.items) {
+  for (const block of snapshot.blocks ?? []) {
+    for (const item of block.items ?? []) {
       if (item.id === itemId) return item.kind === "rest" ? undefined : item;
     }
   }
@@ -1799,7 +1850,7 @@ export const swapOptions = query({
       name: exercise.name,
       videoUrl: exercise.videoUrl,
       tracking: exercise.tracking,
-      tags: exercise.tags,
+      tags: exercise.tags ?? [],
     });
 
     const search = args.search.trim();
@@ -1814,7 +1865,7 @@ export const swapOptions = query({
 
     const frequency = new Map<string, number>();
     for (const exercise of live) {
-      for (const tag of exercise.tags) frequency.set(tag, (frequency.get(tag) ?? 0) + 1);
+      for (const tag of exercise.tags ?? []) frequency.set(tag, (frequency.get(tag) ?? 0) + 1);
     }
     const tags = new Set(current?.tags ?? []);
     const words = expandStems(nameWords(current?.name ?? item.exerciseName));
@@ -1829,7 +1880,7 @@ export const swapOptions = query({
         score += 100;
       }
       for (const word of nameWords(exercise.name)) if (words.has(word)) score += 5;
-      for (const tag of exercise.tags) if (tags.has(tag)) score += 100 / (frequency.get(tag) ?? 1);
+      for (const tag of exercise.tags ?? []) if (tags.has(tag)) score += 100 / (frequency.get(tag) ?? 1);
       if (exercise.tracking === item.tracking) score += 0.25;
       scored.push({ exercise, score });
     }
@@ -1949,13 +2000,13 @@ export const swapExercise = mutation({
             },
     };
     await ctx.db.patch("assignments", doc._id, {
-      snapshot: {
+      snapshot: sanitizeSnapshot({
         ...doc.snapshot,
-        blocks: doc.snapshot.blocks.map((block) => ({
+        blocks: (doc.snapshot.blocks ?? []).map((block) => ({
           ...block,
-          items: block.items.map((candidate) => (candidate.id === item.id ? swapped : candidate)),
+          items: (block.items ?? []).map((candidate) => (candidate.id === item.id ? swapped : candidate)),
         })),
-      },
+      }),
     });
 
     // The note on this slot is about today's attempt at it, whichever movement
@@ -2002,7 +2053,7 @@ export const sessionExerciseOptions = query({
       name: exercise.name,
       videoUrl: exercise.videoUrl,
       tracking: exercise.tracking,
-      tags: exercise.tags,
+      tags: exercise.tags ?? [],
     });
 
     const search = args.search.trim();
@@ -2018,8 +2069,8 @@ export const sessionExerciseOptions = query({
       .order("desc")) {
       if (assignment._id === doc._id) continue;
       if (assignment.status === "scheduled" && assignment.startedAt == null) continue;
-      for (const block of assignment.snapshot.blocks) {
-        for (const item of block.items) {
+      for (const block of assignment.snapshot.blocks ?? []) {
+        for (const item of block.items ?? []) {
           if (item.kind === "rest" || !item.exerciseId || seen.has(item.exerciseId)) continue;
           seen.add(item.exerciseId);
           const exercise = await ctx.db.get("exercises", item.exerciseId as Id<"exercises">);
@@ -2078,15 +2129,15 @@ export const setSessionItemSets = mutation({
     if (sets === item.sets) return null;
 
     await ctx.db.patch("assignments", doc._id, {
-      snapshot: {
+      snapshot: sanitizeSnapshot({
         ...doc.snapshot,
-        blocks: doc.snapshot.blocks.map((block) => ({
+        blocks: (doc.snapshot.blocks ?? []).map((block) => ({
           ...block,
-          items: block.items.map((candidate) =>
+          items: (block.items ?? []).map((candidate) =>
             candidate.id === item.id ? { ...candidate, sets } : candidate,
           ),
         })),
-      },
+      }),
     });
 
     if (sets < item.sets) {
@@ -2114,15 +2165,15 @@ export const removeSessionExercise = mutation({
     const item = snapshotExercise(doc.snapshot, args.itemId);
     if (!item) return null;
 
-    const blocks = doc.snapshot.blocks
+    const blocks = (doc.snapshot.blocks ?? [])
       .map((block) => ({
         ...block,
-        items: block.items.filter((candidate) => candidate.id !== item.id),
+        items: (block.items ?? []).filter((candidate) => candidate.id !== item.id),
       }))
-      .filter((block) => block.items.length > 0 || doc.snapshot.blocks.length === 1);
+      .filter((block) => block.items.length > 0 || (doc.snapshot.blocks ?? []).length === 1);
 
     await ctx.db.patch("assignments", doc._id, {
-      snapshot: { ...doc.snapshot, blocks },
+      snapshot: sanitizeSnapshot({ ...doc.snapshot, blocks }),
     });
 
     const logs = await logDocs(ctx, doc._id);
@@ -2241,8 +2292,8 @@ function durationOf(doc: Doc<"assignments">): number | null {
  * and would otherwise have no name to be listed under.
  */
 function nameExercises(names: Map<string, string>, snapshot: Doc<"assignments">["snapshot"]): void {
-  for (const block of snapshot.blocks) {
-    for (const item of block.items) {
+  for (const block of snapshot.blocks ?? []) {
+    for (const item of block.items ?? []) {
       names.set(item.exerciseId, item.exerciseName);
       if (item.replaces) names.set(item.replaces.exerciseId, item.replaces.exerciseName);
     }

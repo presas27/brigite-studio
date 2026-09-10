@@ -353,7 +353,7 @@ export function SessionPlayer({
   // Neither belongs to any single set, so they live in the list — reachable all
   // session instead of only on the first screen.
   const coachNote = [current.snapshot.instructions, current.note]
-    .map((line) => line.trim())
+    .map((line) => (line ?? "").trim())
     .filter(Boolean)
     .join("\n\n");
 

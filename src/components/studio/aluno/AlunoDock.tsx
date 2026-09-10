@@ -31,13 +31,11 @@ export function AlunoDock({
   badges,
   name,
   alerts,
-  session,
 }: {
   items: ChromeItem[];
   badges: Record<string, number>;
   name: string;
   alerts: ClientAlert[];
-  session: { href: string; label: string } | null;
 }) {
   const t = useTranslations("Studio.nav");
   const tAluno = useTranslations("Studio.aluno");
@@ -96,26 +94,6 @@ export function AlunoDock({
       </AnimatePresence>
 
       <div className="pointer-events-auto relative mx-auto w-full max-w-[22.5rem]">
-        <AnimatePresence>
-          {session && !add.open && (
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.96 }}
-              transition={SPRING}
-              className="mb-2 flex justify-center"
-            >
-              <Link
-                href={session.href}
-                className="aluno-dock inline-flex items-center gap-2 rounded-full px-4 py-2 font-sans text-xs font-semibold text-cream"
-              >
-                <Icon name="play" className="h-3.5 w-3.5 text-accent-ink" />
-                {session.label}
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <nav
           aria-label={t("mainMenu")}
           data-day-add-menu={add.open ? "" : undefined}

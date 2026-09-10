@@ -103,14 +103,6 @@ export function AlunoChrome({
             badges={badges}
             name={name}
             alerts={chrome.alerts}
-            session={
-              session
-                ? {
-                    href: `/app/aluno/treino/${session.id}`,
-                    label: session.startedAt ? t("resume") : t("start"),
-                  }
-                : null
-            }
           />
         }
         actions={
