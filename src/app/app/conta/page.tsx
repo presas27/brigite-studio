@@ -4,6 +4,7 @@ import { Field } from "@/components/studio/Field";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { SubmitButton } from "@/components/studio/SubmitButton";
 import { InstallApp } from "@/components/studio/InstallApp";
+import { SignOutButton } from "@/components/studio/SignOutButton";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { chip, chipAccent, eyebrow, field, muted, surface } from "@/components/studio/theme";
 import { currentUser } from "@/lib/studio/auth";
@@ -168,6 +169,14 @@ export default async function AccountPage({
         </Field>
         <SubmitButton pendingLabel={common("saving")}>{t("changePassword")}</SubmitButton>
       </form>
+
+      <section className={cn(surface, "flex flex-wrap items-center justify-between gap-4 p-5")}>
+        <div className="min-w-0">
+          <p className={eyebrow}>{t("signOut")}</p>
+          <p className={cn(muted, "mt-1")}>{t("signOutHint")}</p>
+        </div>
+        <SignOutButton />
+      </section>
     </div>
   );
 }

@@ -1164,6 +1164,8 @@
       "lead": "Os teus dados e preferências.",
       "details": "Dados da conta",
       "signOut": "Sair",
+      "signingOut": "A sair…",
+      "signOutHint": "Termina a sessão neste dispositivo.",
       "role": {
         "coach": "Treinadora",
         "client": "Aluno"

@@ -1164,6 +1164,8 @@
       "lead": "Your details and preferences.",
       "details": "Account details",
       "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "signOutHint": "Ends the session on this device.",
       "role": {
         "coach": "Coach",
         "client": "Client"
