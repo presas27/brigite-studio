@@ -97,6 +97,7 @@ export default async function AccountPage({
       )}
 
       <InstallApp />
+
     </div>
   );
 }

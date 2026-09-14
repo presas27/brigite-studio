@@ -10,6 +10,7 @@ import {
 import { Field } from "@/components/studio/Field";
 import { Modal } from "@/components/studio/Modal";
 import { SubmitButton } from "@/components/studio/SubmitButton";
+import { SignOutButton } from "@/components/studio/SignOutButton";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { buttonGhost, field, muted, surface } from "@/components/studio/theme";
 import type { ThemeMode } from "@/lib/studio/theme-mode";
@@ -18,13 +19,14 @@ import { cn } from "@/lib/utils";
 const PASSWORD_INITIAL: PasswordState = { status: "idle" };
 
 /**
- * Everything that is a setting rather than a fact: appearance, password, and —
- * for a client — the coach they train with.
+ * Everything that is a setting rather than a fact: appearance, password, the
+ * coach a client trains with, and the way out of the session.
  *
  * One card of rows instead of a card per concern. Each row says what it is and
  * carries its one control; the two that need a form open it in a dialog, so
  * the page stays the height of a phone screen instead of three scrolls of
- * inputs nobody came to fill in.
+ * inputs nobody came to fill in. Sign-out is last because the phone dock hides
+ * the topbar chip that carries it everywhere else.
  */
 export function AccountSettings({
   themeMode,
@@ -60,6 +62,8 @@ export function AccountSettings({
           ) : null}
         </CoachRow>
       )}
+
+      <Row title={t("signOut")} lead={t("signOutHint")} action={<SignOutButton />} />
     </section>
   );
 }

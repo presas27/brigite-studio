@@ -4,15 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
 import { useTranslations } from "next-intl";
-import { authClient } from "@/lib/auth-client";
+import { signOut } from "@/components/studio/SignOutButton";
 import { Icon } from "@/components/studio/coach/icons";
 import { MorphHeight } from "@/components/studio/MorphHeight";
 import { Avatar } from "@/components/studio/Avatar";
 import { cn } from "@/lib/utils";
-async function signOut() {
-  await authClient.signOut();
-  window.location.assign("/app/entrar");
-}
 
 /**
  * The account chip in the top right, and everything that hangs off it: who is
