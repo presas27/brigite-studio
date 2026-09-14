@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/studio/coach/icons";
 import { MorphHeight } from "@/components/studio/MorphHeight";
+import { Avatar } from "@/components/studio/Avatar";
 import { cn } from "@/lib/utils";
 async function signOut() {
   await authClient.signOut();
@@ -67,11 +68,10 @@ export function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={name}
         className="flex items-center gap-2.5 rounded-full bg-cream/5 py-1.5 pr-2.5 pl-1.5 ring-1 ring-cream/12 transition-colors hover:bg-cream/8 hover:ring-cream/25"
       >
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-fill font-sans text-xs font-semibold text-ink">
-          {name.trim().charAt(0).toUpperCase()}
-        </span>
+        <Avatar name={name} />
         <span className="hidden max-w-[10rem] truncate font-sans text-sm text-cream/85 sm:inline">
           {name}
         </span>

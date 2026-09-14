@@ -8,6 +8,7 @@ import { useReducedMotion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
 import { MorphHeight } from "@/components/studio/MorphHeight";
+import { Avatar } from "@/components/studio/Avatar";
 import type { ChromeItem } from "@/components/studio/chrome/StudioChrome";
 import { DAY_MARKS, type DayMarkKind } from "@/components/studio/calendar/dayMarks";
 import { useDayMarks } from "@/components/studio/calendar/DayMarksProvider";
@@ -237,9 +238,7 @@ export function AlunoDock({
                     transition={SPRING}
                   />
                 )}
-                <span className="relative z-[1] grid h-8 w-8 place-items-center rounded-full bg-accent-fill font-sans text-xs font-semibold text-ink ring-2 ring-cream/10">
-                  {name.trim().charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={name} size="md" className="relative z-[1] ring-2 ring-cream/10" />
               </Link>
             </div>
           </div>

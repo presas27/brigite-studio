@@ -742,6 +742,31 @@ seja encontrada. Passou para um menu no chip da conta, no topo direito: nome, em
 papel, **Dados da conta** (`/app/conta` — nome, idioma, tema, e o plano quando é
 aluno) e **Sair**. Fecha com clique fora e com Escape.
 
+### Página de conta (set. 2026)
+
+`/app/conta` eram três formulários abertos empilhados — nome, palavra-passe, treinador
+— num ecrã a que se vai para *ver* uma coisa, não para preencher. Passou a ler
+primeiro:
+
+- **Cartão de identidade.** Avatar (a inicial do nome, o mesmo desenho do chip da
+  navbar e da dock — `src/components/studio/Avatar.tsx`, o lugar onde uma foto entra
+  quando houver upload), nome, email e os factos como chips: papel, plano, aluno
+  desde, idioma. **Editar dados** troca o cartão por um formulário no mesmo sítio
+  (nome, idioma; o email aparece desativado porque é o login) e fecha-se sozinho
+  quando a ação volta bem.
+- **Um cartão de definições em linhas**: aspeto (o toggle), palavra-passe (diálogo) e,
+  no aluno, o treinador (diálogo). Cabe num ecrã de telemóvel sem scroll.
+
+**Deixar de treinar pergunta primeiro.** Era um submit nu na página: um toque
+distraído separou uma aluna da treinadora, em silêncio, e o caminho de volta era um
+convite novo e o formulário de inscrição outra vez. O diálogo nomeia a treinadora e
+diz o que se perde. Para desfazer um acidente que já aconteceu há a ferramenta de
+linha de comandos, que escreve o estado final sem passar pelo convite:
+
+```
+npx convex run users:attachToCoach '{"clientEmail": "…", "coachEmail": "…"}'
+```
+
 ### Uso do gradiente caramelo
 
 O gradiente do site entra na app com uma regra: **uma superfície dourada por ecrã, na

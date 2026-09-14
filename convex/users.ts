@@ -704,6 +704,81 @@ export const linkLogin = internalMutation({
   },
 });
 
+/**
+ * Put a client back on a coach's roster, from the CLI:
+ *
+ * ```
+ * npx convex run users:attachToCoach '{"clientEmail": "…", "coachEmail": "…"}'
+ * ```
+ *
+ * Recovery, not a feature. `leaveCoach` detaches in one click, and the way
+ * back through the product — a fresh invite — makes the person walk the invite
+ * link and the intake form again, which is the wrong price for a misclick. So
+ * this writes the end state directly: the coach on the profile, the pending
+ * invite for the pair closed as accepted (any other coach's pending invite
+ * revoked, since it could no longer be accepted anyway), and, only when the
+ * coach's published form would otherwise stop them at the onboarding gate, an
+ * empty response so it does not.
+ */
+export const attachToCoach = internalMutation({
+  args: { clientEmail: v.string(), coachEmail: v.string() },
+  handler: async (ctx, args) => {
+    const client = await userByEmail(ctx, normalizeEmail(args.clientEmail));
+    if (!client || client.role !== "client") {
+      throw new Error(`No client with email ${args.clientEmail}`);
+    }
+    const coach = await userByEmail(ctx, normalizeEmail(args.coachEmail));
+    if (!coach || coach.role !== "coach") {
+      throw new Error(`No coach with email ${args.coachEmail}`);
+    }
+    const profile = await profileOf(ctx, client._id);
+    if (!profile) throw new Error(`No profile for ${args.clientEmail}`);
+
+    await ctx.db.patch("clientProfiles", profile._id, { coachId: coach._id });
+
+    const invites = await ctx.db
+      .query("invites")
+      .withIndex("by_client", (q) => q.eq("clientId", client._id))
+      .collect();
+    let closed = 0;
+    for (const invite of invites) {
+      if (invite.status !== "pending") continue;
+      await ctx.db.patch("invites", invite._id, {
+        status: invite.coachId === coach._id ? "accepted" : "revoked",
+      });
+      closed += 1;
+    }
+
+    const form = await ctx.db
+      .query("intakeForms")
+      .withIndex("by_coach", (q) => q.eq("coachId", coach._id))
+      .unique();
+    let intake: "answered" | "skipped" | "noForm" = "noForm";
+    if (form && form.published && form.fields.length > 0) {
+      const response = await ctx.db
+        .query("intakeResponses")
+        .withIndex("by_form_and_client", (q) => q.eq("formId", form._id).eq("clientId", client._id))
+        .unique();
+      if (response) {
+        intake = "answered";
+      } else {
+        await ctx.db.insert("intakeResponses", {
+          formId: form._id,
+          coachId: coach._id,
+          clientId: client._id,
+          inviteId: null,
+          answers: [],
+          submittedAt: Date.now(),
+        });
+        intake = "skipped";
+      }
+    }
+
+    await ctx.scheduler.runAfter(0, internal.payments.syncCoachSeats, { coachId: coach._id });
+    return { clientId: client._id, coachId: coach._id, invitesClosed: closed, intake };
+  },
+});
+
 /** Provisioning only: drop the studio row, its profile and its invites. */
 export const removeByEmail = internalMutation({
   args: { email: v.string() },

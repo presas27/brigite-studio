@@ -42,12 +42,22 @@ export function numberFormatter(locale: string, options: Intl.NumberFormatOption
   return created;
 }
 
-export function languageDisplayNames(locale: string): Intl.DisplayNames {
+function languageDisplayNames(locale: string): Intl.DisplayNames {
   const cached = displayNamesCache.get(locale);
   if (cached) return cached;
   const created = new Intl.DisplayNames([locale], { type: "language" });
   displayNamesCache.set(locale, created);
   return created;
+}
+
+/**
+ * A language's own name, as the reader's locale writes it, capitalised.
+ * `Intl.DisplayNames` returns "português" — correct mid-sentence, wrong as a
+ * chip or an option on its own line.
+ */
+export function languageLabel(locale: string, code: string): string {
+  const name = languageDisplayNames(locale).of(code) ?? code;
+  return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);
 }
 
 function relativeFormatter(locale: string): Intl.RelativeTimeFormat {
