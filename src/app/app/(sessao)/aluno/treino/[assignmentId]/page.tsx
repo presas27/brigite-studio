@@ -38,13 +38,15 @@ export default async function TreinoPage({
 
   const { client } = await requireClientAccess(assignment.clientId);
 
-  const exerciseIds = Array.from(
-    new Set(
-      (assignment.snapshot.blocks ?? []).flatMap((block) =>
-        (block.items ?? []).map((item) => item.exerciseId).filter((id) => id.length > 0),
-      ),
-    ),
-  );
+  const exerciseIdSet = new Set<string>();
+  for (const block of assignment.snapshot.blocks ?? []) {
+    for (const item of block.items ?? []) {
+      if (item.exerciseId.length > 0) {
+        exerciseIdSet.add(item.exerciseId);
+      }
+    }
+  }
+  const exerciseIds = Array.from(exerciseIdSet);
 
   const [initialLogs, noteRows, previousRows] = await Promise.all([
     logsFor(assignment.id),

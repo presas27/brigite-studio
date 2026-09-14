@@ -30,7 +30,8 @@ export type AddClientState =
   | { status: "created"; name: string }
   | { status: "invited"; name: string }
   | { status: "duplicate" }
-  | { status: "invalid" };
+  | { status: "invalid" }
+  | { status: "billing" };
 
 /**
  * Add a client and immediately send the invite — a roster entry nobody has been
@@ -65,10 +66,12 @@ export async function addClient(
       ? { status: "created", name: outcome.name }
       : { status: "invited", name: outcome.name };
   } catch (error) {
-    // An address that is a coach's, or already trains with somebody: the
-    // roster says "already has an account" for both, which is all the coach
-    // needs to know.
-    if (error instanceof ConvexError) return { status: "duplicate" };
+    if (error instanceof ConvexError) {
+      const data = error.data as { code?: string } | string;
+      const code = typeof data === "string" ? data : data?.code;
+      if (code === "BILLING_REQUIRED") return { status: "billing" };
+      return { status: "duplicate" };
+    }
     throw error;
   }
 }

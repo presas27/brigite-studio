@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
+import { useReducedMotion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
 import { MorphHeight } from "@/components/studio/MorphHeight";
@@ -74,10 +75,11 @@ export function AlunoDock({
   }
 
   return (
+    <MotionRoot>
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.7rem,env(safe-area-inset-bottom))] lg:hidden">
       <AnimatePresence>
         {(more || add.open) && (
-          <motion.button
+          <m.button
             type="button"
             aria-label={t("closeMenu")}
             initial={reduceMotion ? false : { opacity: 0 }}
@@ -202,7 +204,7 @@ export function AlunoDock({
                 )}
               >
                 {!reduceMotion && (more || extraActive) && (
-                  <motion.span
+                  <m.span
                     layoutId="aluno-dock-active"
                     className="absolute inset-0 rounded-full bg-cream/[0.12]"
                     transition={SPRING}
@@ -229,7 +231,7 @@ export function AlunoDock({
                 className="relative grid h-11 w-11 place-items-center"
               >
                 {!more && isActive("/app/conta") && !reduceMotion && (
-                  <motion.span
+                  <m.span
                     layoutId="aluno-dock-active"
                     className="absolute inset-0 rounded-full bg-cream/[0.12]"
                     transition={SPRING}
@@ -245,6 +247,7 @@ export function AlunoDock({
         </nav>
       </div>
     </div>
+    </MotionRoot>
   );
 }
 
@@ -267,7 +270,7 @@ function AddMarksSheet({
         {DAY_MARKS.map((mark, index) => {
           const on = pinned.includes(mark.kind);
           return (
-            <motion.li
+            <m.li
               key={mark.kind}
               initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -295,7 +298,7 @@ function AddMarksSheet({
                   <Icon name={mark.icon} className="h-5 w-5" />
                 </span>
               </button>
-            </motion.li>
+            </m.li>
           );
         })}
       </ul>
@@ -329,7 +332,7 @@ function DockIcon({
       className="relative grid h-11 flex-1 place-items-center rounded-full text-cream/60 transition-colors"
     >
       {active && layoutId && (
-        <motion.span
+        <m.span
           layoutId={layoutId}
           className="absolute inset-y-0 inset-x-1 rounded-full bg-cream/[0.12]"
           transition={SPRING}

@@ -3,7 +3,7 @@ import type { Checkin } from "@/lib/studio/types";
 import { Field } from "../Field";
 import { SubmitButton } from "../SubmitButton";
 import { chipAccent, eyebrow, field, heading, surface } from "../theme";
-import { parseDayKey } from "./date";
+import { formatDayMonth } from "../format";
 import { ScaleBar } from "./ScaleBar";
 import type { Translate } from "./types";
 
@@ -25,11 +25,7 @@ export function CheckinCard({
   replyAction?: (formData: FormData) => void | Promise<void>;
   justReplied?: boolean;
 }) {
-  const dateLabel = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(parseDayKey(checkin.weekOf));
+  const dateLabel = formatDayMonth(checkin.weekOf, locale);
   const pending = replyAction != null;
 
   return (

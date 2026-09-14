@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme";
 import type { OverviewWeight } from "@/lib/studio/clientConsole";
 import { cn } from "@/lib/utils";
+import { numberFormatter } from "@/components/studio/format";
 import { Sparkline } from "./Sparkline";
 /**
  * Weight, as a number and a shape.
@@ -31,7 +32,7 @@ export async function WeightCard({
     getLocale(),
   ]);
 
-  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const number = numberFormatter(locale, { maximumFractionDigits: 1 });
   const delta = weight.delta;
 
   return (

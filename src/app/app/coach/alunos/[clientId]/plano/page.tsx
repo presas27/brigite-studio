@@ -12,6 +12,7 @@ import { UnscheduledList } from "@/components/studio/plan/UnscheduledList";
 import { WeekGrid } from "@/components/studio/plan/WeekGrid";
 import { Icon } from "@/components/studio/coach/icons";
 import { field, heading } from "@/components/studio/theme";
+import { formatDdMm } from "@/components/studio/format";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { dayKey, shiftDay, weekKey } from "@/lib/studio/dates";
 import { listWorkouts } from "@/lib/studio/library";
@@ -80,9 +81,7 @@ export default async function CoachPlanPage({
     (byDate[assignment.date] ??= []).push(assignment);
   }
   const days = Array.from({ length: 7 }, (_, i) => shiftDay(monday, i));
-  // Fixed dd/mm, not locale-formatted — this pill reads as a date stamp, not prose.
-  const asDdMm = (key: string) => `${key.slice(8, 10)}/${key.slice(5, 7)}`;
-  const weekRange = `${asDdMm(monday)} - ${asDdMm(sunday)}`;
+  const weekRange = `${formatDdMm(monday)} - ${formatDdMm(sunday)}`;
 
   const assignAction = assign.bind(null, clientId);
   const removeAction = remove.bind(null, clientId);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
 import { useTranslations } from "next-intl";
 import { setThemeMode, type ThemeMode } from "@/lib/studio/theme-mode";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,8 @@ export function ThemeToggle({ initial, className }: { initial: ThemeMode; classN
   }
 
   return (
-    <motion.button
+    <MotionRoot>
+    <m.button
       type="button"
       onClick={handleToggle}
       aria-label={label}
@@ -90,7 +91,7 @@ export function ThemeToggle({ initial, className }: { initial: ThemeMode; classN
       )}
     >
       <AnimatePresence>
-        <motion.span
+        <m.span
           key={pulseKey}
           initial={{ opacity: 0, scale: 0.88 }}
           animate={{ opacity: 1, scale: 1.08 }}
@@ -102,7 +103,7 @@ export function ThemeToggle({ initial, className }: { initial: ThemeMode; classN
 
       <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_center,var(--color-caramel)_0%,transparent_72%)] opacity-0 transition-opacity duration-300 group-hover:opacity-15" />
 
-      <motion.span
+      <m.span
         animate={{ rotate: isLight ? 180 : 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
         className="relative flex h-4 w-4 items-center justify-center"
@@ -123,7 +124,8 @@ export function ThemeToggle({ initial, className }: { initial: ThemeMode; classN
               : "translate-y-0 rotate-0 scale-100 opacity-100",
           )}
         />
-      </motion.span>
-    </motion.button>
+      </m.span>
+    </m.button>
+    </MotionRoot>
   );
 }

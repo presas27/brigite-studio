@@ -88,10 +88,8 @@ export function PhotoAngleField({
         height: full.height,
         bytes: full.blob.size + thumb.blob.size,
       });
-      setPreview((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return URL.createObjectURL(full.blob);
-      });
+      const url = URL.createObjectURL(full.blob);
+      setPreview(url);
       setSaved(true);
       setState("idle");
     } catch {

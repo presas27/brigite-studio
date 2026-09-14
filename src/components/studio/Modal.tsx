@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "motion/react";
+import { m, MotionRoot } from "@/components/studio/motion-root";
+import { useReducedMotion } from "motion/react";
 import { Icon } from "./coach/icons";
 import { heading, muted } from "./theme";
 import { cn } from "@/lib/utils";
@@ -38,10 +39,14 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
   }, [open]);
 
   return (
+    <MotionRoot>
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={onCloseAction}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onCloseAction();
+      }}
       onClick={(event) => {
         if (event.target === dialogRef.current) onCloseAction();
       }}
@@ -49,7 +54,7 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
       className="m-auto max-h-[85vh] overflow-y-auto rounded-[1.25rem] border-0 bg-ink-lift p-6 text-cream ring-1 ring-cream/10 backdrop:bg-ink/70 backdrop:backdrop-blur-sm sm:p-7"
     >
       {open && (
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 420, damping: 32 }}
@@ -70,7 +75,7 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
               <Icon name="close" className="h-5 w-5" />
             </button>
           </div>
-          <motion.div
+          <m.div
             key={title}
             initial={reduceMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -78,9 +83,10 @@ export function Modal({ open, onCloseAction, title, lead, width = "32rem", child
             className="mt-5"
           >
             {children}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </dialog>
+    </MotionRoot>
   );
 }

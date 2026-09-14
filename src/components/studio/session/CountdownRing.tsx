@@ -4,14 +4,10 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
+import { formatClock } from "./clock";
 
 const RING_LENGTH = 100;
 
-/** `1:59`, `0:24` — the way a clock is read out loud. */
-export function formatClock(seconds: number): string {
-  const safe = Math.max(0, Math.round(seconds));
-  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
-}
 
 /**
  * A countdown as a ring that empties.

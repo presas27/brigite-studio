@@ -546,9 +546,7 @@ export const listWorkouts = query({
         )
       : docs;
 
-    const out: WorkoutSummary[] = [];
-    for (const doc of matching) out.push(await workoutSummary(ctx, doc));
-    return out;
+    return Promise.all(matching.map((doc) => workoutSummary(ctx, doc)));
   },
 });
 

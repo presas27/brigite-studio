@@ -83,14 +83,15 @@ export default async function PrintWorkoutPage({
 
   // Only the exercises this workout actually uses: reading the whole library to
   // get five sets of tags would be a few thousand rows for a sheet of paper.
-  const exerciseIds = [
-    ...new Set(
-      blocks
-        .flatMap((block) => block.items)
-        .filter((item) => !isRestItem(item) && item.exerciseId)
-        .map((item) => item.exerciseId),
-    ),
-  ];
+  const exerciseIdSet = new Set<string>();
+  for (const block of blocks) {
+    for (const item of block.items) {
+      if (!isRestItem(item) && item.exerciseId) {
+        exerciseIdSet.add(item.exerciseId);
+      }
+    }
+  }
+  const exerciseIds = [...exerciseIdSet];
   const equipment = sections.equipment
     ? equipmentOf(
         (await Promise.all(exerciseIds.map(findExercise))).filter(

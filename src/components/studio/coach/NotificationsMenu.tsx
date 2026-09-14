@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachAlert } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
@@ -64,6 +64,7 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
   };
 
   return (
+    <MotionRoot>
     <div ref={container} className="relative">
       <button
         type="button"
@@ -86,7 +87,7 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             role="menu"
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -144,9 +145,10 @@ export function NotificationsMenu({ alerts }: { alerts: CoachAlert[] }) {
                 {tOverview("viewAll")}
               </Link>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
+    </MotionRoot>
   );
 }

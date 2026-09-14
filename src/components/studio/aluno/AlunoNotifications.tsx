@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
 import { useLocale, useTranslations } from "next-intl";
 import type { ClientAlert } from "@/lib/studio/clientConsole";
 import { relativeTime } from "../chat/relative-time";
@@ -48,6 +48,7 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
   }, [open]);
 
   return (
+    <MotionRoot>
     <div ref={container} className="relative">
       <button
         type="button"
@@ -70,7 +71,7 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             role="menu"
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -119,9 +120,10 @@ export function AlunoNotifications({ alerts }: { alerts: ClientAlert[] }) {
                 ))}
               </ol>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
+    </MotionRoot>
   );
 }

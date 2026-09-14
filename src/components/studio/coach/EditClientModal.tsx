@@ -53,6 +53,9 @@ export function EditClientModal({ client }: { client: Client }) {
         ref={dialogRef}
         aria-labelledby={titleId}
         onClose={() => setOpen(false)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") closeModal();
+        }}
         onClick={(event) => {
           if (event.target === dialogRef.current) closeModal();
         }}

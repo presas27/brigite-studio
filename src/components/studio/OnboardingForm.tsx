@@ -38,6 +38,8 @@ export function OnboardingForm({ email, inviteToken }: { email: string; inviteTo
       <p className={muted}>{tOnboarding("signedInAs", { email })}</p>
 
       {!inviteToken && (
+        // Role picker vs check-in notes: same grid skeleton, different product.
+        // react-doctor-disable-next-line react-doctor/duplicate-jsx-subtree
         <fieldset className="space-y-2">
           <legend className="font-sans text-xs font-medium text-cream/55">{t("roleLabel")}</legend>
           <div className="grid gap-2 sm:grid-cols-2">

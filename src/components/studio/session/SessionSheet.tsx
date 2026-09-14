@@ -247,10 +247,8 @@ export function SessionSheet({
                             previous={previous}
                             done={done}
                             current={current}
-                            onFocusRow={() => {
-                              const index = steps.findIndex((candidate) => candidate.key === step.key);
-                              if (index >= 0) onJump(index);
-                            }}
+                            onJump={onJump}
+                            stepIndex={steps.findIndex((candidate) => candidate.key === step.key)}
                             onChange={(next) => onChange(step.itemId, step.setIndex, next)}
                             onToggleDone={() => {
                               if (done) {
@@ -343,7 +341,8 @@ const SheetSetRow = memo(function SheetSetRow({
   previous,
   done,
   current,
-  onFocusRow,
+  onJump,
+  stepIndex,
   onChange,
   onToggleDone,
 }: {
@@ -352,7 +351,8 @@ const SheetSetRow = memo(function SheetSetRow({
   previous?: SetLog;
   done: boolean;
   current: boolean;
-  onFocusRow: () => void;
+  onJump: (index: number) => void;
+  stepIndex: number;
   onChange: (value: SetValue) => void;
   onToggleDone: () => void;
 }) {
@@ -363,6 +363,9 @@ const SheetSetRow = memo(function SheetSetRow({
   const btnRef = useRef<HTMLButtonElement>(null);
   const isMountedRef = useRef(false);
 
+  const onFocusRow = () => {
+    if (stepIndex >= 0) onJump(stepIndex);
+  };
   useGSAP(
     () => {
       if (!isMountedRef.current) {

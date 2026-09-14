@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/studio/Empty";
 import { CheckinCard } from "@/components/studio/plan/CheckinCard";
-import { parseDayKey } from "@/components/studio/plan/date";
+import { formatDayMonth } from "@/components/studio/format";
 import { eyebrow, heading, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 import { requireClientAccess } from "@/lib/studio/auth";
@@ -41,11 +41,7 @@ export default async function CoachCheckinsPage({
             <div className={cn(surface, "flex flex-wrap items-center justify-between gap-2 p-4")}>
               <p className={eyebrow}>
                 {t("weekOf", {
-                  date: new Intl.DateTimeFormat(locale, {
-                    day: "numeric",
-                    month: "long",
-                    timeZone: "UTC",
-                  }).format(parseDayKey(weekKey())),
+                  date: formatDayMonth(weekKey(), locale),
                 })}
               </p>
               <p className="text-sm text-cream/55">{t("notSubmitted")}</p>

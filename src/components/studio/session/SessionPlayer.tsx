@@ -159,9 +159,8 @@ export function SessionPlayer({
   const saveNote = useCallback(
     async (itemId: string, exerciseId: string, body: string) => {
       const trimmed = body.trim();
-      let previous = "";
+      const previous = notes[itemId] ?? "";
       setNotes((current) => {
-        previous = current[itemId] ?? "";
         const next = { ...current };
         if (trimmed) next[itemId] = trimmed;
         else delete next[itemId];
@@ -179,7 +178,7 @@ export function SessionPlayer({
         throw error;
       }
     },
-    [assignment.id, saveNoteAction],
+    [assignment.id, notes, saveNoteAction],
   );
 
   const isLogged = useCallback(
@@ -209,8 +208,10 @@ export function SessionPlayer({
   const [enterAs, setEnterAs] = useState<"set" | "exercise">("exercise");
   const [restKey, setRestKey] = useState(0);
   const [restFrom, setRestFrom] = useState(0);
-  const [effort, setEffort] = useState<number | null>(assignment.effort);
-  const [finalStatus, setFinalStatus] = useState<AssignmentStatus>(assignment.status);
+  const [effortOverride, setEffort] = useState<number | null | undefined>(undefined);
+  const [statusOverride, setFinalStatus] = useState<AssignmentStatus | null>(null);
+  const effort = effortOverride === undefined ? assignment.effort : effortOverride;
+  const finalStatus = statusOverride ?? assignment.status;
   const [listOpen, setListOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [finishing, setFinishing] = useState(false);

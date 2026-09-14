@@ -9,7 +9,7 @@ import { ShelfTabs } from "@/components/studio/ShelfTabs";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import type { LibraryCategory, WorkoutSummary } from "@/lib/studio/types";
-import { capitalize, searchKey } from "@/lib/utils";
+import { capitalize, keyContains, searchKey } from "@/lib/utils";
 import { WorkoutCard } from "./WorkoutCard";
 import { WorkoutListRow } from "./WorkoutListRow";
 
@@ -64,7 +64,9 @@ export function WorkoutLibrary({
     return workouts.filter((workout) => {
       if (workout.libraryCategory !== shelf) return false;
       const matchesQuery =
-        !needle || searchKey(workout.name).includes(needle) || searchKey(workout.focus ?? "").includes(needle);
+        !needle ||
+        keyContains(workout.name, needle) ||
+        keyContains(workout.focus ?? "", needle);
       const matchesFocus = !focus || workout.focus === focus;
       return matchesQuery && matchesFocus;
     });

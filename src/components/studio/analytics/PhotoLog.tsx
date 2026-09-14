@@ -72,6 +72,8 @@ export function PhotoLog({ weeks }: { weeks: ProgressPhotoWeek[] }) {
     return <Empty title={t("logEmpty")} hint={t("logEmptyHint")} className="bg-transparent ring-0 px-1 py-2" />;
   }
 
+  const selectedSet = new Set(selected);
+
   const pair = selected
     .map((weekOf) => weeks.find((week) => week.weekOf === weekOf))
     .filter((week): week is ProgressPhotoWeek => week != null)
@@ -153,7 +155,7 @@ export function PhotoLog({ weeks }: { weeks: ProgressPhotoWeek[] }) {
 
           <ul className="space-y-3">
             {weeks.map((week) => {
-              const checked = selected.includes(week.weekOf);
+              const checked = selectedSet.has(week.weekOf);
               return (
                 <li
                   key={week.weekOf}

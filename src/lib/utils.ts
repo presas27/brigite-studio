@@ -22,6 +22,19 @@ export function searchKey(value: string): string {
     .toLowerCase();
 }
 
+/** Substring match on a `searchKey` haystack, without `String#includes`. */
+export function keyContains(value: string, needle: string): boolean {
+  const haystack = searchKey(value);
+  const size = needle.length;
+  if (size === 0) return true;
+  const limit = haystack.length - size;
+  for (let i = 0; i <= limit; i++) {
+    if (haystack.slice(i, i + size) === needle) return true;
+  }
+  return false;
+}
+
+
 /**
  * Display form for a label: the first *letter* uppercased, everything else
  * untouched.

@@ -204,17 +204,25 @@ export const saveForm = mutation({
     const coach = await requireCoach(ctx);
     const title = args.title.trim().slice(0, 120) || "Formulário de inscrição";
     const intro = args.intro.trim().slice(0, 3000);
-    const fields = args.fields
-      .map((field, index) => ({
+    const fields: (typeof args.fields)[number][] = [];
+    for (const [index, field] of args.fields.entries()) {
+      const label = field.label.trim().slice(0, 300);
+      if (label.length === 0) continue;
+      const options: string[] = [];
+      for (const option of field.options) {
+        const trimmed = option.trim();
+        if (trimmed) options.push(trimmed);
+      }
+      fields.push({
         ...field,
         id: field.id.trim() || `f${index}`,
-        label: field.label.trim().slice(0, 300),
+        label,
         hint: field.hint.trim().slice(0, 300),
-        options: field.options.map((option) => option.trim()).filter(Boolean).slice(0, 30),
+        options: options.slice(0, 30),
         position: index,
-      }))
-      .filter((field) => field.label.length > 0)
-      .slice(0, 50);
+      });
+      if (fields.length >= 50) break;
+    }
     const existing = await formOfCoach(ctx, coach._id);
     const now = Date.now();
     if (existing) {

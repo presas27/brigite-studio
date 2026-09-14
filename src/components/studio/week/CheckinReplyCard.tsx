@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { parseDayKey } from "@/components/studio/plan/date";
+import { formatDayMonth } from "@/components/studio/format";
 import { ScaleBar } from "@/components/studio/plan/ScaleBar";
 import type { Translate } from "@/components/studio/plan/types";
 import { Field } from "@/components/studio/Field";
@@ -30,11 +30,7 @@ export function CheckinReplyCard({
   t: Translate;
   replyAction: (formData: FormData) => void | Promise<void>;
 }) {
-  const dateLabel = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(parseDayKey(checkin.weekOf));
+  const dateLabel = formatDayMonth(checkin.weekOf, locale);
 
   return (
     <div className={cn(surface, "ring-2 ring-caramel/50", "space-y-4 p-5")}>

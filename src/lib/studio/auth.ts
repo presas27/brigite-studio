@@ -74,6 +74,15 @@ export const requireBuilder = cache(async (): Promise<User> => {
   return current.user;
 });
 
+/** Gate for the Developh backoffice. Email must be in Convex `ADMIN_EMAILS`. */
+export const requireAdmin = cache(async (): Promise<User> => {
+  const current = await session();
+  if (current.state !== "ready") bounce(current);
+  const allowed = await sq(api.billing.isAdmin);
+  if (!allowed) redirect(current.user.role === "coach" ? "/app/coach" : "/app/aluno");
+  return current.user;
+});
+
 /**
  * Gate for anything scoped to one client that either side may open: the
  * client's own coach, or the client themselves.

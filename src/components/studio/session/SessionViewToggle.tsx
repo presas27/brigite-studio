@@ -1,7 +1,6 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
@@ -27,7 +26,8 @@ export function SessionViewToggle({
   const sheetRef = useRef<HTMLButtonElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
 
-  function slidePill(immediate: boolean) {
+  const firstSlide = useRef(true);
+  useLayoutEffect(() => {
     const pill = pillRef.current;
     const target = value === "focus" ? focusRef.current : sheetRef.current;
     const parent = root.current;
@@ -36,23 +36,13 @@ export function SessionViewToggle({
     const box = target.getBoundingClientRect();
     const next = { x: box.left - parentBox.left, width: box.width };
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (immediate || reduced) {
+    if (firstSlide.current || reduced) {
+      firstSlide.current = false;
       gsap.set(pill, next);
       return;
     }
     gsap.to(pill, { ...next, duration: 0.32, ease: "power2.out" });
-  }
-
-  useLayoutEffect(() => {
-    slidePill(true);
-  }, []);
-
-  useGSAP(
-    () => {
-      slidePill(false);
-    },
-    { scope: root, dependencies: [value] },
-  );
+  }, [value]);
 
   return (
     <div

@@ -593,5 +593,46 @@ export default defineSchema({
     .index("by_client", ["clientId"])
     .index("by_coach", ["coachId"])
     .index("by_form_and_client", ["formId", "clientId"]),
+
+  /**
+   * How this coach is billed. One row per coach, created on first read.
+   *
+   * The product is free for the athlete. The coach pays for extra active
+   * students beyond `includedClients` (default 2) at `pricePerClientCents`
+   * (default €2.49). `exempt` is not a 100% discount: the roster still
+   * counts, the invoice is €0, and Stripe is never opened — Sara's account.
+   *
+   * Stripe ids are null until the coach first exceeds the included seats
+   * and completes Checkout. The subscription quantity is the extra seats
+   * only; Stripe prorates mid-cycle adds and archives onto the next invoice
+   * so a student added two days before renewal costs two days, not a month,
+   * and is active immediately.
+   */
+  coachBilling: defineTable({
+    coachId: v.id("users"),
+    exempt: v.boolean(),
+    includedClients: v.number(),
+    pricePerClientCents: v.number(),
+    stripeCustomerId: v.union(v.null(), v.string()),
+    stripeSubscriptionId: v.union(v.null(), v.string()),
+    stripeSubscriptionItemId: v.union(v.null(), v.string()),
+    stripePriceId: v.union(v.null(), v.string()),
+    status: v.union(
+      v.literal("none"),
+      v.literal("incomplete"),
+      v.literal("active"),
+      v.literal("past_due"),
+      v.literal("canceled"),
+    ),
+    currentPeriodEnd: v.union(v.null(), v.number()),
+  })
+    .index("by_coach", ["coachId"])
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+
+  /** Stripe webhook deliveries already applied — `event.id` is the idempotency key. */
+  stripeEvents: defineTable({
+    eventId: v.string(),
+  }).index("by_event", ["eventId"]),
 });
 

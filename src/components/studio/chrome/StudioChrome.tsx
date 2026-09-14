@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
+import { useReducedMotion } from "motion/react";
 import { AccountMenu } from "@/components/studio/AccountMenu";
 import { ThemeToggle } from "@/components/studio/ThemeToggle";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
@@ -138,7 +139,7 @@ export function StudioChrome({
                 )}
               >
                 {active && (
-                  <motion.span
+                  <m.span
                     layoutId={reduceMotion ? undefined : `${role}-nav-pill`}
                     className="absolute inset-0 rounded-[0.9rem] bg-accent-fill"
                     transition={{ type: "spring", stiffness: 520, damping: 40 }}
@@ -208,6 +209,7 @@ export function StudioChrome({
     // few px past its edges and flash the near-black `body` underneath `.studio`. Pinning the
     // shell to exactly the viewport and letting `<main>` below carry its own scrollbar keeps
     // that motion (and the reveal) contained inside `<main>` instead of on the document.
+    <MotionRoot>
     <div className="studio min-h-dvh lg:h-dvh lg:overflow-hidden">
       {/* Drawer scrim. Rendered only when open so it never eats taps on lg. */}
       {!dock && drawerOpen && (
@@ -322,7 +324,7 @@ export function StudioChrome({
           )}
         >
           <AnimatePresence mode="wait">
-            <motion.div
+            <m.div
               key={pathname}
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -330,11 +332,12 @@ export function StudioChrome({
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               {children}
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </main>
       </div>
       {dock && mobileDock}
     </div>
+    </MotionRoot>
   );
 }

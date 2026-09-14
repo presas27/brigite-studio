@@ -85,8 +85,7 @@ export function FormBuilder({
   return (
     <form
       className="space-y-6"
-      onSubmit={(event) => {
-        event.preventDefault();
+      action={() => {
         setFailed(false);
         startTransition(async () => {
           try {

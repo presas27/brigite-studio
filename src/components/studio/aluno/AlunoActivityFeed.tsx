@@ -4,6 +4,7 @@ import { relativeTime } from "@/components/studio/chat/relative-time";
 import { Icon, type IconName } from "@/components/studio/coach/icons";
 import { eyebrow, muted, surface } from "@/components/studio/theme";
 import type { ClientActivityItem } from "@/lib/studio/clientConsole";
+import { dateFormatter } from "@/components/studio/format";
 import { cn } from "@/lib/utils";
 
 const ICON: Record<ClientActivityItem["kind"], IconName> = {
@@ -14,6 +15,10 @@ const ICON: Record<ClientActivityItem["kind"], IconName> = {
   message: "message",
   coachMessage: "message",
 };
+
+function sentenceKey(item: ClientActivityItem) {
+  return `kind.${item.kind}`;
+}
 
 /**
  * What has happened, newest first — the aluna's own thread of the studio.
@@ -30,14 +35,12 @@ export async function AlunoActivityFeed({ items }: { items: ClientActivityItem[]
 
   // Check-in rows carry a `YYYY-MM-DD` week key as their subject. Dropped into
   // a sentence raw it reads like a database field, so it gets formatted here.
-  const dayFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
+  const dayFormat = dateFormatter(locale, { day: "numeric", month: "long" });
   const subjectOf = (item: ClientActivityItem) => {
     if (item.subject == null) return "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(item.subject)) return item.subject;
     return dayFormat.format(new Date(`${item.subject}T12:00:00`));
   };
-
-  const sentenceKey = (item: ClientActivityItem) => `kind.${item.kind}`;
 
   return (
     <section aria-labelledby="aluno-activity" className="space-y-3">

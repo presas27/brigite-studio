@@ -72,17 +72,19 @@ export function SessionPreview({
       blocks.push(block);
     }
     if (block.rows.some((row) => row.itemId === step.itemId)) continue;
-    const restItem = isRestItem(step.item);
+    const item = step.item;
+    const restItem = isRestItem(item);
     const interleaved = step.round != null;
+    const videoUrl = item.videoUrl;
     block.rows.push({
       itemId: step.itemId,
-      name: step.item.exerciseName,
-      videoUrl: step.item.videoUrl && youtubeId(step.item.videoUrl) ? step.item.videoUrl : null,
+      name: item.exerciseName,
+      videoUrl: videoUrl && youtubeId(videoUrl) ? videoUrl : null,
       line: restItem
-        ? `${step.item.seconds ?? 0}s`
+        ? `${item.seconds ?? 0}s`
         : [
             interleaved ? prescriptionOf(step, labels) : setsOf(step, labels),
-            step.item.restSeconds > 0 ? `${rest} ${step.item.restSeconds}s` : null,
+            item.restSeconds > 0 ? `${rest} ${item.restSeconds}s` : null,
           ]
             .filter(Boolean)
             .join(" · "),

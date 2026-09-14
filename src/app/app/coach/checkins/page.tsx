@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { parseDayKey } from "@/components/studio/plan/date";
+import { formatDayMonth } from "@/components/studio/format";
 import { Empty } from "@/components/studio/Empty";
 import { PageHeader } from "@/components/studio/PageHeader";
 import { chipAccent, eyebrow, muted, surfaceLink } from "@/components/studio/theme";
@@ -70,11 +70,7 @@ export default async function CoachCheckinsOverviewPage({
     }
   }
 
-  const weekLabel = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(parseDayKey(monday));
+  const weekLabel = formatDayMonth(monday, locale);
 
   return (
     <div className="space-y-8">

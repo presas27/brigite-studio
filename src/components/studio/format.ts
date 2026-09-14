@@ -21,13 +21,32 @@ const DAY_MS = 86_400_000;
 
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 const relativeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+const displayNamesCache = new Map<string, Intl.DisplayNames>();
 
-function dateFormatter(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+export function dateFormatter(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
   const key = `${locale}:${JSON.stringify(options)}`;
   const cached = dateFormatters.get(key);
   if (cached) return cached;
   const created = new Intl.DateTimeFormat(locale, options);
   dateFormatters.set(key, created);
+  return created;
+}
+
+export function numberFormatter(locale: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  const cached = numberFormatters.get(key);
+  if (cached) return cached;
+  const created = new Intl.NumberFormat(locale, options);
+  numberFormatters.set(key, created);
+  return created;
+}
+
+export function languageDisplayNames(locale: string): Intl.DisplayNames {
+  const cached = displayNamesCache.get(locale);
+  if (cached) return cached;
+  const created = new Intl.DisplayNames([locale], { type: "language" });
+  displayNamesCache.set(locale, created);
   return created;
 }
 
@@ -91,6 +110,15 @@ export function shortWeekday(key: string, locale: string): string {
 /** `YYYY-MM-DD` -> the day number alone, e.g. "17". */
 export function formatDayNumber(key: string, locale: string): string {
   return dateFormatter(locale, { day: "numeric", timeZone: "UTC" }).format(parseDayKey(key));
+}
+
+/** `YYYY-MM-DD` -> "17 de agosto" / "August 17". */
+export function formatDayMonth(key: string, locale: string): string {
+  return dateFormatter(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(parseDayKey(key));
 }
 
 /** `YYYY-MM-DD` -> "segunda-feira, 17 de agosto" / "Monday, August 17". */

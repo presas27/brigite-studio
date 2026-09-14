@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { addClient, type AddClientState } from "@/app/app/coach/actions";
+import { startBillingCheckout } from "@/app/app/conta/actions";
 import { useModalClose } from "@/components/studio/AddModal";
 import { Field } from "@/components/studio/Field";
 import { SubmitButton } from "@/components/studio/SubmitButton";
@@ -41,6 +42,16 @@ export function AddClientForm() {
     return <p className={muted}>{t("invitedExisting", { name: state.name })}</p>;
   }
 
+  if (state.status === "billing") {
+    return (
+      <div className="space-y-4">
+        <p className={muted}>{t("billingRequired")}</p>
+        <form action={startBillingCheckout}>
+          <SubmitButton pendingLabel={t("billingRedirect")}>{t("billingActivate")}</SubmitButton>
+        </form>
+      </div>
+    );
+  }
   return (
     <form action={formAction} className="space-y-4">
       {state.status === "invalid" && (

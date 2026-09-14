@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m, MotionRoot } from "@/components/studio/motion-root";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/studio/coach/icons";
@@ -60,7 +60,8 @@ export function AccountMenu({
     "flex w-full items-center gap-2.5 rounded-[0.7rem] px-3 py-2.5 text-left font-sans text-sm text-cream/75 transition-colors hover:bg-cream/6 hover:text-cream";
 
   return (
-    <div ref={container} className={cn("relative", className)}>
+    <MotionRoot>
+      <div ref={container} className={cn("relative", className)}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -85,7 +86,7 @@ export function AccountMenu({
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             role="menu"
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -121,9 +122,10 @@ export function AccountMenu({
               </button>
             </div>
             </MorphHeight>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </MotionRoot>
   );
 }

@@ -10,7 +10,7 @@ import { FilterBar } from "@/components/studio/FilterBar";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import type { ExerciseDigest } from "@/lib/studio/types";
-import { capitalize, searchKey } from "@/lib/utils";
+import { capitalize, keyContains, searchKey } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseListRow } from "./ExerciseListRow";
 
@@ -45,10 +45,12 @@ export function ExerciseLibrary({
     return exercises.filter((exercise) => {
       const matchesQuery =
         !needle ||
-        searchKey(exercise.name).includes(needle) ||
-        exercise.tags.some((exerciseTag) => searchKey(exerciseTag).includes(needle));
-      const matchesTag = !tag || exercise.tags.includes(tag);
-      return matchesQuery && matchesTag;
+        keyContains(exercise.name, needle) ||
+        exercise.tags.some((exerciseTag) => keyContains(exerciseTag, needle));
+      if (!matchesQuery) return false;
+      if (!tag) return true;
+      for (const exerciseTag of exercise.tags) if (exerciseTag === tag) return true;
+      return false;
     });
   }, [exercises, query, tag]);
 

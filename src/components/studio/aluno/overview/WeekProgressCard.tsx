@@ -4,6 +4,7 @@ import { eyebrow, heading, muted, surfaceLink } from "@/components/studio/theme"
 import type { OverviewDay } from "@/lib/studio/clientConsole";
 import type { ScheduledSummary } from "@/lib/studio/types";
 import { capitalize, cn } from "@/lib/utils";
+import { dateFormatter } from "@/components/studio/format";
 
 /**
  * The week, as the two numbers she actually asks for: how many sessions are
@@ -41,7 +42,7 @@ export async function WeekProgressCard({
   const when =
     next &&
     capitalize(
-      new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "Europe/Lisbon" }).format(
+      dateFormatter(locale, { weekday: "long", timeZone: "Europe/Lisbon" }).format(
         new Date(`${next.date}T12:00:00Z`),
       ),
       locale,

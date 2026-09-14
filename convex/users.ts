@@ -18,6 +18,7 @@ import {
   requireViewer,
   viewer,
 } from "./model/authz";
+import { assertCanAddClient } from "./model/billing";
 import { mapClient, mapUser } from "./model/shape";
 
 /**
@@ -177,9 +178,11 @@ export const listClients = query({
       .withIndex("by_coach", (q) => q.eq("coachId", coach._id))
       .collect();
 
+    const users = await Promise.all(profiles.map((profile) => ctx.db.get("users", profile.userId)));
     const clients = [];
-    for (const profile of profiles) {
-      const user = await ctx.db.get("users", profile.userId);
+    for (let i = 0; i < profiles.length; i++) {
+      const user = users[i];
+      const profile = profiles[i];
       if (!user || user.role !== "client") continue;
       if (!includeArchived && user.status === "archived") continue;
       clients.push(mapClient(user, profile));
@@ -389,9 +392,9 @@ export const acceptInvite = mutation({
         .unique();
       if (!response) throw new ConvexError({ code: "INTAKE_REQUIRED" });
     }
-
     await ctx.db.patch("clientProfiles", profile._id, { coachId: invite.coachId });
     await ctx.db.patch("invites", invite._id, { status: "accepted" });
+    await ctx.scheduler.runAfter(0, internal.payments.syncCoachSeats, { coachId: invite.coachId });
     return null;
   },
 });
@@ -403,7 +406,11 @@ export const leaveCoach = mutation({
     const user = await requireViewer(ctx);
     const profile = await profileOf(ctx, user._id);
     if (!profile) throw new Error("No profile");
+    const previousCoachId = profile.coachId;
     await ctx.db.patch("clientProfiles", profile._id, { coachId: null });
+    if (previousCoachId) {
+      await ctx.scheduler.runAfter(0, internal.payments.syncCoachSeats, { coachId: previousCoachId });
+    }
     return null;
   },
 });
@@ -465,6 +472,7 @@ export const createClient = mutation({
       return { kind: "invited" as const, name: existing.name };
     }
 
+    await assertCanAddClient(ctx, coach);
     const userId = await ctx.db.insert("users", {
       authId: null,
       email,
@@ -485,6 +493,7 @@ export const createClient = mutation({
       startedAt: Date.now(),
     });
     await issueInvite(ctx, { coachId: coach._id, clientId: userId, email });
+    await ctx.scheduler.runAfter(0, internal.payments.syncCoachSeats, { coachId: coach._id });
 
     const client = await clientWithProfile(ctx, userId);
     if (!client) throw new Error("Client was created but could not be read back");
@@ -548,11 +557,15 @@ export const setClientStatus = mutation({
   args: { clientId: v.id("users"), status },
   handler: async (ctx, args) => {
     const { client, profile } = await requireCoachOf(ctx, args.clientId);
+    const coachId = profile.coachId;
     if (args.status === "archived" && client.authId) {
       await ctx.db.patch("clientProfiles", profile._id, { coachId: null });
-      return;
+    } else {
+      await ctx.db.patch("users", args.clientId, { status: args.status });
     }
-    await ctx.db.patch("users", args.clientId, { status: args.status });
+    if (coachId) {
+      await ctx.scheduler.runAfter(0, internal.payments.syncCoachSeats, { coachId });
+    }
   },
 });
 
@@ -620,6 +633,16 @@ export const changePassword = mutation({
 export const byEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, { email }) => userByEmail(ctx, normalizeEmail(email)),
+});
+
+export const byAuthId = internalQuery({
+  args: { authId: v.string() },
+  handler: async (ctx, { authId }) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_auth_id", (q) => q.eq("authId", authId))
+      .unique();
+  },
 });
 
 /**

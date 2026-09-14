@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { SessionStep } from "@/lib/studio/session-queue";
 import type { SetLog } from "@/lib/studio/types";
 import { EMPTY_SET, type SetValue } from "./useSessionLog";
-import { formatClock } from "./CountdownRing";
+import { formatClock } from "./clock";
 import { Icon } from "../coach/icons";
 import { cn } from "@/lib/utils";
 

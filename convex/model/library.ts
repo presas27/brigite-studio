@@ -243,29 +243,43 @@ export async function blocksFor(ctx: Ctx, workoutId: Id<"workouts">): Promise<Wo
     .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
     .collect();
 
-  const exercises = new Map<Id<"exercises">, Doc<"exercises"> | null>();
-  const out: WorkoutBlock[] = [];
+  const itemLists = await Promise.all(
+    blocks.map((block) =>
+      ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
+        .collect(),
+    ),
+  );
 
-  for (const block of blocks) {
-    const items = await ctx.db
-      .query("workoutItems")
-      .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
-      .collect();
-
-    const mapped: WorkoutItem[] = [];
+  const exerciseIds: Id<"exercises">[] = [];
+  const seenExercises = new Set<Id<"exercises">>();
+  for (const items of itemLists) {
     for (const item of items) {
+      if (item.kind === "rest" || item.exerciseId === null) continue;
+      if (seenExercises.has(item.exerciseId)) continue;
+      seenExercises.add(item.exerciseId);
+      exerciseIds.push(item.exerciseId);
+    }
+  }
+  const exerciseRows = await Promise.all(
+    exerciseIds.map((exerciseId) => ctx.db.get("exercises", exerciseId)),
+  );
+  const exercises = new Map<Id<"exercises">, Doc<"exercises"> | null>();
+  for (let i = 0; i < exerciseIds.length; i++) exercises.set(exerciseIds[i], exerciseRows[i]);
+
+  const out: WorkoutBlock[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const mapped: WorkoutItem[] = [];
+    for (const item of itemLists[i]) {
       if (item.kind === "rest" || item.exerciseId === null) {
         mapped.push(mapRestItem(item));
         continue;
       }
-      let exercise = exercises.get(item.exerciseId);
-      if (exercise === undefined) {
-        exercise = await ctx.db.get("exercises", item.exerciseId);
-        exercises.set(item.exerciseId, exercise);
-      }
+      const exercise = exercises.get(item.exerciseId);
       if (exercise) mapped.push(mapItem(item, exercise));
     }
-
     out.push({
       id: block._id,
       position: block.position,
@@ -306,13 +320,19 @@ export async function workoutSize(
     .withIndex("by_workout_and_position", (q) => q.eq("workoutId", workoutId))
     .collect();
 
+  const itemLists = await Promise.all(
+    blocks.map((block) =>
+      ctx.db
+        .query("workoutItems")
+        .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
+        .collect(),
+    ),
+  );
   let itemCount = 0;
-  for (const block of blocks) {
-    const items = await ctx.db
-      .query("workoutItems")
-      .withIndex("by_block_and_position", (q) => q.eq("blockId", block._id))
-      .collect();
-    itemCount += items.filter((item) => item.kind !== "rest").length;
+  for (const items of itemLists) {
+    for (const item of items) {
+      if (item.kind !== "rest") itemCount += 1;
+    }
   }
 
   return { itemCount, blockCount: blocks.length };

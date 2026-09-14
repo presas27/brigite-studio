@@ -1,0 +1,74 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "ignore": {
+    "files": ["src/lib/studio/library-trainerize.ts"],
+    "overrides": [
+      {
+        "files": ["convex/**"],
+        "rules": [
+          "react-doctor/async-await-in-loop",
+          "react-doctor/server-sequential-independent-await",
+          "react-doctor/js-combine-iterations",
+          "react-doctor/js-set-map-lookups"
+        ]
+      },
+      {
+        "files": ["src/components/studio/analytics/PhotoLog.tsx"],
+        "rules": ["react-doctor/nextjs-no-img-element"]
+      },
+      {
+        "files": ["src/components/studio/analytics/MetricChartCanvas.tsx"],
+        "rules": ["react-doctor/prefer-dynamic-import"]
+      },
+      {
+        "files": [
+          "src/components/studio/session/SessionPlayer.tsx",
+          "src/components/studio/session/useSessionLog.ts",
+          "src/components/studio/calendar/DayMarksProvider.tsx"
+        ],
+        "rules": [
+          "react-doctor/no-adjust-state-on-prop-change",
+          "react-doctor/no-initialize-state",
+          "react-doctor/rendering-hydration-no-flicker"
+        ]
+      },
+      {
+        "files": [
+          "src/components/studio/Modal.tsx",
+          "src/components/studio/coach/EditClientModal.tsx"
+        ],
+        "rules": ["react-doctor/no-noninteractive-element-interactions"]
+      },
+      {
+        "files": [
+          "src/components/studio/session/ExerciseNoteButton.tsx",
+          "src/components/studio/workout/ExercisePicker.tsx"
+        ],
+        "rules": ["react-doctor/no-autofocus"]
+      },
+      {
+        "files": ["src/components/ui/iconsax.tsx"],
+        "rules": [
+          "react-doctor/rendering-svg-precision",
+          "react-doctor/only-export-components"
+        ]
+      },
+      {
+        "files": ["src/components/studio/workout/parts.tsx"],
+        "rules": ["react-doctor/only-export-components"]
+      },
+      {
+        "files": ["src/components/studio/session/SwapExerciseButton.tsx"],
+        "rules": ["react-doctor/prefer-useReducer"]
+      },
+      {
+        "files": [
+          "src/components/studio/intake/IntakeForm.tsx",
+          "src/components/studio/session/ExerciseStage.tsx",
+          "src/components/studio/session/SessionPlayer.tsx"
+        ],
+        "rules": ["react-doctor/no-giant-component"]
+      }
+    ]
+  }
+}

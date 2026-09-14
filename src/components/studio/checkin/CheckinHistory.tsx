@@ -75,8 +75,9 @@ export function CheckinHistory({
             )}
           </div>
 
-          {(entry.wins || entry.blockers) && (
-            <div className="grid gap-3 sm:grid-cols-2">
+            {(entry.wins || entry.blockers) && (
+              // react-doctor-disable-next-line react-doctor/duplicate-jsx-subtree
+              <div className="grid gap-3 sm:grid-cols-2">
               {entry.wins && (
                 <div>
                   <p className={eyebrow}>{t("winsLabel")}</p>

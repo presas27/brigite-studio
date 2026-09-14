@@ -286,10 +286,8 @@ export function useSessionLog({
     };
   }, []);
 
-  const syncStatus: SyncStatus = useMemo(
-    () => (session.pending.size > 0 ? (online ? "syncing" : "queued") : justSynced ? "synced" : null),
-    [session.pending.size, online, justSynced],
-  );
+  const syncStatus: SyncStatus =
+    session.pending.size > 0 ? (online ? "syncing" : "queued") : justSynced ? "synced" : null;
 
   const doneCount = useMemo(
     () => Object.values(session.entries).filter((value) => !isFullyEmpty(value)).length,

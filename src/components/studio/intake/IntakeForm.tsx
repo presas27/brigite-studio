@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, LazyMotion, domAnimation, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { submitIntakeAndAccept } from "@/app/app/entrar/actions";
 import { Field } from "@/components/studio/Field";
@@ -28,6 +28,18 @@ export type IntakeFieldView = {
   sensitive?: boolean;
   showIf?: { fieldId: string; equals: string };
 };
+
+function visibleFieldKey(
+  items: IntakeFieldView[],
+  isVisible: (item: IntakeFieldView) => boolean,
+): string {
+  let key = "";
+  for (const item of items) {
+    if (!isVisible(item)) continue;
+    key += key ? `|${item.id}` : item.id;
+  }
+  return key;
+}
 
 /**
  * Multi-step onboarding and intake form.
@@ -167,7 +179,8 @@ export function IntakeForm({
   const progressPct = Math.round(((currentStep + 1) / totalSteps) * 100);
 
   return (
-    <div className="space-y-6">
+    <LazyMotion features={domAnimation} strict>
+      <div className="space-y-6">
       {currentStep === 0 && (title || intro) && (
         <div className="space-y-1.5 pb-1">
           {title && <h1 className={cn(heading, "text-xl text-cream")}>{title}</h1>}
@@ -188,7 +201,7 @@ export function IntakeForm({
           className="h-1.5 w-full overflow-hidden rounded-full bg-cream/10"
         >
           <div
-            className="h-full rounded-full bg-accent-ink transition-all duration-300 ease-out"
+            className="h-full rounded-full bg-accent-ink transition-[width] duration-300 ease-out"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -210,10 +223,10 @@ export function IntakeForm({
         className="space-y-4"
       >
         <MorphHeight
-          contentKey={`${currentStep}:${activeSection.items.filter(isFieldVisible).map((item) => item.id).join("|")}`}
+          contentKey={`${currentStep}:${visibleFieldKey(activeSection.items, isFieldVisible)}`}
         >
         <AnimatePresence mode="wait">
-          <motion.div
+          <m.div
             key={currentStep}
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
@@ -373,25 +386,21 @@ export function IntakeForm({
               if (item.showIf) {
                 const isVisible = isFieldVisible(item);
                 return (
-                  <AnimatePresence key={item.id} initial={false}>
-                    {isVisible && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pt-1 pb-0.5">{fieldNode}</div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <MorphHeight
+                    key={item.id}
+                    contentKey={isVisible ? "on" : "off"}
+                    fade={false}
+                    durationMs={280}
+                    ease="cubic-bezier(0.22, 1, 0.36, 1)"
+                  >
+                    {isVisible ? <div className="pt-1 pb-0.5">{fieldNode}</div> : null}
+                  </MorphHeight>
                 );
               }
 
               return <div key={item.id}>{fieldNode}</div>;
             })}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
         </MorphHeight>
 
@@ -438,6 +447,7 @@ export function IntakeForm({
           )}
         </div>
       </form>
-    </div>
+      </div>
+    </LazyMotion>
   );
 }

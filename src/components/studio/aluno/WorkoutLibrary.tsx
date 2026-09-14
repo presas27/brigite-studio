@@ -11,7 +11,7 @@ import { formatDayKey } from "@/components/studio/format";
 import { eyebrow } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
 import type { ClientWorkout } from "@/lib/studio/types";
-import { capitalize, searchKey } from "@/lib/utils";
+import { capitalize, keyContains, searchKey } from "@/lib/utils";
 import { WorkoutCard } from "./WorkoutCard";
 import { WorkoutListRow } from "./WorkoutListRow";
 
@@ -64,9 +64,9 @@ export function WorkoutLibrary({
     return workouts.filter((workout) => {
       const matchesQuery =
         !needle ||
-        searchKey(workout.name).includes(needle) ||
-        searchKey(workout.focus ?? "").includes(needle) ||
-        searchKey(workout.phaseName ?? "").includes(needle);
+        keyContains(workout.name, needle) ||
+        keyContains(workout.focus ?? "", needle) ||
+        keyContains(workout.phaseName ?? "", needle);
       return matchesQuery && (!focus || workout.focus === focus);
     });
   }, [workouts, query, focus]);

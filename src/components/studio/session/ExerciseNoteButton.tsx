@@ -119,8 +119,7 @@ export function ExerciseNoteButton({
         width="28rem"
       >
         <form
-          onSubmit={(event) => {
-            event.preventDefault();
+          action={() => {
             setFailed(false);
             startTransition(async () => {
               try {

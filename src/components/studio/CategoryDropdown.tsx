@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { field } from "@/components/studio/theme";
 import { MorphHeight } from "@/components/studio/MorphHeight";
-import { cn, searchKey } from "@/lib/utils";
+import { cn, keyContains, searchKey } from "@/lib/utils";
 export type CategoryOption = { value: string; label: string; count: number };
 
 /**
@@ -52,7 +52,7 @@ export function CategoryDropdown({
   const results = useMemo(() => {
     const needle = searchKey(query.trim());
     if (!needle) return options;
-    return options.filter(({ label }) => searchKey(label).includes(needle));
+    return options.filter(({ label }) => keyContains(label, needle));
   }, [options, query]);
 
   const selected = options.find((option) => option.value === value);

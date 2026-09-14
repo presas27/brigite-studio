@@ -7,7 +7,7 @@ import { MorphHeight } from "@/components/studio/MorphHeight";
 import { FilterBar } from "@/components/studio/FilterBar";
 import { muted } from "@/components/studio/theme";
 import { usePersistedView } from "@/components/studio/usePersistedView";
-import { searchKey } from "@/lib/utils";
+import { keyContains, searchKey } from "@/lib/utils";
 import { ClientCard } from "./ClientCard";
 import { ClientListRow, type ClientRow } from "./ClientListRow";
 
@@ -34,7 +34,9 @@ export function ClientLibrary({
     const needle = searchKey(query.trim());
     return rows.filter(({ client }) => {
       const matchesQuery =
-        !needle || searchKey(client.name).includes(needle) || searchKey(client.email).includes(needle);
+        !needle ||
+        keyContains(client.name, needle) ||
+        keyContains(client.email, needle);
       const matchesPlan = !plan || client.profile.plan === plan;
       return matchesQuery && matchesPlan;
     });

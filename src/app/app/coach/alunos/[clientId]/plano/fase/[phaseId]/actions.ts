@@ -181,10 +181,13 @@ export async function scheduleWorkoutAction(
     return;
   }
 
-  const dates = formData
-    .getAll("date")
-    .map((value) => String(value).trim())
-    .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value));
+  const dates: string[] = [];
+  for (const value of formData.getAll("date")) {
+    const trimmed = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      dates.push(trimmed);
+    }
+  }
   if (dates.length === 0) return;
 
   await rescheduleWorkout({ clientId, workoutId, mode: "custom", dates });

@@ -9,7 +9,7 @@ import { ShelfTabs } from "@/components/studio/ShelfTabs";
 import { chip, muted, surfaceLink } from "@/components/studio/theme";
 import { formatEditedOn } from "@/components/studio/format";
 import type { LibraryCategory, TrainingProgramSummary } from "@/lib/studio/types";
-import { capitalize, cn, searchKey } from "@/lib/utils";
+import { capitalize, cn, keyContains, searchKey } from "@/lib/utils";
 
 /**
  * The coach's programs, split across the same two shelves as her workouts.
@@ -54,9 +54,7 @@ export function ProgramLibrary({
     return programs.filter((program) => {
       if (program.libraryCategory !== shelf) return false;
       if (!needle) return true;
-      return (
-        searchKey(program.name).includes(needle) || searchKey(program.focus).includes(needle)
-      );
+      return keyContains(program.name, needle) || keyContains(program.focus, needle);
     });
   }, [programs, query, shelf]);
 

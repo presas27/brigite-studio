@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatClock } from "./CountdownRing";
+import { formatClock } from "./clock";
 
 /**
  * How long the session has been running, ticking. Isolated in its own component

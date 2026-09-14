@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/studio/PageHeader";
 import { AddWorkoutToPhaseModal } from "@/components/studio/plan/AddWorkoutToPhaseModal";
 import { PhaseSettings } from "@/components/studio/plan/PhaseSettings";
 import { PhaseWorkoutList } from "@/components/studio/plan/PhaseWorkoutList";
+import { dateFormatter } from "@/components/studio/format";
+import { parseDayKey } from "@/components/studio/plan/date";
 import { requireClientAccess } from "@/lib/studio/auth";
 import { listWorkouts } from "@/lib/studio/library";
 import { findPhase, listPhases, phaseWorkouts } from "@/lib/studio/phases";
@@ -54,13 +56,13 @@ export default async function PhasePage({
 
   // Full, year-inclusive dates here — this is the one place a coach checks
   // exactly when a phase runs, unlike the dd/mm week-nav pill on the plan tab.
-  const dateFormat = new Intl.DateTimeFormat(locale, {
+  const dateFormat = dateFormatter(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
     timeZone: "UTC",
   });
-  const formatDate = (value: string) => dateFormat.format(new Date(`${value}T12:00:00Z`));
+  const formatDate = (value: string) => dateFormat.format(parseDayKey(value));
 
   const durationLine =
     phase.durationType === "calendar"

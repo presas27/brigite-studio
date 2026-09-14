@@ -10,6 +10,7 @@ import {
 } from "@/components/studio/theme";
 import type { ScheduledSummary } from "@/lib/studio/types";
 import { capitalize, cn } from "@/lib/utils";
+import { dateFormatter } from "@/components/studio/format";
 
 /**
  * The screen's one gold surface — the session, and the button that starts it.
@@ -71,7 +72,7 @@ export async function TodayCard({
   }
 
   const when = capitalize(
-    new Intl.DateTimeFormat(locale, {
+    dateFormatter(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",

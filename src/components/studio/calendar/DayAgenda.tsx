@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { capitalize, cn } from "@/lib/utils";
 import { Icon } from "../coach/icons";
-import { formatWeekday } from "../format";
-import { parseDayKey } from "../plan/date";
+import { formatDayMonth, formatWeekday } from "../format";
 import type { Translate } from "../plan/types";
 import { eyebrow, heading, muted, surface } from "../theme";
 import { DAY_MARKS, markByKind, type DayMarkKind } from "./dayMarks";
@@ -40,13 +39,8 @@ export function DayAgenda({
   t: Translate;
 }) {
   const byClient = subject === "client";
-  const day = parseDayKey(date);
   const weekday = formatWeekday(date, locale);
-  const dayMonth = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(day);
+  const dayMonth = formatDayMonth(date, locale);
   const done = sessions.filter((session) => session.status === "done").length;
 
   return (

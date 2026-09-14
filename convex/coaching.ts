@@ -482,9 +482,9 @@ async function roster(ctx: Ctx, coachId: Id<"users">): Promise<Doc<"users">[]> {
     .withIndex("by_coach", (q) => q.eq("coachId", coachId))
     .collect();
 
+  const users = await Promise.all(profiles.map((profile) => ctx.db.get("users", profile.userId)));
   const clients: Doc<"users">[] = [];
-  for (const profile of profiles) {
-    const client = await ctx.db.get("users", profile.userId);
+  for (const client of users) {
     if (client && client.status !== "archived") clients.push(client);
   }
   return clients;

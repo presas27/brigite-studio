@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireClient } from "@/lib/studio/auth";
 import { startEmptySession, startWorkoutNow } from "@/lib/studio/plan";
 import { capitalize } from "@/lib/utils";
+import { dateFormatter } from "@/components/studio/format";
 import { getUserLocale } from "@/i18n/locale";
 
 /**
@@ -47,7 +48,7 @@ export async function startLiveWorkout(formData: FormData): Promise<void> {
   const kind = String(formData.get("kind") ?? "empty") === "run" ? "run" : "empty";
   const locale = await getUserLocale();
   const weekday = capitalize(
-    new Intl.DateTimeFormat(locale, {
+    dateFormatter(locale, {
       weekday: "long",
       timeZone: "Europe/Lisbon",
     }).format(new Date()),
