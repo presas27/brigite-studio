@@ -105,8 +105,9 @@ export function Hero() {
       <div className="gradient-hero grain relative flex min-h-svh flex-col overflow-hidden">
         {/* Vertical crop of the same studio frame used on the desktop
             hero. Anchored to her so the empty left of the wide plate
-            never becomes the subject; the wine wash over the top half
-            is what keeps cream type readable on the light backdrop. */}
+            never becomes the subject. Wash rises from the bottom so
+            the lowered copy stays readable without a lid of shadow
+            over her face. */}
         <div
           ref={figureRef}
           className="pointer-events-none absolute inset-0 xl:hidden"
@@ -119,7 +120,7 @@ export function Hero() {
             fetchPriority="high"
             className="object-cover object-[76%_42%]"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--brown-deep)_0%,color-mix(in_oklab,var(--caramel-deep),transparent_6%)_24%,color-mix(in_oklab,var(--caramel-deep),transparent_48%)_48%,color-mix(in_oklab,var(--caramel-deep),transparent_78%)_68%,transparent_82%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,var(--brown-deep)_0%,color-mix(in_oklab,var(--caramel-deep),transparent_8%)_32%,color-mix(in_oklab,var(--caramel-deep),transparent_55%)_58%,transparent_78%)]" />
         </div>
 
         {/* Wide studio frame, `xl` and up. Below that the hero is too tall
@@ -140,10 +141,10 @@ export function Hero() {
           <div className="absolute inset-0 bg-[linear-gradient(97deg,var(--brown-deep)_0%,var(--caramel-deep)_34%,color-mix(in_oklab,var(--caramel-deep),transparent_38%)_52%,transparent_70%)]" />
         </div>
 
-        <div className="relative mx-auto flex w-full max-w-[100rem] grow flex-col px-6 pt-28 md:px-10 md:pt-36 lg:px-16">
-          {/* Text block centers in the space below the nav pill on lg;
-              on mobile it flows from the top as before. */}
-          <div className="lg:my-auto">
+        <div className="relative mx-auto flex w-full max-w-[100rem] grow flex-col justify-end px-6 pb-12 pt-28 md:px-10 md:pb-16 md:pt-36 lg:px-16 xl:justify-start">
+          {/* Pinned to the lower third below `xl`, so the photo keeps
+              the top of the frame. From `xl` it recenters under the nav. */}
+          <div className="xl:my-auto">
             <h1
               key={locale}
               ref={titleRef}
