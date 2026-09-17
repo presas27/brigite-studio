@@ -298,7 +298,7 @@ export const ExerciseStage = memo(function ExerciseStage({
           {step.item.replaces && (
             <p className="flex items-center gap-1.5 font-sans text-xs text-accent-ink md:text-sm">
               <Icon name="swap" className="h-3.5 w-3.5 shrink-0" />
-              {t("swapReplaces", { name: step.item.replaces.exerciseName })}
+              {t("swapReplaces", { from: step.item.replaces.exerciseName, to: step.item.exerciseName })}
             </p>
           )}
 

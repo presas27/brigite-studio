@@ -1,7 +1,7 @@
 "use client";
 
 import type { View } from "@/components/studio/ViewToggle";
-import type { WorkoutItem } from "@/lib/studio/types";
+import type { Exercise, WorkoutItem } from "@/lib/studio/types";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseRow } from "./ExerciseRow";
 
@@ -26,6 +26,7 @@ type Props = {
   onNudgeAction: (blockId: string, itemId: string, delta: -1 | 1) => void;
   /** Rendered after the last exercise — the block's own "add exercise" control. */
   footer?: React.ReactNode;
+  library?: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
 };
 
 /**
@@ -56,6 +57,7 @@ export function ExerciseList({
   onDropOnAction,
   onNudgeAction,
   footer,
+  library,
 }: Props) {
   if (view === "list") {
     return (
@@ -76,6 +78,7 @@ export function ExerciseList({
             onDragOverAction={() => onDragOverAction(item.id)}
             onDropOnAction={() => onDropOnAction(blockId, index)}
             onNudgeAction={(delta) => onNudgeAction(blockId, item.id, delta)}
+            library={library}
           />
         ))}
         {footer}
@@ -107,6 +110,7 @@ export function ExerciseList({
           onDragOverAction={() => onDragOverAction(item.id)}
           onDropOnAction={() => onDropOnAction(blockId, index)}
           onNudgeAction={(delta) => onNudgeAction(blockId, item.id, delta)}
+          library={library}
         />
       ))}
       {footer}

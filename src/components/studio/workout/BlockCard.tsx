@@ -45,6 +45,8 @@ type Props = DragProps & {
   exercises: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
   selection: Selection;
   view: View;
+  /** Client plan copy: replace control on each exercise. */
+  replaceable?: boolean;
 };
 
 /** The three kinds a coach chooses between. `interval` exists in older data. */
@@ -79,6 +81,7 @@ export function BlockCard({
   canMoveUp,
   canMoveDown,
   onMoveAction,
+  replaceable = false,
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const common = useTranslations("Studio.common");
@@ -230,6 +233,7 @@ export function BlockCard({
           onDragOverAction={onDragOverItemAction}
           onDropOnAction={onDropOnItemAction}
           onNudgeAction={onNudgeAction}
+          library={replaceable ? exercises : undefined}
           footer={
             <ExercisePicker
               workoutId={workoutId}

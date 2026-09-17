@@ -940,9 +940,18 @@
       "swapPick": "Escolhe um exercício",
       "swapConfirm": "Trocar por {name}",
       "swapping": "A trocar…",
-      "swapReplaces": "No lugar de {name}",
+      "swapReplaces": "Substituído: {from} → {to}",
       "swapMessage": "Troquei «{from}» por «{to}» no treino «{workout}».",
       "swapRestoreMessage": "Voltei a «{name}» no treino «{workout}».",
+      "swapForeverMessage": "Substituí «{from}» por «{to}» no plano «{workout}», para sempre.",
+      "replaceExercise": "Substituir exercício",
+      "replaceLead": "{from} → {to}",
+      "replaceToday": "Só para hoje",
+      "replaceTodayHint": "Aplica-se só a esta sessão. O plano original não muda.",
+      "replaceForever": "Para sempre",
+      "replaceForeverHint": "Altera o plano. As sessões futuras deste treino usam o exercício novo.",
+      "replaceConfirm": "Confirmar",
+      "replaceConfirming": "A substituir…",
       "outcome": {
         "full": {
           "title": "Treino fechado",
@@ -1012,7 +1021,7 @@
       },
       "exerciseNotes": "Notas do aluno",
       "noteFrom": "Em {name}",
-      "replaced": "No lugar de {name}",
+      "replaced": "Substituído: {from} → {to}",
       "replacedNote": "Nota: {note}"
     },
     "messages": {
@@ -1281,6 +1290,7 @@
       "noSessions": "Sem sessões concluídas neste intervalo de datas.",
       "noExerciseData": "Sem dados registados para este exercício no intervalo escolhido.",
       "generatedOn": "Impresso a {date}",
+      "createdBy": "Criado por {studioName}",
       "unitKg": " kg",
       "unitSeconds": " s",
       "unitReps": " reps",

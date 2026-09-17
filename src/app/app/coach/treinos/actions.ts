@@ -23,6 +23,7 @@ import {
   updateItem,
   updateWorkout,
 } from "@/lib/studio/library";
+import { swapExercise } from "@/lib/studio/plan";
 import type { BlockKind, Role, WorkoutType } from "@/lib/studio/types";
 
 /**
@@ -364,5 +365,27 @@ export async function setRoundsAction(
   await requireBuilder();
   if (!workoutId || !blockId || !Number.isFinite(rounds)) return;
   await updateBlock(blockId, { rounds });
+  refresh();
+}
+
+/**
+ * Replace one exercise on a client's plan copy. `today` writes onto today's
+ * session of this workout; `forever` rewrites the plan itself.
+ */
+export async function replacePlanExerciseAction(input: {
+  workoutId: string;
+  itemId: string;
+  exerciseId: string;
+  exerciseName: string;
+  scope: "today" | "forever";
+}): Promise<void> {
+  await requireBuilder();
+  if (!input.workoutId || !input.itemId || !input.exerciseId) return;
+  await swapExercise({
+    workoutId: input.workoutId,
+    itemId: input.itemId,
+    exerciseId: input.exerciseId,
+    scope: input.scope,
+  });
   refresh();
 }

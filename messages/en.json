@@ -940,9 +940,18 @@
       "swapPick": "Pick an exercise",
       "swapConfirm": "Swap for {name}",
       "swapping": "Swapping…",
-      "swapReplaces": "In place of {name}",
+      "swapReplaces": "Replaced: {from} → {to}",
       "swapMessage": "I swapped \"{from}\" for \"{to}\" in \"{workout}\".",
       "swapRestoreMessage": "I switched back to \"{name}\" in \"{workout}\".",
+      "swapForeverMessage": "I replaced \"{from}\" with \"{to}\" in the \"{workout}\" plan, for good.",
+      "replaceExercise": "Replace exercise",
+      "replaceLead": "{from} → {to}",
+      "replaceToday": "Today only",
+      "replaceTodayHint": "Applies to this session only. The plan stays as it is.",
+      "replaceForever": "Forever",
+      "replaceForeverHint": "Changes the plan. Future sessions of this workout use the new exercise.",
+      "replaceConfirm": "Confirm",
+      "replaceConfirming": "Replacing…",
       "outcome": {
         "full": {
           "title": "Session closed",
@@ -1012,7 +1021,7 @@
       },
       "exerciseNotes": "Client's notes",
       "noteFrom": "On {name}",
-      "replaced": "In place of {name}",
+      "replaced": "Replaced: {from} → {to}",
       "replacedNote": "Note: {note}"
     },
     "messages": {
@@ -1281,6 +1290,7 @@
       "noSessions": "No completed sessions found in this date range.",
       "noExerciseData": "No data logged for this exercise in the selected range.",
       "generatedOn": "Printed {date}",
+      "createdBy": "Created by {studioName}",
       "unitKg": " kg",
       "unitSeconds": " s",
       "unitReps": " reps",

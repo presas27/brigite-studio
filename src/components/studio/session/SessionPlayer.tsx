@@ -92,7 +92,7 @@ export function SessionPlayer({
     itemId: string;
     exerciseId: string;
     exerciseName: string;
-    note: string;
+    scope: "today" | "forever";
   }) => Promise<void>;
   addExerciseAction: (input: { assignmentId: string; exerciseId: string }) => Promise<void>;
   setItemSetsAction: (input: { assignmentId: string; itemId: string; sets: number }) => Promise<void>;
@@ -758,7 +758,6 @@ export function SessionPlayer({
                     itemId={itemId}
                     exerciseName={name}
                     replaces={replaces}
-                    coached={coached}
                     onSwapAction={async (input) => {
                       await swapAction({ assignmentId: assignment.id, itemId, ...input });
                     }}
@@ -801,7 +800,6 @@ export function SessionPlayer({
                     itemId={step.itemId}
                     exerciseName={step.item.exerciseName}
                     replaces={step.item.replaces}
-                    coached={coached}
                     onSwapAction={async (input) => {
                       await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
                       setEnterAs("exercise");
@@ -832,7 +830,6 @@ export function SessionPlayer({
                       itemId={step.itemId}
                       exerciseName={step.item.exerciseName}
                       replaces={step.item.replaces}
-                      coached={coached}
                       onSwapAction={async (input) => {
                         await swapAction({ assignmentId: assignment.id, itemId: step.itemId, ...input });
                         setEnterAs("exercise");

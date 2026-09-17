@@ -1,76 +1,66 @@
 "use client";
 
-import { useDeferredValue, useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useAuthedQuery } from "@/components/studio/useAuthedQuery";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
+import { replacePlanExerciseAction } from "@/app/app/coach/treinos/actions";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { Modal } from "@/components/studio/Modal";
-import { buttonGhost, eyebrow, field } from "@/components/studio/theme";
-import type { ItemSwap } from "@/lib/studio/types";
+import {
+  ReplaceScopeDialog,
+  type ReplaceScope,
+} from "@/components/studio/session/ReplaceScopeDialog";
+import { buttonGhost, buttonQuiet, eyebrow, field } from "@/components/studio/theme";
+import type { Exercise } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { youtubeId } from "@/lib/youtube";
-import { ReplaceScopeDialog, type ReplaceScope } from "./ReplaceScopeDialog";
+
+type Digest = Pick<Exercise, "id" | "name" | "videoUrl" | "tags">;
+
+const SUGGESTIONS = 24;
 
 /**
- * Replace the movement on the set in front of her. The picker is live: options
- * come straight off the deployment as she types. Picking always opens the
- * today/forever confirmation — the plan is not rewritten unless she says so.
+ * Replace the movement on a client's plan copy. Opens the library (same-tag
+ * movements first), then the today/forever confirmation — the same pair the
+ * session player uses, so the gesture is one thing across the app.
  */
-export function SwapExerciseButton({
-  assignmentId,
+export function ReplaceExerciseButton({
+  workoutId,
   itemId,
+  exerciseId,
   exerciseName,
-  replaces,
-  onSwapAction,
-  compact = false,
-  eager = false,
+  library,
 }: {
-  assignmentId: string;
+  workoutId: string;
   itemId: string;
+  exerciseId: string;
   exerciseName: string;
-  /** The prescribed exercise, when this slot has already been swapped. */
-  replaces: ItemSwap | undefined;
-  onSwapAction: (input: {
-    exerciseId: string;
-    exerciseName: string;
-    scope: ReplaceScope;
-  }) => Promise<void>;
-  /** Icon-only trigger, for the player's header. */
-  compact?: boolean;
-  /**
-   * Subscribe to the suggestions before the picker opens. On for the exercise
-   * currently in front of her, so the list is already there when she taps.
-   */
-  eager?: boolean;
+  library: Digest[];
 }) {
   const t = useTranslations("Studio.session");
   const common = useTranslations("Studio.common");
-  const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [picked, setPicked] = useState<Digest | null>(null);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const search = useDeferredValue(query);
-  const options = useAuthedQuery(
-    api.plan.swapOptions,
-    open || eager ? { assignmentId: assignmentId as Id<"assignments">, itemId, search } : "skip",
-  );
-
   useEffect(() => {
-    if (!open) return;
+    if (!pickerOpen) return;
     if (window.matchMedia("(pointer: fine)").matches) searchRef.current?.focus();
-  }, [open]);
+  }, [pickerOpen]);
+
+  const results = useMemo(
+    () => preferSameCategory(library, exerciseId, query),
+    [library, exerciseId, query],
+  );
 
   function openPicker() {
     setQuery("");
     setPicked(null);
     setFailed(false);
-    setOpen(true);
+    setPickerOpen(true);
   }
 
   function confirm(scope: ReplaceScope) {
@@ -78,7 +68,13 @@ export function SwapExerciseButton({
     setFailed(false);
     startTransition(async () => {
       try {
-        await onSwapAction({ exerciseId: picked.id, exerciseName: picked.name, scope });
+        await replacePlanExerciseAction({
+          workoutId,
+          itemId,
+          exerciseId: picked.id,
+          exerciseName: picked.name,
+          scope,
+        });
         setPicked(null);
       } catch {
         setFailed(true);
@@ -92,18 +88,15 @@ export function SwapExerciseButton({
         type="button"
         onClick={openPicker}
         aria-label={t("replaceExercise")}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full font-sans text-xs font-medium text-accent-ink transition-colors hover:bg-caramel/15 hover:text-accent-ink",
-          compact ? "p-2" : "px-2.5 py-1.5",
-        )}
+        title={t("replaceExercise")}
+        className={cn(buttonQuiet, "shrink-0 text-accent-ink hover:text-accent-ink")}
       >
-        <Icon name="swap" className="h-3.5 w-3.5" />
-        {!compact && t("replaceExercise")}
+        <Icon name="swap" className="h-4 w-4" />
       </button>
 
       <Modal
-        open={open}
-        onCloseAction={() => setOpen(false)}
+        open={pickerOpen}
+        onCloseAction={() => setPickerOpen(false)}
         title={t("replaceExercise")}
         lead={exerciseName}
         width="40rem"
@@ -123,20 +116,17 @@ export function SwapExerciseButton({
             className={cn(field, "py-2.5 pl-9 text-sm")}
           />
         </div>
-        {options === undefined ? (
-          <p className="mt-6 font-sans text-sm text-cream/55">{t("swapLoading")}</p>
-        ) : options.length === 0 ? (
+        {results.length === 0 ? (
           <p className="mt-6 font-sans text-sm text-cream/55">{t("swapNoResults")}</p>
         ) : (
           <>
-            {!search.trim() && <p className={cn(eyebrow, "mt-4")}>{t("swapSuggested")}</p>}
+            {!query.trim() && <p className={cn(eyebrow, "mt-4")}>{t("swapSuggested")}</p>}
             <ul
               role="listbox"
               aria-label={t("swapSearch")}
               className="mt-3 max-h-[44vh] space-y-1 overflow-y-auto pr-1"
             >
-              {options.map((option) => {
-                const original = replaces?.exerciseId === option.id;
+              {results.map((option) => {
                 const thumb = option.videoUrl && youtubeId(option.videoUrl) ? option.videoUrl : null;
                 return (
                   <li key={option.id}>
@@ -145,8 +135,8 @@ export function SwapExerciseButton({
                       role="option"
                       aria-selected={false}
                       onClick={() => {
-                        setPicked({ id: option.id, name: option.name });
-                        setOpen(false);
+                        setPicked(option);
+                        setPickerOpen(false);
                       }}
                       className="flex w-full items-center gap-3 rounded-[0.85rem] px-3 py-2.5 text-left ring-1 ring-transparent transition hover:bg-cream/5 hover:ring-cream/10"
                     >
@@ -157,11 +147,8 @@ export function SwapExerciseButton({
                         <span className="block font-sans text-sm font-semibold leading-snug text-cream">
                           {option.name}
                         </span>
-                        {(option.tags.length > 0 || original) && (
+                        {option.tags.length > 0 && (
                           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-sans text-xs text-cream/45">
-                            {original && (
-                              <span className="font-semibold text-accent-ink">{t("swapOriginal")}</span>
-                            )}
                             {option.tags.slice(0, 3).map((tag) => (
                               <span key={tag}>{tag}</span>
                             ))}
@@ -175,9 +162,8 @@ export function SwapExerciseButton({
             </ul>
           </>
         )}
-
-        <div className="mt-5 flex items-center justify-end gap-2 border-t border-cream/10 pt-4">
-          <button type="button" onClick={() => setOpen(false)} className={cn(buttonGhost, "px-4 py-2 text-sm")}>
+        <div className="mt-5 flex justify-end border-t border-cream/10 pt-4">
+          <button type="button" onClick={() => setPickerOpen(false)} className={cn(buttonGhost, "px-4 py-2 text-sm")}>
             {common("cancel")}
           </button>
         </div>
@@ -186,7 +172,7 @@ export function SwapExerciseButton({
       <ReplaceScopeDialog
         key={picked?.id ?? "closed"}
         open={picked !== null}
-        fromName={replaces?.exerciseName ?? exerciseName}
+        fromName={exerciseName}
         toName={picked?.name ?? ""}
         pending={pending}
         failed={failed}
@@ -197,4 +183,22 @@ export function SwapExerciseButton({
       />
     </>
   );
+}
+
+/** Same-tag movements first when she has not typed; the whole library once she has. */
+function preferSameCategory(library: Digest[], currentId: string, query: string): Digest[] {
+  const others = library.filter((exercise) => exercise.id !== currentId);
+  const needle = query.trim().toLowerCase();
+  if (needle) {
+    return others.filter(
+      (exercise) =>
+        exercise.name.toLowerCase().includes(needle) ||
+        exercise.tags.some((tag) => tag.toLowerCase().includes(needle)),
+    );
+  }
+  const current = library.find((exercise) => exercise.id === currentId);
+  const tags = new Set(current?.tags ?? []);
+  if (tags.size === 0) return others.slice(0, SUGGESTIONS);
+  const matched = others.filter((exercise) => exercise.tags.some((tag) => tags.has(tag)));
+  return (matched.length > 0 ? matched : others).slice(0, SUGGESTIONS);
 }

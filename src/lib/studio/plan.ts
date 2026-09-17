@@ -336,23 +336,27 @@ export async function saveExerciseNote(input: {
 }
 
 /**
- * Swap one exercise of an open session for another, this session only. The
- * item keeps its id and prescription; `message` is what the coach's thread
- * gets, and is ignored for a client training alone.
+ * Replace one exercise. `today` is this session only; `forever` rewrites the
+ * client's plan copy. `message` is what the coach's thread gets when the
+ * client is the one who changed it.
  */
 export async function swapExercise(input: {
-  assignmentId: string;
+  assignmentId?: string;
+  workoutId?: string;
   itemId: string;
   exerciseId: string;
-  note: string;
-  message: string;
+  scope: "today" | "forever";
+  note?: string;
+  message?: string;
 }): Promise<void> {
   await sm(api.plan.swapExercise, {
-    assignmentId: input.assignmentId as Id<"assignments">,
     itemId: input.itemId,
     exerciseId: input.exerciseId as Id<"exercises">,
-    note: input.note,
-    message: input.message,
+    scope: input.scope,
+    ...(input.assignmentId ? { assignmentId: input.assignmentId as Id<"assignments"> } : {}),
+    ...(input.workoutId ? { workoutId: input.workoutId as Id<"workouts"> } : {}),
+    ...(input.note ? { note: input.note } : {}),
+    ...(input.message ? { message: input.message } : {}),
   });
 }
 

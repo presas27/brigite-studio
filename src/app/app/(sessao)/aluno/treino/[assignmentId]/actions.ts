@@ -96,19 +96,17 @@ export async function saveNote(input: {
 }
 
 /**
- * Swap one exercise of this session for another, this session only.
- *
- * The line the coach's thread gets is worded here, in the client's language,
- * because this is where the translations are; the mutation only posts it when
- * there is a coach to read it. No `refresh()`: the player subscribes to the
- * assignment, so the swapped snapshot arrives without throwing the route.
+ * Replace one exercise of this session. `today` leaves the plan alone;
+ * `forever` rewrites the client's copy. The line the coach's thread gets is
+ * worded here, in the client's language. No `refresh()`: the player
+ * subscribes to the assignment.
  */
 export async function swapSessionExercise(input: {
   assignmentId: string;
   itemId: string;
   exerciseId: string;
   exerciseName: string;
-  note: string;
+  scope: "today" | "forever";
 }): Promise<void> {
   const assignment = await assignmentFor(input.assignmentId);
   const current = assignment.snapshot.blocks
@@ -117,22 +115,28 @@ export async function swapSessionExercise(input: {
   if (!current || isRestItem(current)) throw new Error("No such exercise in this session");
 
   const t = await getTranslations("Studio.session");
-  const note = input.note.trim();
+  const from = current.replaces?.exerciseName ?? current.exerciseName;
   const restoring = current.replaces?.exerciseId === input.exerciseId;
   const line = restoring
     ? t("swapRestoreMessage", { name: input.exerciseName, workout: assignment.snapshot.name })
-    : t("swapMessage", {
-        from: current.replaces?.exerciseName ?? current.exerciseName,
-        to: input.exerciseName,
-        workout: assignment.snapshot.name,
-      });
+    : input.scope === "forever"
+      ? t("swapForeverMessage", {
+          from,
+          to: input.exerciseName,
+          workout: assignment.snapshot.name,
+        })
+      : t("swapMessage", {
+          from,
+          to: input.exerciseName,
+          workout: assignment.snapshot.name,
+        });
 
   await swapExercise({
     assignmentId: assignment.id,
     itemId: input.itemId,
     exerciseId: input.exerciseId,
-    note,
-    message: note ? `${line}\n${note}` : line,
+    scope: input.scope,
+    message: line,
   });
 }
 

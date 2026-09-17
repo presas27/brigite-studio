@@ -109,9 +109,9 @@ export type WorkoutItem = {
   rpe: string;
   notes: string;
   /**
-   * Only ever set on a snapshot item, by the client, mid-session: the exercise
-   * the coach prescribed for this slot, once they swapped it for another. A
-   * live workout item never carries it. See `snapshotItem` in `convex/schema.ts`.
+   * Only ever set on a snapshot item, for a this-session substitution: the
+   * exercise the plan prescribed for this slot. A live workout item never
+   * carries it. See `snapshotItem` in `convex/schema.ts`.
    */
   replaces?: ItemSwap;
 };

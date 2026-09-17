@@ -3,9 +3,10 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
 import { buttonQuiet } from "@/components/studio/theme";
-import { isRestItem, type WorkoutItem } from "@/lib/studio/types";
+import { isRestItem, type Exercise, type WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ExerciseDetailsDialog } from "./ExerciseDetailsDialog";
+import { ReplaceExerciseButton } from "./ReplaceExerciseButton";
 import { RestDurationDialog } from "./RestDurationDialog";
 import { prescription } from "./parts";
 
@@ -24,6 +25,8 @@ type Props = {
   onDragOverAction: () => void;
   onDropOnAction: () => void;
   onNudgeAction: (delta: -1 | 1) => void;
+  /** Client plan copy: show replace between details and the reorder handle. */
+  library?: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
 };
 
 /**
@@ -46,6 +49,7 @@ export function ExerciseRow({
   onDragOverAction,
   onDropOnAction,
   onNudgeAction,
+  library,
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const [open, setOpen] = useState(false);
@@ -120,6 +124,16 @@ export function ExerciseRow({
         >
           <Icon name="settings" className="h-4 w-4" />
         </button>
+
+        {!rest && library && (
+          <ReplaceExerciseButton
+            workoutId={workoutId}
+            itemId={item.id}
+            exerciseId={item.exerciseId}
+            exerciseName={item.exerciseName}
+            library={library}
+          />
+        )}
 
         <button
           type="button"

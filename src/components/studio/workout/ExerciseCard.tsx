@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/studio/coach/icons";
 import { ExerciseThumb } from "@/components/studio/library/ExerciseThumb";
-import { isRestItem, type WorkoutItem } from "@/lib/studio/types";
+import { isRestItem, type Exercise, type WorkoutItem } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import { ExerciseDetailsDialog } from "./ExerciseDetailsDialog";
+import { ReplaceExerciseButton } from "./ReplaceExerciseButton";
 import { RestDurationDialog } from "./RestDurationDialog";
 import { prescription } from "./parts";
 
@@ -25,6 +26,7 @@ type Props = {
   onDropOnAction: () => void;
   onDragOverAction: () => void;
   onNudgeAction: (delta: -1 | 1) => void;
+  library?: Pick<Exercise, "id" | "name" | "videoUrl" | "tags">[];
 };
 
 export function ExerciseCard({
@@ -41,6 +43,7 @@ export function ExerciseCard({
   onDropOnAction,
   onDragOverAction,
   onNudgeAction,
+  library,
 }: Props) {
   const t = useTranslations("Studio.workouts");
   const [open, setOpen] = useState(false);
@@ -109,6 +112,18 @@ export function ExerciseCard({
               selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
             )}
           />
+        )}
+
+        {!rest && library && (
+          <div className="absolute top-3 right-12 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+            <ReplaceExerciseButton
+              workoutId={workoutId}
+              itemId={item.id}
+              exerciseId={item.exerciseId}
+              exerciseName={item.exerciseName}
+              library={library}
+            />
+          </div>
         )}
 
         <button

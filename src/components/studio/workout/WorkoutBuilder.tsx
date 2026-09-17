@@ -249,6 +249,7 @@ export function WorkoutBuilder({
                   onDropOnItemAction={drop}
                   onDropAtEndAction={(blockId) => drop(blockId, "end")}
                   onNudgeAction={nudge}
+                  replaceable={workout.clientId != null}
                 />
               ))}
             </div>

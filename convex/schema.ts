@@ -44,12 +44,12 @@ const tracking = v.union(
  * must not change a session the client already saw, and `setLogs` are keyed by
  * the `itemId` in here so reordering the template cannot scramble past numbers.
  *
- * `replaces` is the one edit a snapshot item ever takes, and the client makes
- * it, not the coach: they swapped the movement out mid-session — no barbell
- * free, a wrist that will not take it — and the item now carries the exercise
- * they did, with the one the coach asked for kept here so the report can put
- * the two side by side. The `id` never changes, which is what keeps the sets
- * already logged under it, and the note on it, attached to the right slot.
+ * `replaces` is the one edit a snapshot item ever takes: someone swapped the
+ * movement out for this session only — no barbell free, a wrist that will not
+ * take it — and the item now carries the exercise they did, with the one the
+ * plan asked for kept here so the report can put the two side by side. The
+ * `id` never changes, which is what keeps the sets already logged under it,
+ * and the note on it, attached to the right slot.
  */
 const snapshotItem = v.object({
   id: v.string(),

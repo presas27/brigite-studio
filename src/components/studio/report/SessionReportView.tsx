@@ -233,7 +233,7 @@ function ExerciseReport({
         <p className="mt-1 flex flex-wrap items-center gap-x-2 font-sans text-xs text-accent-ink">
           <span className="inline-flex items-center gap-1.5">
             <Icon name="swap" className="h-3.5 w-3.5 shrink-0" />
-            {t("replaced", { name: entry.item.replaces.exerciseName })}
+            {t("replaced", { from: entry.item.replaces.exerciseName, to: entry.item.exerciseName })}
           </span>
           {entry.item.replaces.note && (
             <span className="text-cream/60">

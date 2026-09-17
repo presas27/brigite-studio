@@ -6,6 +6,7 @@ import {
   hiddenWorkoutIds,
   liveExercises,
   searchExercises,
+  touchWorkout,
   workoutSize,
   workoutWithBlocks,
 } from "./model/library";
@@ -1940,87 +1941,85 @@ function expandStems(words: string[]): Set<string> {
 }
 
 /**
- * Swap one exercise of an open session for another, for this session only.
+ * Replace one exercise with another.
  *
- * The item keeps its `id` and its prescription — sets, reps, rest, tempo, the
- * coach's note on it — and takes the new movement's name, demo and cues; the
- * exercise it replaces is written into `replaces` so nothing about what was
- * asked for is lost. Sets already logged under the item stay: each carries
- * the `exerciseId` it was actually done as, so records and progressions keep
- * counting them against the right movement. Swapping back to the original
- * clears `replaces` rather than recording a swap of nothing.
+ * `today` writes onto an open session's snapshot and records `replaces` so the
+ * report can put the two names side by side. The plan is untouched. `forever`
+ * rewrites the client's plan copy and every still-scheduled session of that
+ * workout — future freezes pick up the new movement on their own.
  *
- * Only the client does this, and only while the session is open. When they
- * have a coach, `message` lands in the thread as theirs — the coach learns
- * of the change the way they learn of everything else the client says, and
- * the console's unread count is what raises it. The caller words the
- * message because it is written in the client's language, and the
- * translations live on that side. Without a coach there is no thread and
- * nothing to tell.
+ * Coach and client may both choose either scope. The item keeps its `id` and
+ * prescription; sets already logged stay under the exercise they were done as.
+ * When the caller is the client and they have a coach, `message` lands in the
+ * thread — worded on the Next side, in their language.
  */
 export const swapExercise = mutation({
   args: {
-    assignmentId: v.id("assignments"),
+    assignmentId: v.optional(v.id("assignments")),
+    workoutId: v.optional(v.id("workouts")),
     itemId: v.string(),
     exerciseId: v.id("exercises"),
-    note: v.string(),
-    message: v.string(),
+    scope: v.union(v.literal("today"), v.literal("forever")),
+    note: v.optional(v.string()),
+    message: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const doc = await ctx.db.get("assignments", args.assignmentId);
-    if (!doc) throw new Error("No such assignment");
-    const { viewer, profile } = await requireClientAccess(ctx, doc.clientId);
-    if (viewer._id !== doc.clientId) throw new Error("Only the client swaps their own session");
-    if (doc.status !== "scheduled") throw new Error("Session is closed");
-
-    const item = snapshotExercise(doc.snapshot, args.itemId);
-    if (!item) throw new Error("No such exercise in this session");
     const exercise = await ctx.db.get("exercises", args.exerciseId);
     if (!exercise || exercise.archived) throw new Error("No such exercise");
-    if (exercise._id === item.exerciseId) return null;
 
-    const original = item.replaces ?? { exerciseId: item.exerciseId, exerciseName: item.exerciseName };
-    const swapped = {
-      ...item,
-      exerciseId: exercise._id as string,
-      exerciseName: exercise.name,
-      tracking: exercise.tracking,
-      videoUrl: exercise.videoUrl,
-      cues: exercise.cues,
-      cuesEn: exercise.cuesEn,
-      replaces:
-        original.exerciseId === exercise._id
-          ? undefined
-          : {
-              exerciseId: original.exerciseId,
-              exerciseName: original.exerciseName,
-              note: args.note.trim().slice(0, NOTE_LIMIT),
-              at: Date.now(),
-            },
-    };
-    await ctx.db.patch("assignments", doc._id, {
-      snapshot: sanitizeSnapshot({
-        ...doc.snapshot,
-        blocks: (doc.snapshot.blocks ?? []).map((block) => ({
-          ...block,
-          items: (block.items ?? []).map((candidate) => (candidate.id === item.id ? swapped : candidate)),
-        })),
-      }),
-    });
+    const session = args.assignmentId ? await ctx.db.get("assignments", args.assignmentId) : null;
+    if (args.assignmentId && !session) throw new Error("No such assignment");
 
-    // The note on this slot is about today's attempt at it, whichever movement
-    // that ended up being; only its advisory `exerciseId` follows the swap.
-    const note = await ctx.db
-      .query("exerciseNotes")
-      .withIndex("by_assignment_and_item", (q) => q.eq("assignmentId", doc._id).eq("itemId", item.id))
-      .unique();
-    if (note) await ctx.db.patch("exerciseNotes", note._id, { exerciseId: swapped.exerciseId });
+    const planId = args.workoutId ?? session?.workoutId ?? null;
+    const plan = planId ? await ctx.db.get("workouts", planId) : null;
+    if (args.workoutId && !plan) throw new Error("No such workout");
 
-    const message = args.message.trim();
-    if (profile.coachId !== null && message) {
+    const clientId = session?.clientId ?? plan?.clientId ?? null;
+    if (!clientId) throw new Error("Not a client's workout");
+    const { viewer, profile } = await requireClientAccess(ctx, clientId);
+
+    const note = (args.note ?? "").trim().slice(0, NOTE_LIMIT);
+    const now = Date.now();
+
+    if (args.scope === "forever") {
+      if (plan && plan.clientId === clientId) {
+        await replacePlanItem(ctx, args.itemId, exercise);
+        const scheduled = await ctx.db
+          .query("assignments")
+          .withIndex("by_workout", (q) => q.eq("workoutId", plan._id))
+          .collect();
+        for (const doc of scheduled) {
+          if (doc.clientId !== clientId || doc.status !== "scheduled") continue;
+          await patchAssignmentItem(ctx, doc, args.itemId, exercise, "forever", note, now);
+        }
+      } else if (session && session.status === "scheduled") {
+        // Live / library-backed session: no client plan copy to rewrite.
+        const patched = await patchAssignmentItem(
+          ctx,
+          session,
+          args.itemId,
+          exercise,
+          "today",
+          note,
+          now,
+        );
+        if (!patched) throw new Error("No such exercise in this session");
+      } else {
+        throw new Error("Not a client's workout");
+      }
+    } else {
+      const open = session ?? (await openSessionToday(ctx, clientId, planId));
+      if (!open) throw new Error("No session today");
+      if (open.status !== "scheduled") throw new Error("Session is closed");
+      const patched = await patchAssignmentItem(ctx, open, args.itemId, exercise, "today", note, now);
+      if (!patched) throw new Error("No such exercise in this session");
+    }
+
+    const message = (args.message ?? "").trim();
+    if (viewer._id === clientId && profile.coachId !== null && message) {
       await ctx.db.insert("messages", {
-        clientId: doc.clientId,
+        clientId,
         authorId: viewer._id,
         body: message,
         readAt: null,
@@ -2029,6 +2028,104 @@ export const swapExercise = mutation({
     return null;
   },
 });
+
+function replacedSnapshotItem(
+  item: SnapshotItem,
+  exercise: Doc<"exercises">,
+  scope: "today" | "forever",
+  note: string,
+  now: number,
+): SnapshotItem {
+  const original = item.replaces ?? {
+    exerciseId: item.exerciseId,
+    exerciseName: item.exerciseName,
+  };
+  const restoring = original.exerciseId === exercise._id;
+  const next: SnapshotItem = {
+    ...item,
+    exerciseId: exercise._id as string,
+    exerciseName: exercise.name,
+    tracking: exercise.tracking,
+    videoUrl: exercise.videoUrl,
+    cues: exercise.cues,
+    cuesEn: exercise.cuesEn,
+  };
+  if (scope === "today" && !restoring) {
+    next.replaces = {
+      exerciseId: original.exerciseId,
+      exerciseName: original.exerciseName,
+      note,
+      at: now,
+    };
+  } else {
+    next.replaces = undefined;
+  }
+  return next;
+}
+
+async function patchAssignmentItem(
+  ctx: MutationCtx,
+  doc: Doc<"assignments">,
+  itemId: string,
+  exercise: Doc<"exercises">,
+  scope: "today" | "forever",
+  note: string,
+  now: number,
+): Promise<boolean> {
+  const item = snapshotExercise(doc.snapshot, itemId);
+  if (!item) return false;
+  if (exercise._id === item.exerciseId && scope === "forever" && !item.replaces) return true;
+  if (exercise._id === item.exerciseId && scope === "today") return true;
+  const swapped = replacedSnapshotItem(item, exercise, scope, note, now);
+  await ctx.db.patch("assignments", doc._id, {
+    snapshot: sanitizeSnapshot({
+      ...doc.snapshot,
+      blocks: (doc.snapshot.blocks ?? []).map((block) => ({
+        ...block,
+        items: (block.items ?? []).map((candidate) => (candidate.id === item.id ? swapped : candidate)),
+      })),
+    }),
+  });
+  const existing = await ctx.db
+    .query("exerciseNotes")
+    .withIndex("by_assignment_and_item", (q) => q.eq("assignmentId", doc._id).eq("itemId", item.id))
+    .unique();
+  if (existing) await ctx.db.patch("exerciseNotes", existing._id, { exerciseId: swapped.exerciseId });
+  return true;
+}
+
+async function replacePlanItem(
+  ctx: MutationCtx,
+  itemId: string,
+  exercise: Doc<"exercises">,
+): Promise<void> {
+  const id = ctx.db.normalizeId("workoutItems", itemId);
+  if (!id) return;
+  const item = await ctx.db.get("workoutItems", id);
+  if (!item || item.kind === "rest") return;
+  if (item.exerciseId === exercise._id) return;
+  await ctx.db.patch("workoutItems", id, { exerciseId: exercise._id });
+  const block = await ctx.db.get("workoutBlocks", item.blockId);
+  if (block) await touchWorkout(ctx, block.workoutId);
+}
+
+async function openSessionToday(
+  ctx: MutationCtx,
+  clientId: Id<"users">,
+  workoutId: Id<"workouts"> | null,
+): Promise<Doc<"assignments"> | null> {
+  if (!workoutId) return null;
+  const today = dayKey();
+  const todays = await ctx.db
+    .query("assignments")
+    .withIndex("by_client_and_date", (q) => q.eq("clientId", clientId).eq("date", today))
+    .collect();
+  const open = todays.find((doc) => doc.workoutId === workoutId && doc.status === "scheduled");
+  if (open) return open;
+  const created = await freezeAssignment(ctx, { clientId, workoutId, date: today });
+  if (!created) return null;
+  return await ctx.db.get("assignments", created);
+}
 
 
 /**
