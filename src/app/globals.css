@@ -420,6 +420,17 @@ html[data-theme-transition="expanding"]::view-transition-new(root) {
   margin: 14mm;
 }
 
+/*
+ * Running brand on every printed page. Chrome still has no CSS running
+ * headers (`position: running()`, `@top-right`), and `position: fixed`
+ * overlays continuation content. A table thead both paints and reserves
+ * space; the wrapping row must be allowed to fragment or a long workout
+ * would refuse to break.
+ */
+.print-sheet-brand {
+  display: none;
+}
+
 @media print {
   html,
   body {
@@ -432,5 +443,15 @@ html[data-theme-transition="expanding"]::view-transition-new(root) {
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  .print-sheet-brand {
+    display: table-header-group;
+  }
+
+  .print-sheet,
+  .print-sheet tr,
+  .print-sheet td {
+    break-inside: auto;
   }
 }

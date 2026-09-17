@@ -59,6 +59,8 @@ export default async function PrintWorkoutPage({
   // different workout on paper than the one on screen.
   const blocks = [...workout.blocks].sort((a, b) => a.position - b.position);
   const subtitle = `${client.name} · ${tWorkouts(`type.${workout.workoutType}`)}`;
+  const studioName = viewer.name.trim();
+  const brand = studioName ? t("createdBy", { studioName }) : undefined;
 
   if (format === "progresso") {
     const to = dayParam(query.ate) ? query.ate : dayKey();
@@ -69,6 +71,7 @@ export default async function PrintWorkoutPage({
       <PrintSheet
         title={workout.name}
         subtitle={subtitle}
+        brand={brand}
         meta={[
           `${formatDayKey(from, locale)} – ${formatDayKey(to, locale)}`,
           t("sessionCount", { count: progression.sessions.length }),
@@ -104,6 +107,7 @@ export default async function PrintWorkoutPage({
     <PrintSheet
       title={workout.name}
       subtitle={subtitle}
+      brand={brand}
       meta={[
         t(`format.${format}`),
         ...(workout.focus ? [workout.focus] : []),
