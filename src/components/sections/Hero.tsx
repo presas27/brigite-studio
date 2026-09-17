@@ -15,10 +15,11 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 /**
  * Hero — full-bleed caramel gradient; the ink band below laps over its
  * bottom edge with rounded corners. Condensed uppercase headline on the
- * left with one Playfair italic word, Sara's cut-out anchored to the
- * bottom on the right. One choreographed load: masked line reveal on
- * the title, then figure and intro; the figure lags on scroll. Skipped
- * under `prefers-reduced-motion`.
+ * left with one Playfair italic word. Same studio curl photograph on
+ * every breakpoint: a vertical crop below `xl`, the wide frame from
+ * `xl` up. One choreographed load: masked line reveal on the title,
+ * then figure and intro; the figure lags on scroll. Skipped under
+ * `prefers-reduced-motion`.
  */
 export function Hero() {
   const t = useTranslations("Hero");
@@ -101,12 +102,32 @@ export function Hero() {
   return (
     <section ref={scope}>
       <div className="gradient-hero grain relative flex min-h-svh flex-col overflow-hidden">
+        {/* Vertical crop of the same studio frame used on the desktop
+            hero. Anchored to her so the empty left of the wide plate
+            never becomes the subject. Wash rises from the bottom so
+            the lowered copy stays readable without a lid of shadow
+            over her face. */}
+        <div
+          ref={figureRef}
+          className="pointer-events-none absolute inset-0 xl:hidden"
+        >
+          <Image
+            src="/images/sara/hero-wide.webp"
+            alt={t("alt")}
+            fill
+            sizes="100vw"
+            fetchPriority="high"
+            className="object-cover object-[76%_42%]"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,var(--brown-deep)_0%,color-mix(in_oklab,var(--caramel-deep),transparent_8%)_32%,color-mix(in_oklab,var(--caramel-deep),transparent_55%)_58%,transparent_78%)]" />
+        </div>
+
         {/* Wide studio frame, `xl` and up. Below that the hero is too tall
             for its width: `object-cover` scales the photo by height and
             crops so much off the left that Sara lands in the headline, so
-            the cut-out composition stays. The brand wash over the left half
-            is what keeps the cream copy legible on the light backdrop; it
-            fades out before it reaches her. */}
+            a tighter vertical crop is used instead. The brand wash over
+            the left half is what keeps the cream copy legible on the
+            light backdrop; it fades out before it reaches her. */}
         <div className="pointer-events-none absolute inset-0 hidden xl:block">
           <Image
             src="/images/sara/hero-wide.webp"
@@ -119,10 +140,10 @@ export function Hero() {
           <div className="absolute inset-0 bg-[linear-gradient(97deg,var(--brown-deep)_0%,var(--caramel-deep)_34%,color-mix(in_oklab,var(--caramel-deep),transparent_38%)_52%,transparent_70%)]" />
         </div>
 
-        <div className="relative mx-auto flex w-full max-w-[100rem] grow flex-col px-6 pt-28 md:px-10 md:pt-36 lg:px-16">
-          {/* Text block centers in the space below the nav pill on lg;
-              on mobile it flows from the top as before. */}
-          <div className="lg:my-auto">
+        <div className="relative mx-auto flex w-full max-w-[100rem] grow flex-col justify-end px-6 pb-12 pt-28 md:px-10 md:pb-16 md:pt-36 lg:px-16 xl:justify-start">
+          {/* Pinned to the lower third below `xl`, so the photo keeps
+              the top of the frame. From `xl` it recenters under the nav. */}
+          <div className="xl:my-auto">
             <h1
               key={locale}
               ref={titleRef}
@@ -168,23 +189,6 @@ export function Hero() {
                 <SolMark className="h-7 w-7 text-cream/90 motion-safe:animate-[spin_45s_linear_infinite]" />
               </div>
             </div>
-          </div>
-
-          {/* Cut-out figure — up to `lg`; from `xl` the wide frame takes
-              over. */}
-          <div
-            ref={figureRef}
-            className="pointer-events-none relative mx-auto mt-10 flex grow items-end drop-shadow-[0_24px_48px_var(--hero-figure-shadow)] lg:absolute lg:bottom-0 lg:right-10 lg:mt-0 xl:hidden"
-          >
-            <Image
-              src="/images/sara/hero-cutout-v7.webp"
-              alt={t("alt")}
-              width={1200}
-              height={1739}
-              fetchPriority="high"
-              sizes="(min-width: 1024px) 40rem, 70vw"
-              className="relative h-[min(52svh,28rem)] w-auto lg:h-[min(84vh,54rem)]"
-            />
           </div>
         </div>
       </div>
