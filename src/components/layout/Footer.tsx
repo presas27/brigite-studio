@@ -43,6 +43,18 @@ export function Footer() {
           </ul>
         </nav>
 
+        <address className="not-italic text-sm leading-relaxed text-cream/60">
+          <p>{site.name}</p>
+          <p>{t("city")}</p>
+          <p>
+            <a
+              href={`mailto:${site.email}`}
+              className="link-grow transition-colors hover:text-cream"
+            >
+              {site.email}
+            </a>
+          </p>
+        </address>
         <p className="flex items-center gap-3 text-xs text-cream/50">
           <SolMark className="h-4 w-4 text-accent-muted" />© {year} {site.name}
         </p>

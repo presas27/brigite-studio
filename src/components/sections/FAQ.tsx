@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { Accordion } from "@/components/ui/Accordion";
 import { Reveal } from "@/components/motion/Reveal";
 
-const FAQ_COUNT = 5;
+export const FAQ_COUNT = 5;
 
 /**
  * FAQ — editorial split. A giant "FAQ" wordmark anchors the left column;

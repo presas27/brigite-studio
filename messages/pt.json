@@ -1,6 +1,9 @@
 {
   "Meta": {
-    "description": "Personal training com a Sara Brigites. Treinos personalizados, acompanhamento próximo e resultados reais."
+    "title": "Personal trainer em Lisboa · Brigite's Studio",
+    "description": "Personal training com a Sara Brigites em Lisboa. Treino 1:1, online, mobilidade, aérea e equilibrismo.",
+    "ogAlt": "Sara Brigites a treinar numa bola no estúdio",
+    "jobTitle": "Personal trainer"
   },
   "Nav": {
     "primary": "Principal",
@@ -11,6 +14,7 @@
     "contact": "Contacta!",
     "logoHome": "Brigite's Studio, início",
     "instagram": "Instagram",
+    "city": "Lisboa",
     "openMenu": "Abrir menu",
     "closeMenu": "Fechar menu",
     "language": "Idioma",
@@ -23,7 +27,7 @@
     "intro": "Criado a pensar em iniciantes, entusiastas de fitness, performers e atletas, o meu acompanhamento ajuda-te a ganhar força, melhorar a mobilidade e desenvolver confiança no teu corpo em todas as fases do teu percurso.",
     "cta": "Marcar sessão",
     "secondary": "Ver planos",
-    "alt": "Sara Brigites de braços cruzados, a sorrir"
+    "alt": "Sara Brigites a treinar numa bola no estúdio"
   },
   "About": {
     "heading": "Olá, <m>sou a</m> Sara.",

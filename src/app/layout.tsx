@@ -38,14 +38,43 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
   const t = await getTranslations("Meta");
+  const title = t("title");
+  const description = t("description");
+  const ogLocale = locale === "pt" ? "pt_PT" : "en_GB";
+
   return {
     title: {
-      default: site.name,
+      default: title,
       template: `%s · ${site.name}`,
     },
-    description: t("description"),
+    description,
     metadataBase: new URL(site.url),
+    alternates: { canonical: "/" },
+    robots: { index: true, follow: true },
+    openGraph: {
+      type: "website",
+      locale: ogLocale,
+      url: "/",
+      siteName: site.name,
+      title,
+      description,
+      images: [
+        {
+          url: site.images.og,
+          width: site.images.ogWidth,
+          height: site.images.ogHeight,
+          alt: t("ogAlt"),
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [site.images.og],
+    },
   };
 }
 

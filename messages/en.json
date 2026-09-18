@@ -1,6 +1,9 @@
 {
   "Meta": {
-    "description": "Personal training with Sara Brigites. Personalised coaching, close support and lasting results."
+    "title": "Personal trainer in Lisbon · Brigite's Studio",
+    "description": "Personal training with Sara Brigites in Lisbon. 1:1 sessions, online coaching, mobility, aerial and handbalancing.",
+    "ogAlt": "Sara Brigites training on a stability ball in the studio",
+    "jobTitle": "Personal trainer"
   },
   "Nav": {
     "primary": "Main",
@@ -11,6 +14,7 @@
     "contact": "Get in touch!",
     "logoHome": "Brigite's Studio, home",
     "instagram": "Instagram",
+    "city": "Lisbon",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "language": "Language",
@@ -23,7 +27,7 @@
     "intro": "Designed for beginners, fitness enthusiasts, performers and athletes alike, my coaching supports you in building strength, improving mobility and developing confidence in your body at every stage of your journey.",
     "cta": "Book a session",
     "secondary": "See plans",
-    "alt": "Sara Brigites smiling with her arms crossed"
+    "alt": "Sara Brigites training on a stability ball in the studio"
   },
   "About": {
     "heading": "Hi, <m>I'm</m> Sara.",
