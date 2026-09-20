@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Geist } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getThemeMode } from "@/lib/studio/theme-mode";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -44,21 +43,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
-  const themeMode = await getThemeMode();
 
   return (
     // `data-scroll-behavior` tells the router that `scroll-behavior: smooth` is
-    // set in CSS, so it suppresses it during route transitions. Without it the
-    // app's page-to-page navigation animates its scroll reset, which reads as
-    // lag; anchor links on the marketing page keep their smooth scroll.
-    //
-    // `data-studio-theme` is rendered from the cookie so the app's light theme
-    // paints on the first frame — no flash. It only takes effect inside
-    // `.studio`, so the marketing site is never repainted.
+    // set in CSS, so it suppresses it during route transitions — anchor links
+    // keep their smooth scroll.
     <html
       lang={locale}
       data-scroll-behavior="smooth"
-      data-studio-theme={themeMode}
       className={`${geistSans.variable} ${anton.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

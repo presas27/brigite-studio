@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Icon } from "@/components/studio/coach/icons";
-import { buttonGhost, buttonPrimary, heading, muted, surface } from "@/components/studio/theme";
 import { cn } from "@/lib/utils";
 
 type ErrorPanelProps = {
@@ -45,22 +43,27 @@ export function ErrorPanel({
 }: ErrorPanelProps) {
   return (
     <div className={cn("flex min-h-[60dvh] items-center justify-center px-5 py-16", className)}>
-      <div className={cn(surface, "w-full max-w-xl space-y-5 p-6 sm:p-8")}>
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/5 text-accent-ink ring-1 ring-cream/10">
-          <Icon name="alert" className="h-6 w-6" />
-        </span>
-
+      <div className="w-full max-w-xl space-y-5 rounded-3xl bg-ink-lift p-6 ring-1 ring-cream/10 sm:p-8">
         <div className="space-y-2">
-          <h1 className={cn(heading, "text-[1.75rem] sm:text-[2.25rem]")}>{title}</h1>
-          <p className={cn(muted, "max-w-prose")}>{lead}</p>
+          <h1 className="font-display text-[1.75rem] uppercase tracking-tight text-cream sm:text-[2.25rem]">
+            {title}
+          </h1>
+          <p className="max-w-prose font-sans text-cream/70">{lead}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onRetryAction} className={buttonPrimary}>
+          <button
+            type="button"
+            onClick={onRetryAction}
+            className="inline-flex items-center justify-center rounded-full bg-butter px-6 py-3 font-sans text-sm font-semibold text-on-primary transition-colors duration-200 hover:bg-primary-hover"
+          >
             {retryLabel}
           </button>
           {href && hrefLabel && (
-            <Link href={href} className={buttonGhost}>
+            <Link
+              href={href}
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 font-sans text-sm font-semibold text-cream/80 ring-1 ring-cream/15 transition-colors duration-200 hover:bg-cream/5"
+            >
               {hrefLabel}
             </Link>
           )}

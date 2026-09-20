@@ -17,11 +17,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: {
     /**
-     * YouTube poster frames. Exercise demos are links, not uploads, so the only
-     * picture the library has for a movement is the one YouTube already serves.
-     */
-    remotePatterns: [{ protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" }],
-    /**
      * AVIF first. The hero photo is a wide studio frame whose backdrop is a
      * smooth grey sweep — WebP spends its bitrate on that gradient's noise.
      * Measured on the 3840px master: WebP 345 KB vs AVIF 16 KB at equal
@@ -31,12 +26,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   /**
-   * Tree-shake the icon/chart/motion barrels so a page that uses one
-   * `AreaChart` does not download the rest of Recharts, and a Hover icon
-   * does not pull every Motion export.
+   * Tree-shake the animation barrels so a page that uses one `Reveal` does not
+   * download every Motion or GSAP export.
    */
   experimental: {
-    optimizePackageImports: ["motion", "recharts", "gsap", "@gsap/react"],
+    optimizePackageImports: ["motion", "gsap", "@gsap/react"],
     turbopackFileSystemCacheForBuild: true,
   },
   async headers() {
